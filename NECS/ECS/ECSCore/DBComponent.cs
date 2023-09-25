@@ -446,41 +446,49 @@ namespace NECS.ECS.ECSCore
 
         public override void UnserializeDB()
         {
-            ChangedComponents.Clear();
-            foreach (var serializedRow in serializedDB)
+            lock (serializedDB)//race fix
             {
-                Dictionary<long, (ECSComponent, ComponentState)> components = new Dictionary<long, (ECSComponent, ComponentState)>();
-                DB.TryGetValue(serializedRow.Key, out components);
-                if (components == null)
-                    components = new Dictionary<long, (ECSComponent, ComponentState)>();
-                ECSEntity entityOwner = null;
-                if(ManagerScope.instance.entityManager.EntityStorage.TryGetValue(serializedRow.Key, out entityOwner))
+                ChangedComponents.Clear();
+                foreach (var serializedRow in serializedDB)
                 {
-                    foreach (var component in serializedRow.Value)
+                    Dictionary<long, (ECSComponent, ComponentState)> components = new Dictionary<long, (ECSComponent, ComponentState)>();
+                    DB.TryGetValue(serializedRow.Key, out components);
+                    if (components == null)
+                        components = new Dictionary<long, (ECSComponent, ComponentState)>();
+                    ECSEntity entityOwner = null;
+                    if (ManagerScope.instance.entityManager.EntityStorage.TryGetValue(serializedRow.Key, out entityOwner))
                     {
-                        var unserComp = (ECSComponent)(component.component as JObject).ToObject(ECSComponentManager.AllComponents[component.componentId].GetTypeFast());
-                        unserComp.ownerEntity = entityOwner;
-                        if(!components.ContainsKey(unserComp.instanceId))
+                        foreach (var component in serializedRow.Value)
                         {
-                            components[unserComp.instanceId] = (unserComp, component.componentState);
-                            ComponentOwners[unserComp.instanceId] = entityOwner.instanceId;
-                            if (component.componentState != ComponentState.Created)
+                            var unserComp = (ECSComponent)(component.component as JObject).ToObject(ECSComponentManager.AllComponents[component.componentId].GetTypeFast());
+                            component.componentInstanceId = unserComp.instanceId;
+                            unserComp.ownerEntity = entityOwner;
+                            if (!components.ContainsKey(unserComp.instanceId))
                             {
-                                unserComp.OnAdded(unserComp.ownerEntity);
+                                components[unserComp.instanceId] = (unserComp, component.componentState);
+                                ComponentOwners[unserComp.instanceId] = entityOwner.instanceId;
+                                if (component.componentState != ComponentState.Created)
+                                {
+                                    unserComp.OnAdded(unserComp.ownerEntity);
+                                }
                             }
+                            else
+                            {
+                                unserComp.componentManagers = components[unserComp.instanceId].Item1.componentManagers;
+                                components[unserComp.instanceId] = (unserComp, component.componentState);
+                                unserComp.componentManagers.ForEach(x => x.Value.ConnectPoint = unserComp);
+                            }
+                            ChangedComponents[unserComp.instanceId] = 1;
                         }
-                        else
-                            components[unserComp.instanceId] = (unserComp, component.componentState);
-                        ChangedComponents[unserComp.instanceId] = 1;
+                        DB[serializedRow.Key] = components;
                     }
-                    DB[serializedRow.Key] = components;
+                    else
+                    {
+                        Logger.Error("error unserialize: no entity");
+                    }
                 }
-                else
-                {
-                    Logger.LogError("error unserialize: no entity");
-                }
+                AfterDeserialize();
             }
-            AfterDeserialize();
         }
 
         public override void AfterDeserialize()

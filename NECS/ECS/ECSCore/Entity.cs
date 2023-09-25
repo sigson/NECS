@@ -11,10 +11,9 @@ using System.Threading.Tasks;
 namespace NECS.ECS.ECSCore
 {
     [TypeUid(200155515534159360)]//base type of entity
-    public class ECSEntity : CachingSerializable, ICloneable
+    public class ECSEntity : IECSObject, ICloneable
     {
         static public long Id = 200155515534159360;
-        public long instanceId = Guid.NewGuid().GuidToLong();
         [NonSerialized]
         public List<Type> TemplateAccessor = new List<Type>();
 

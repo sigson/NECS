@@ -11,11 +11,10 @@ using NECS.Network.Simple.Net;
 
 namespace NECS.ECS.ECSCore
 {
-    public class ECSComponent : CachingSerializable, ICloneable
+    public class ECSComponent : IECSObject, ICloneable
     {
         static public long Id { get; set; } = 0;
 
-        public long instanceId = Guid.NewGuid().GuidToLong();
         [NonSerialized]
         public ECSEntity ownerEntity;
 
@@ -40,6 +39,8 @@ namespace NECS.ECS.ECSCore
         protected long ReflectionId = 0;
         [NonSerialized]
         public bool Unregistered = true;
+        [NonSerialized]
+        public ComponentManagers componentManagers;
 
         public void DirectiveSerialize()
         {

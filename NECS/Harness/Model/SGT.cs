@@ -12,6 +12,8 @@ namespace NECS.Harness.Model
     {
         private static IDictionary<Type, SGT> instances = new ConcurrentDictionary<Type, SGT>();
 
+        public static Action<object> ExtendedInstancing = null; //for game engine additional instancing
+
         public static T InitalizeSingleton<T>(object behaviour = null) where T : SGT
         {
             return (T)InitalizeSingleton(typeof(T), behaviour);
@@ -27,6 +29,10 @@ namespace NECS.Harness.Model
                     instances.TryGetValue(singletonType, out instance);
                     if (instance == null)
                     {
+                        if(ExtendedInstancing != null)
+                        {
+                            ExtendedInstancing(behaviour);
+                        }
                         instances.Add(singletonType, instance);
                     }
                 }

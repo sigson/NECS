@@ -10,10 +10,9 @@ using NECS.Core.Logging;
 
 namespace NECS.ECS.ECSCore
 {
-    public abstract class ECSEvent : CachingSerializable
+    public abstract class ECSEvent : IECSObject
     {
         static public long Id { get; set; }
-        public long instanceId = Guid.NewGuid().GuidToLong();
         public long EntityOwnerId;
         [NonSerialized]
         public EventWatcher eventWatcher;
