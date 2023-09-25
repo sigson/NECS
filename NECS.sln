@@ -5,6 +5,10 @@ VisualStudioVersion = 17.7.34031.279
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NECS", "NECS\NECS.csproj", "{7480C4DE-80E8-4724-A27D-A4E15D7B40F1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NECS_Client", "NECS_Client\NECS_Client.csproj", "{DF94A7FF-6742-4858-B4E0-6542195C7276}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NECS_Server", "NECS_Server\NECS_Server.csproj", "{CF32CD81-C888-40ED-BD75-3C1884509652}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +19,14 @@ Global
 		{7480C4DE-80E8-4724-A27D-A4E15D7B40F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7480C4DE-80E8-4724-A27D-A4E15D7B40F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7480C4DE-80E8-4724-A27D-A4E15D7B40F1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF94A7FF-6742-4858-B4E0-6542195C7276}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF94A7FF-6742-4858-B4E0-6542195C7276}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF94A7FF-6742-4858-B4E0-6542195C7276}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF94A7FF-6742-4858-B4E0-6542195C7276}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF32CD81-C888-40ED-BD75-3C1884509652}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF32CD81-C888-40ED-BD75-3C1884509652}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF32CD81-C888-40ED-BD75-3C1884509652}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF32CD81-C888-40ED-BD75-3C1884509652}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
