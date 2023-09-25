@@ -22,10 +22,5 @@ using NECS.Extensions;
                 compute(list[i]);
             }
         }
-
-        public static long GuidToLong(this Guid guid)
-        {
-            return DateTime.UtcNow.Ticks + BitConverter.ToInt64(guid.ToByteArray(), 8);
-        }
     }
 //}

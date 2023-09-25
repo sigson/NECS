@@ -11,7 +11,10 @@ namespace NECS.Core.Logging
             lock (_lock)
             {
                 Console.ForegroundColor = color;
-                Console.WriteLine($"[{DateTime.UtcNow}, {type}] {content}");
+                if(content is Exception)
+                    Console.WriteLine($"[{DateTime.UtcNow}, {type}] {(content as Exception).Message}\n {(content as Exception).StackTrace}");
+                else
+                    Console.WriteLine($"[{DateTime.UtcNow}, {type}] {content}");
             }
         }
 

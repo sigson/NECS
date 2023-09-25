@@ -1,4 +1,5 @@
-﻿using NECS.ECS.Types.AtomicType;
+﻿using NECS.Core.Logging;
+using NECS.ECS.Types.AtomicType;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -77,7 +78,83 @@ namespace NECS
             return new string(Enumerable.Repeat(chars, countSymbols)
                 .Select(s => s[random.Next(s.Length)]).ToArray());
         }
+
+        public static float FastFloat(this string str)
+        {
+            return float.Parse(str, System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        public static long GuidToLong(this Guid guid)
+        {
+            return DateTime.UtcNow.Ticks + BitConverter.ToInt64(guid.ToByteArray(), 8);
+        }
     }
+
+    public class TaskEx : Task
+    {
+        public TaskEx(Action action) : base(action)
+        {
+        }
+
+        public TaskEx(Action action, CancellationToken cancellationToken) : base(action, cancellationToken)
+        {
+        }
+
+        public TaskEx(Action action, TaskCreationOptions creationOptions) : base(action, creationOptions)
+        {
+        }
+
+        public TaskEx(Action<object> action, object state) : base(action, state)
+        {
+        }
+
+        public TaskEx(Action action, CancellationToken cancellationToken, TaskCreationOptions creationOptions) : base(action, cancellationToken, creationOptions)
+        {
+        }
+
+        public TaskEx(Action<object> action, object state, CancellationToken cancellationToken) : base(action, state, cancellationToken)
+        {
+        }
+
+        public TaskEx(Action<object> action, object state, TaskCreationOptions creationOptions) : base(action, state, creationOptions)
+        {
+        }
+
+        public TaskEx(Action<object> action, object state, CancellationToken cancellationToken, TaskCreationOptions creationOptions) : base(action, state, cancellationToken, creationOptions)
+        {
+        }
+
+        public static void RunAsync(Action action)
+        {
+            /////UNITY VERSION FOR CATCHING ERRORS
+            //Func<Task> asyncUpd = async () =>
+            //{
+            //    await Task.Run(() => {
+            //        action();
+            //    }).LogExceptionIfFaulted().ConfigureAwait(false);
+            //};
+            //asyncUpd();
+            ////////////////////
+            ///
+
+            Func<Task> asyncUpd = async () =>
+            {
+                await Task.Run(() =>
+                {
+                    try
+                    {
+                        action();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex);
+                    }
+                }).ConfigureAwait(false);
+            };
+            asyncUpd();
+        }
+    }
+
     public static class Reflection
     {
 

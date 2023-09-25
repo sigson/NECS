@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -136,6 +138,148 @@ namespace NECS.Extensions
         }
     }
 
+    public class OrderedDictionary<TKey, TValue> : IDictionary<TKey, TValue>
+    {
+        private List<TKey> keys = new List<TKey>();
+        private Dictionary<TKey, TValue> dictionary = new Dictionary<TKey, TValue>();
+
+        private void AddImpl(TKey key, TValue value)
+        {
+            //lock (dictionary)
+            {
+                dictionary.Add(key, value);
+                keys.Add(key);
+            }
+        }
+
+        private TValue GetImpl(TKey key)
+        {
+            //lock (dictionary)
+            return dictionary[key];
+        }
+
+        public TValue Get(int index)
+        {
+            //lock (dictionary)
+            return dictionary[keys[index]];
+        }
+
+        private void SetImpl(TKey key, TValue value)
+        {
+            //lock (dictionary)
+            {
+                if (dictionary.ContainsKey(key))
+                    dictionary[key] = value;
+                else
+                {
+                    dictionary.Add(key, value);
+                    keys.Add(key);
+                }
+            }
+        }
+
+        private bool RemoveImpl(TKey key)
+        {
+            //lock (dictionary)
+            {
+                keys.Remove(key);
+                return dictionary.Remove(key);
+            }
+        }
+
+        public bool Remove(int index)
+        {
+            //lock(dictionary)
+            {
+                var ret = dictionary.Remove(keys[index]);
+                keys.RemoveAt(index);
+                return ret;
+            }
+        }
+
+        private void ClearImpl()
+        {
+            //lock (dictionary)
+            {
+                dictionary.Clear();
+                keys.Clear();
+            }
+        }
+
+        public TValue this[TKey key] { get => GetImpl(key); set => SetImpl(key, value); }
+
+        public ICollection<TKey> Keys => keys;
+
+        public ICollection<TValue> Values
+        {
+            get
+            {
+                List<TValue> values = new List<TValue>();
+                keys.ForEach(x => values.Add(dictionary[x]));
+                return values;
+            }
+        }
+
+        public int Count => dictionary.Count;
+
+        public bool IsReadOnly => false;
+
+        public void Add(TKey key, TValue value)
+        {
+            AddImpl(key, value);
+        }
+
+        public void Add(KeyValuePair<TKey, TValue> item)
+        {
+            AddImpl(item.Key, item.Value);
+        }
+
+        public void Clear()
+        {
+            ClearImpl();
+        }
+
+        public bool Contains(KeyValuePair<TKey, TValue> item)
+        {
+            return dictionary.ContainsKey(item.Key);
+        }
+
+        public bool ContainsKey(TKey key)
+        {
+            return dictionary.ContainsKey(key);
+        }
+
+        public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+        {
+            return dictionary.GetEnumerator();
+        }
+
+        public bool Remove(TKey key)
+        {
+            return RemoveImpl(key);
+        }
+
+        public bool Remove(KeyValuePair<TKey, TValue> item)
+        {
+            return RemoveImpl(item.Key);
+        }
+
+        public bool TryGetValue(TKey key, out TValue value)
+        {
+            return dictionary.TryGetValue(key, out value);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return dictionary.GetEnumerator();
+        }
+    }
+
     public class ConcurrentDictionaryEx<TKey, TValue> : ConcurrentDictionary<TKey, TValue>
     {
         public int FastCount;
@@ -168,26 +312,197 @@ namespace NECS.Extensions
 
     }
 
-    public class ConcurrentHashSet<T> : HashSet<T>
+    public class ConcurrentHashSet<T> : ICollection<T>, IEnumerable<T>, System.Collections.IEnumerable, IReadOnlyCollection<T>, ISet<T>, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
-        public int FastCount;
-        ConcurrentDictionary<T, int> dictionary;
+        private ConcurrentDictionary<T, int> storage = new ConcurrentDictionary<T, int>();
 
-        public new bool Add(T item)
+
+        public int Count => storage.Count;
+
+        public bool IsReadOnly => storage.Keys.IsReadOnly;
+
+        public void Add(T item)
         {
-            dictionary.TryAdd(item, 0);
-            Interlocked.Increment(ref FastCount);
-            return true;
+            storage[item] = 0;
         }
 
-        public new bool Remove(T item)
+        public void Clear()
         {
-            dictionary.TryRemove(new KeyValuePair<T, int>(item, 0));
-            Interlocked.Decrement(ref FastCount);
-            return true;
+            storage.Clear();
         }
 
-        
-        //public 
+        public bool Contains(T item)
+        {
+            return storage.ContainsKey(item);
+        }
+
+        public void CopyTo(T[] array, int arrayIndex)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ExceptWith(IEnumerable<T> other)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            return storage.Keys.GetEnumerator();
+        }
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void IntersectWith(IEnumerable<T> other)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool IsProperSubsetOf(IEnumerable<T> other)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool IsProperSupersetOf(IEnumerable<T> other)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool IsSubsetOf(IEnumerable<T> other)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool IsSupersetOf(IEnumerable<T> other)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OnDeserialization(object sender)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Overlaps(IEnumerable<T> other)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Remove(T item)
+        {
+            return storage.TryRemove(item, out _);
+        }
+
+        public bool SetEquals(IEnumerable<T> other)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SymmetricExceptWith(IEnumerable<T> other)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void UnionWith(IEnumerable<T> other)
+        {
+            throw new NotImplementedException();
+        }
+
+        bool ISet<T>.Add(T item)
+        {
+            return storage.TryAdd(item, 0);
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return storage.Keys.GetEnumerator();
+        }
+    }
+
+    public class ConcurrentList<T> : IList<T> where T : class
+    {
+        private readonly ConcurrentDictionary<long, T> _store;
+
+        public ConcurrentList(IEnumerable<T> items = null)
+        {
+            var prime = (items ?? Enumerable.Empty<T>()).Select(x => new KeyValuePair<long, T>(Guid.NewGuid().GuidToLong(), x));
+            _store = new ConcurrentDictionary<long, T>(prime);
+        }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            return _store.Values.GetEnumerator();
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        public void Add(T item)
+        {
+            if (_store.TryAdd(Guid.NewGuid().GuidToLong(), item) == false)
+                throw new ApplicationException("Unable to concurrently add item to list");
+        }
+
+        public void Clear()
+        {
+            _store.Clear();
+        }
+
+        public bool Contains(T item)
+        {
+            return _store.Values.Where(x => item == x).Count() > 0;
+        }
+
+        public void CopyTo(T[] array, int arrayIndex)
+        {
+            _store.Values.CopyTo(array, arrayIndex);
+        }
+
+        public T[] ToArray()
+        {
+            return _store.Values.ToArray();
+        }
+
+        public bool Remove(T item)
+        {
+            foreach (var key in _store.Keys)
+            {
+                if (_store.TryGetValue(key, out var value) && value == item)
+                    return _store.TryRemove(key, out _);
+            }
+            return false;
+        }
+
+        public int IndexOf(T item)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Insert(int index, T item)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void RemoveAt(int index)
+        {
+            throw new NotImplementedException();
+        }
+
+        public int Count
+        {
+            get { return _store.Count; }
+        }
+
+        public bool IsReadOnly
+        {
+            get { return _store.Keys.IsReadOnly; }
+        }
+
+        public T this[int index] { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     }
 }
