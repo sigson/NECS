@@ -11,6 +11,8 @@ using NECS.ECS.Components;
 using NECS.ECS.Components.ECSComponentsGroup;
 using NECS.Network.Simple.Net;
 using NECS.Harness.Services;
+using NECS.Core.Logging;
+using NECS.ECS.DefaultsDB.ECSComponents;
 
 namespace NECS.ECS.ECSCore
 {
@@ -175,39 +177,87 @@ namespace NECS.ECS.ECSCore
             UnserializedEntity bufEntity;
             EntityComponentStorage storage;
 
-            using (StringReader reader = new StringReader(serializedData))
+            lock (ManagerScope.instance)
             {
-                JsonTextReader jreader = new JsonTextReader(reader);
-                bufEntity = (UnserializedEntity)GlobalCachingSerialization.standartSerializer.Deserialize(jreader, typeof(UnserializedEntity));
-                entity = null;
-                if (!ManagerScope.instance.entityManager.EntityStorage.TryGetValue(bufEntity.entity.instanceId, out entity))
+                using (StringReader reader = new StringReader(serializedData))
                 {
-                    entity = bufEntity.entity;
+                    JsonTextReader jreader = new JsonTextReader(reader);
+                    bufEntity = (UnserializedEntity)GlobalCachingSerialization.standartSerializer.Deserialize(jreader, typeof(UnserializedEntity));
+                    entity = null;
+                    
+                    if (!ManagerScope.instance.entityManager.EntityStorage.TryGetValue(bufEntity.entity.instanceId, out entity))
+                    {
+                        Logger.Log(bufEntity.entity.instanceId.ToString() + " new entity");
+                        entity = bufEntity.entity;
+                        bufEntity.ReworkDictionary();
+                        storage = new EntityComponentStorage(entity);
+                        storage.SerializationContainer = bufEntity.SerializationContainer;
+                        storage.RestoreComponentsAfterSerialization(entity);
+                        entity.entityComponents = storage;
+                        entity.AddComponentSilent(new EntityManagersComponent());
+                        entity.fastEntityComponentsId = new ConcurrentDictionary<long, int>(entity.entityComponents.Components.ToDictionary(k => k.instanceId, t => 0));
+                        ManagerScope.instance.entityManager.OnAddNewEntity(entity);
+                        return;
+                    }
                     bufEntity.ReworkDictionary();
-                    storage = new EntityComponentStorage(entity);
-                    storage.SerializationContainer = bufEntity.SerializationContainer;
-                    storage.RestoreComponentsAfterSerialization(entity);
-                    entity.entityComponents = storage;
-                    entity.fastEntityComponentsId = new ConcurrentDictionary<long, int>(entity.entityComponents.Components.ToDictionary(k => k.instanceId, t => 0));
-                    ManagerScope.instance.entityManager.OnAddNewEntity(entity);
-                    return;
+
+                    if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+                    {
+                        entity.entityComponents.FilterRemovedComponents(bufEntity.entity.fastEntityComponentsId.Keys.ToList(), new List<long>() { ServerComponentGroup.Id });
+                    }
+                    else if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
+                    {
+                        entity.entityComponents.FilterRemovedComponents(bufEntity.entity.fastEntityComponentsId.Keys.ToList(), new List<long>() { ClientComponentGroup.Id });
+                    }
+                    entity.entityComponents.RegisterAllComponents();
+
+                    foreach (var component in bufEntity.SerializationContainer)
+                    {
+                        var tComponent = (ECSComponent)component.Value;
+                        entity.AddOrChangeComponentSilentWithOwnerRestoring(tComponent);
+                        if (tComponent is DBComponent)
+                            TaskEx.RunAsync(() => (entity.GetComponent<DBComponent>(tComponent.GetId())).UnserializeDB());
+                    }
+                    entity.entityComponents.RegisterAllComponents();
+
                 }
-                bufEntity.ReworkDictionary();
-                if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
-                {
-                    entity.entityComponents.FilterRemovedComponents(bufEntity.entity.fastEntityComponentsId.Keys.ToList(), new List<long>() { ServerComponentGroup.Id });
-                }
-                else if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
-                {
-                    entity.entityComponents.FilterRemovedComponents(bufEntity.entity.fastEntityComponentsId.Keys.ToList(), new List<long>() { ClientComponentGroup.Id });
-                }
-                entity.entityComponents.RegisterAllComponents();
-                foreach (var component in bufEntity.SerializationContainer)
-                {
-                    entity.AddOrChangeComponentSilent((ECSComponent)component.Value);
-                }
-                entity.entityComponents.RegisterAllComponents();
             }
+
+            #region oldest
+            //using (StringReader reader = new StringReader(serializedData))
+            //{
+            //    JsonTextReader jreader = new JsonTextReader(reader);
+            //    bufEntity = (UnserializedEntity)GlobalCachingSerialization.standartSerializer.Deserialize(jreader, typeof(UnserializedEntity));
+            //    entity = null;
+            //    if (!ManagerScope.instance.entityManager.EntityStorage.TryGetValue(bufEntity.entity.instanceId, out entity))
+            //    {
+            //        entity = bufEntity.entity;
+            //        bufEntity.ReworkDictionary();
+            //        storage = new EntityComponentStorage(entity);
+            //        storage.SerializationContainer = bufEntity.SerializationContainer;
+            //        storage.RestoreComponentsAfterSerialization(entity);
+            //        entity.entityComponents = storage;
+            //        entity.fastEntityComponentsId = new ConcurrentDictionary<long, int>(entity.entityComponents.Components.ToDictionary(k => k.instanceId, t => 0));
+            //        ManagerScope.instance.entityManager.OnAddNewEntity(entity);
+            //        return;
+            //    }
+            //    bufEntity.ReworkDictionary();
+            //    if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+            //    {
+            //        entity.entityComponents.FilterRemovedComponents(bufEntity.entity.fastEntityComponentsId.Keys.ToList(), new List<long>() { ServerComponentGroup.Id });
+            //    }
+            //    else if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
+            //    {
+            //        entity.entityComponents.FilterRemovedComponents(bufEntity.entity.fastEntityComponentsId.Keys.ToList(), new List<long>() { ClientComponentGroup.Id });
+            //    }
+            //    entity.entityComponents.RegisterAllComponents();
+            //    foreach (var component in bufEntity.SerializationContainer)
+            //    {
+            //        entity.AddOrChangeComponentSilent((ECSComponent)component.Value);
+            //    }
+            //    entity.entityComponents.RegisterAllComponents();
+            //}
+            #endregion
         }
     }
     public class UnserializedEntity : CachingSerializable
