@@ -57,7 +57,7 @@ namespace NECS.ECS.ECSCore
             
             foreach (ECSSystem system in ManagerScope.instance.systemManager.InterestedIDECSComponentsDatabase.Keys.ToList())
             {
-                var SystemInterest = system.ReturnInterestedEventsList();
+                var SystemInterest = system.GetInterestedEventsList();
                 foreach (var Event in AllEvents)
                 {
                     if(SystemInterest.Keys.Contains(Event.GetId()))
@@ -96,7 +96,21 @@ namespace NECS.ECS.ECSCore
                     {
                         await Task.Run(() =>
                         {
-                            func.DynamicInvoke(ecsEvent);
+                            try
+                            {
+                                func.DynamicInvoke(ecsEvent);
+                            }
+                            catch(Exception ex)
+                            {
+                                Logger.LogError(ex);
+#if DEBUG
+                                throw;
+#endif
+                            }
+                            finally
+                            {
+                                ecsEvent.eventWatcher.Watchers--;
+                            }
                         });
                     };
                     asyncUpd();

@@ -161,7 +161,7 @@ namespace NECS.ECS.ECSCore
         {
             foreach(ECSSystem system in allSystems)
             {
-                if(InterestedIDECSComponentsDatabase.TryAdd(system, system.ReturnInterestedComponentsList()))
+                if(InterestedIDECSComponentsDatabase.TryAdd(system, new ConcurrentDictionaryEx<long, int>(system.GetInterestedComponentsList())))
                 {
                     Interlocked.Increment(ref InterestedIDECSComponentsDatabase[system].FastCount);
                 }

@@ -293,6 +293,14 @@ namespace NECS.Extensions
 
         }
 
+        public ConcurrentDictionaryEx(ConcurrentDictionary<TKey, TValue> keyValuePairs) : base()
+        {
+            foreach(var keyval in keyValuePairs)
+            {
+                this.TryAdd(keyval.Key, keyval.Value);
+            }
+        }
+
         public ConcurrentDictionaryEx<TKey, TValue> Upd()
         {
             for (int i = 0; i < IKeys.Count; i++)
