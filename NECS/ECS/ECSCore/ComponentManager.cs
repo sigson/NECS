@@ -48,7 +48,8 @@ namespace NECS.ECS.ECSCore
                 if (comp.DirectiveUpdate)
                     DirectiveUpdateComponents.Add(comp.GetId());
             }
-            var checkData = EntitySerialization.FullSerialize(entity); // fill json serialization cache
+            //var checkData = EntitySerialization.FullSerialize(entity); // fill json serialization cache
+            BurstSerializationManager.InitSerialize(entity.entityComponents.Components.Cast<IECSObject>().ToList()); // fill json serialization cache
             entity.entityComponents.OnEntityDelete();
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
                 GlobalProgramComponentGroup = new ClientComponentGroup();
