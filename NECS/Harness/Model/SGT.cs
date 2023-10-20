@@ -1,4 +1,5 @@
 ﻿using NECS.Core.Logging;
+using NECS.GameEngineAPI;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -8,18 +9,16 @@ using System.Threading.Tasks;
 
 namespace NECS.Harness.Model
 {
-    public abstract class SGT
+    public abstract class SGT : ProxyBehaviour
     {
-        private static IDictionary<Type, SGT> instances = new ConcurrentDictionary<Type, SGT>();
+        private static Dictionary<Type, SGT> instances = new Dictionary<Type, SGT>();
 
-        public static Action<object> ExtendedInstancing = null; //for game engine additional instancing
-
-        public static T InitalizeSingleton<T>(object behaviour = null) where T : SGT
+        public static T InitalizeSingleton<T>(IEngineApiObjectBehaviour behaviour = null) where T : SGT
         {
             return (T)InitalizeSingleton(typeof(T), behaviour);
         }
 
-        public static SGT InitalizeSingleton(Type singletonType, object behaviour = null)
+        public static SGT InitalizeSingleton(Type singletonType, IEngineApiObjectBehaviour behaviour = null)
         {
             SGT instance = null;
             lock (instances)
@@ -29,9 +28,16 @@ namespace NECS.Harness.Model
                     instances.TryGetValue(singletonType, out instance);
                     if (instance == null)
                     {
-                        if(ExtendedInstancing != null)
+                        instance = (SGT)behaviour.GetComponent(singletonType);
+                        if (instance == null)
                         {
-                            ExtendedInstancing(behaviour);
+                            if (behaviour != null)
+                                instance = (SGT)behaviour.gameObject.AddComponent(singletonType);
+                            else
+                            {
+                                instance = (SGT)new EngineApiObjectBehaviour().AddComponent(singletonType);
+                                DontDestroyOnLoad(instance.gameObject);
+                            }
                         }
                         instances.Add(singletonType, instance);
                     }
@@ -45,12 +51,12 @@ namespace NECS.Harness.Model
             return instance;
         }
 
-        public static T Get<T>(object behaviour = null) where T : SGT
+        public static T Get<T>(IEngineApiObjectBehaviour behaviour = null) where T : SGT
         {
             return (T)getInstance<T>(behaviour);
         }
 
-        public static T tryGetInstance<T>(object behaviour = null) where T : SGT
+        public static T tryGetInstance<T>(IEngineApiObjectBehaviour behaviour = null) where T : SGT
         {
             try
             {
@@ -63,7 +69,7 @@ namespace NECS.Harness.Model
             return null;
         }
 
-        public static T getInstance<T>(object behaviour = null) where T : SGT
+        public static T getInstance<T>(IEngineApiObjectBehaviour behaviour = null) where T : SGT
         {
             SGT instance = null;
             instances.TryGetValue(typeof(T), out instance);
@@ -78,7 +84,7 @@ namespace NECS.Harness.Model
         public abstract void InitializeProcess();
         public abstract void OnDestroyReaction();
 
-        protected virtual void OnDestroy()
+        public override void OnDestroy()
         {
             lock (instances)
             {
@@ -106,16 +112,24 @@ namespace NECS.Harness.Model
 
         public static void DestroySGT(Type type)
         {
-            try
+            lock (instances)
             {
-                if (instances.TryGetValue(type, out var sgt))
+                try
                 {
-                    instances.Remove(type);
+                    if (instances.TryGetValue(type, out var sgt))
+                    {
+                        try
+                        {
+                            sgt.Destroy(sgt);
+                        }
+                        catch { }
+                        instances.Remove(type);
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                Logger.Error("Escape from lock: " + ex.Message + " _________ " + ex.StackTrace);
+                catch (Exception ex)
+                {
+                    Logger.Error("Escape from lock: " + ex.Message + " _________ " + ex.StackTrace);
+                }
             }
         }
     }

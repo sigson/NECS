@@ -15,7 +15,7 @@ namespace NECS_Test.SerializationTest
         public void ObjectSerializationTest()
         {
             EntityManagersComponent component = new EntityManagersComponent();
-            BurstSerializationManager.DeepCopyByExpressionTree<EntityManagersComponent>(component);
+            var x = BurstSerializationManager.DeepCopyByExpressionTree<EntityManagersComponent>(component);
         }
     }
 }

@@ -509,7 +509,7 @@ namespace NECS.ECS.ECSCore
                     if (ecsComponent.Item2 == ComponentState.Changed)
                     {
                         //ecsComponent.Item1.OnAdded(ecsComponent.Item1.ownerEntity);
-                        Task.Run(() =>
+                        TaskEx.Run(() =>
                         {
                             ecsComponent.Item1.RunOnChangeCallbacks(ecsComponent.Item1.ownerEntity);
                         });

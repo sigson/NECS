@@ -1,7 +1,10 @@
 ﻿using NECS.Core.Logging;
 using NECS.ECS.Types.AtomicType;
+using NECS.GameEngineAPI;
+using NECS.Harness.Model;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -266,6 +269,23 @@ namespace NECS
             foreach (FileInfo file in source.GetFiles())
                 file.CopyTo(Path.Combine(target.FullName, file.Name));
         }
+    }
+
+    public static class ManagerSpace
+    {
+        #region Instantiate
+        public static IEngineApiObjectBehaviour InstantiatedProcess(IEngineApiObjectBehaviour instantiated, IEntityManager entityManagerOwner = null)
+        {
+            if (entityManagerOwner != null)
+            {
+                if (instantiated is IEngineApiObjectBehaviour)
+                {
+                    (instantiated as IEngineApiObjectBehaviour).GetComponentsInChildren<IManagable>().ForEach(x => (x as IManagable).ownerManagerSpace = entityManagerOwner);
+                }
+            }
+            return instantiated;
+        }
+        #endregion
     }
 
     public static partial class DateTimeExtensions
