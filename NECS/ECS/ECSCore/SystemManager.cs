@@ -14,10 +14,10 @@ namespace NECS.ECS.ECSCore
 {
     public class ECSSystemManager
     {
-        public ConcurrentDictionary<ECSSystem, ConcurrentDictionaryEx<long, int>> SystemsInterestedEntityDatabase = new();//List of interested entity Instance ID
+        public ConcurrentDictionary<ECSSystem, ConcurrentDictionaryEx<long, int>> SystemsInterestedEntityDatabase = new ConcurrentDictionary<ECSSystem, ConcurrentDictionaryEx<long, int>>();//List of interested entity Instance ID
         public int SystemsInterestedEntityDatabaseCount;
         //fill all id before running ecs
-        public ConcurrentDictionary<ECSSystem, ConcurrentDictionaryEx<long, int>> InterestedIDECSComponentsDatabase = new();
+        public ConcurrentDictionary<ECSSystem, ConcurrentDictionaryEx<long, int>> InterestedIDECSComponentsDatabase = new ConcurrentDictionary<ECSSystem, ConcurrentDictionaryEx<long, int>>();
         public int InterestedIDECSComponentsDatabaseCount;
 
         public static bool LockSystems = false;

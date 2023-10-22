@@ -9,37 +9,37 @@ namespace NECS
 {
     public interface IEngineApiObjectBehaviour
     {
-        public IEngineApiObjectBehaviour gameObject { get; set; } 
-        public bool enabled { get; set; }
-        public IEngineApiObjectBehaviour AddComponent(Type componentType);
-        public T AddComponent<T>() where T : IEngineApiObjectBehaviour;
+        IEngineApiObjectBehaviour gameObject { get; set; } 
+        bool enabled { get; set; }
+        IEngineApiObjectBehaviour AddComponent(Type componentType);
+        T AddComponent<T>() where T : IEngineApiObjectBehaviour;
 
-        public IEngineApiObjectBehaviour GetComponent(string type);
-        public T GetComponent<T>();
-        public IEngineApiObjectBehaviour GetComponent(Type type);
-        public IEngineApiObjectBehaviour GetComponentInChildren(Type type, bool includeInactive);
-        public T GetComponentInChildren<T>();
-        public IEngineApiObjectBehaviour GetComponentInChildren(Type type);
-        public IEngineApiObjectBehaviour GetComponentInParent(Type type, bool includeInactive);
-        public IEngineApiObjectBehaviour GetComponentInParent(Type type);
-        public T GetComponentInParent<T>();
-        public void GetComponents<T>(List<T> results);
-        public IEngineApiObjectBehaviour[] GetComponents(Type type);
-        public T[] GetComponents<T>();
-        public void GetComponents(Type type, List<IEngineApiObjectBehaviour> results);
-        public void GetComponentsInChildren<T>(List<T> results);
-        public T[] GetComponentsInChildren<T>();
-        public void GetComponentsInChildren<T>(bool includeInactive, List<T> results);
-        public T[] GetComponentsInChildren<T>(bool includeInactive);
-        public IEngineApiObjectBehaviour[] GetComponentsInChildren(Type type);
-        public T[] GetComponentsInParent<T>();
-        public void GetComponentsInParent<T>(bool includeInactive, List<T> results);
-        public T[] GetComponentsInParent<T>(bool includeInactive);
-        public IEngineApiObjectBehaviour[] GetComponentsInParent(Type type);
-        public void SetActive(bool value);
-        public bool TryGetComponent(Type type, out IEngineApiObjectBehaviour component);
-        public bool TryGetComponent<T>(out T component);
-        public void Destroy(Object obj);
-        public void DestroyImmediate(Object obj);
+        IEngineApiObjectBehaviour GetComponent(string type);
+        T GetComponent<T>();
+        IEngineApiObjectBehaviour GetComponent(Type type);
+        IEngineApiObjectBehaviour GetComponentInChildren(Type type, bool includeInactive);
+        T GetComponentInChildren<T>();
+        IEngineApiObjectBehaviour GetComponentInChildren(Type type);
+        IEngineApiObjectBehaviour GetComponentInParent(Type type, bool includeInactive);
+        IEngineApiObjectBehaviour GetComponentInParent(Type type);
+        T GetComponentInParent<T>();
+        void GetComponents<T>(List<T> results);
+        IEngineApiObjectBehaviour[] GetComponents(Type type);
+        T[] GetComponents<T>();
+        void GetComponents(Type type, List<IEngineApiObjectBehaviour> results);
+        void GetComponentsInChildren<T>(List<T> results);
+        T[] GetComponentsInChildren<T>();
+        void GetComponentsInChildren<T>(bool includeInactive, List<T> results);
+        T[] GetComponentsInChildren<T>(bool includeInactive);
+        IEngineApiObjectBehaviour[] GetComponentsInChildren(Type type);
+        T[] GetComponentsInParent<T>();
+        void GetComponentsInParent<T>(bool includeInactive, List<T> results);
+        T[] GetComponentsInParent<T>(bool includeInactive);
+        IEngineApiObjectBehaviour[] GetComponentsInParent(Type type);
+        void SetActive(bool value);
+        bool TryGetComponent(Type type, out IEngineApiObjectBehaviour component);
+        bool TryGetComponent<T>(out T component);
+        void Destroy(Object obj);
+        void DestroyImmediate(Object obj);
     }
 }

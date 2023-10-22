@@ -18,6 +18,26 @@ namespace NECS
 {
     public static class MathEx
     {
+        public static double CopySign(double x, double y)
+        {
+            // This method is required to work for all inputs,
+            // including NaN, so we operate on the raw bits.
+
+            long xbits = BitConverter.DoubleToInt64Bits(x);
+            long ybits = BitConverter.DoubleToInt64Bits(y);
+
+            // If the sign bits of x and y are not the same,
+            // flip the sign bit of x and return the new value;
+            // otherwise, just return x
+
+            if ((xbits ^ ybits) < 0)
+            {
+                return BitConverter.Int64BitsToDouble(xbits ^ long.MinValue);
+            }
+
+            return x;
+        }
+
         public static float Rad2Deg => 360f / ((float)Math.PI * 2);
         public static float RadToDeg(float rad)
         {
@@ -46,7 +66,7 @@ namespace NECS
 
         public static Vector3S ToEulerAngles(Quaternion q)
         {
-            Vector3S angles = new();
+            Vector3S angles = new Vector3S();
 
             // roll / x
             double sinr_cosp = 2 * (q.W * q.X + q.Y * q.Z);
@@ -57,7 +77,7 @@ namespace NECS
             double sinp = 2 * (q.W * q.Y - q.Z * q.X);
             if (Math.Abs(sinp) >= 1)
             {
-                angles.y = (float)Math.CopySign(Math.PI / 2, sinp);
+                angles.y = (float)MathEx.CopySign(Math.PI / 2, sinp);
             }
             else
             {

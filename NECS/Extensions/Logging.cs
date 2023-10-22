@@ -4,7 +4,7 @@ namespace NECS.Core.Logging
 {
     internal static class Logger
     {
-        private static readonly object _lock = new();
+        private static readonly object _lock = new object();
 
         private static void Write(string type, ConsoleColor color, object content)
         {

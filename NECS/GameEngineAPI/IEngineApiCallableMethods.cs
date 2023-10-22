@@ -8,57 +8,57 @@ namespace NECS.GameEngineAPI
 {
     public interface IEngineApiCallableMethods
     {
-        public void Awake();
+        void Awake();
 
-        public void OnEnable();
+        void OnEnable();
 
-        public void Reset();
+        void Reset();
 
-        public void Start();
+        void Start();
 
-        public void FixedUpdate();
-        public void FixedUpdate(double delta);
+        void FixedUpdate();
+        void FixedUpdate(double delta);
 
-        public void OnTriggerEnter(EngineApiCollider3D other);
+        void OnTriggerEnter(EngineApiCollider3D other);
 
-        public void OnTriggerStay(EngineApiCollider3D other);
+        void OnTriggerStay(EngineApiCollider3D other);
 
-        public void OnTriggerExit(EngineApiCollider3D other);
+        void OnTriggerExit(EngineApiCollider3D other);
 
-        public void OnTriggerEnter2D(EngineApiCollider2D other);
+        void OnTriggerEnter2D(EngineApiCollider2D other);
 
-        public void OnTriggerStay2D(EngineApiCollider2D other);
+        void OnTriggerStay2D(EngineApiCollider2D other);
 
-        public void OnTriggerExit2D(EngineApiCollider2D other);
+        void OnTriggerExit2D(EngineApiCollider2D other);
 
-        public void OnCollisionEnter(EngineApiCollision3D collision);
+        void OnCollisionEnter(EngineApiCollision3D collision);
 
-        public void OnCollisionStay(EngineApiCollision3D collision);
+        void OnCollisionStay(EngineApiCollision3D collision);
 
-        public void OnCollisionExit(EngineApiCollision3D collision);
+        void OnCollisionExit(EngineApiCollision3D collision);
 
-        public void OnCollisionEnter2D(EngineApiCollision2D collision);
+        void OnCollisionEnter2D(EngineApiCollision2D collision);
 
-        public void OnCollisionStay2D(EngineApiCollision2D collision);
+        void OnCollisionStay2D(EngineApiCollision2D collision);
 
-        public void OnCollisionExit2D(EngineApiCollision2D collision);
+        void OnCollisionExit2D(EngineApiCollision2D collision);
 
-        public void Update(double delta);
-        public void Update();
+        void Update(double delta);
+        void Update();
 
-        public void LateUpdate();
-        public void LateUpdate(double delta);
+        void LateUpdate();
+        void LateUpdate(double delta);
 
-        public void OnRenderObject();
+        void OnRenderObject();
 
-        public void OnApplicationPause(bool pause);
+        void OnApplicationPause(bool pause);
 
-        public void OnApplicationQuit();
+        void OnApplicationQuit();
 
-        public void OnApplicationFocus(bool focus);
+        void OnApplicationFocus(bool focus);
 
-        public void OnDisable();
+        void OnDisable();
 
-        public void OnDestroy();
+        void OnDestroy();
     }
 }
