@@ -311,7 +311,7 @@ namespace NECS.GameEngineAPI
     {
         public static void Destroy(object obj)
         {
-            Destroy(obj.GetType());
+            //Destroy(obj.GetType());
         }
 
         public static void DontDestroyOnLoad(object obj)
