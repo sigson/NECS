@@ -7,7 +7,7 @@ using NECS.ECS.ECSCore;
 
 namespace NECS.ECS.Events.ECSEvents
 {
-    [TypeUidAttribute(209812350511333540)]
+    [TypeUidAttribute(16)]
     public class ReceiveEntitiesEvent : ECSEvent
     {
         static public new long Id { get; set; } = 209812350511333540;

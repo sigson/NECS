@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace NECS.ECS.ECSCore
 {
-    [TypeUid(210198972242373120)]
+    [TypeUid(5)]
     public abstract class EntityTemplate
     {
         public override string ToString()

@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace NECS.ECS.ECSCore
 {
-    [TypeUid(200155515534159360)]//base type of entity
+    [TypeUid(2)]//base type of entity
     public class ECSEntity : IECSObject, ICloneable
     {
         static public long Id = 200155515534159360;
@@ -109,10 +109,6 @@ namespace NECS.ECS.ECSCore
             this.AddComponent(component);
         }
 
-        public long GetId()
-        {
-            return Id;
-        }
         private void AddComponentImpl(ECSComponent component, bool sendEvent)
         {
             Type componentClass = component.GetTypeFast();

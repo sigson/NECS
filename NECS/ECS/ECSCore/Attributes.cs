@@ -9,9 +9,9 @@ namespace NECS.ECS.ECSCore
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface)]
     public sealed class TypeUidAttribute : Attribute
     {
-        public long Id { get; set; }
+        public int Id { get; set; }
 
-        public TypeUidAttribute(long id)
+        public TypeUidAttribute(int id)
         {
             Id = id;
         }

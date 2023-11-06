@@ -11,6 +11,7 @@ using NECS.Network.Simple.Net;
 
 namespace NECS.ECS.ECSCore
 {
+    [TypeUid(3)]
     public class ECSComponent : IECSObject, ICloneable
     {
         static public long Id { get; set; } = 0;
@@ -18,8 +19,6 @@ namespace NECS.ECS.ECSCore
         [NonSerialized]
         public ECSEntity ownerEntity;
 
-        [NonSerialized]
-        public Type ComponentType;
         [NonSerialized]
         public bool DirectiveUpdate;
         [NonSerialized]
@@ -35,8 +34,6 @@ namespace NECS.ECS.ECSCore
         static public List<Action> StaticOnChangeHandlers = new List<Action>();
         [NonSerialized]
         public List<Action<ECSEntity, ECSComponent>> OnChangeHandlers = new List<Action<ECSEntity, ECSComponent>>();
-        [NonSerialized]
-        protected long ReflectionId = 0;
         [NonSerialized]
         public bool Unregistered = true;
         [NonSerialized]
@@ -55,33 +52,11 @@ namespace NECS.ECS.ECSCore
 
         }
 
-        public long GetId()
-        {
-            if (Id == 0)
-                try
-                {
-                    if(ComponentType == null)
-                    {
-                        ComponentType = GetType();
-                    }
-                    if (ReflectionId == 0)
-                        ReflectionId = ComponentType.GetCustomAttribute<TypeUidAttribute>().Id;
-                    return ReflectionId;
-                }
-                catch
-                {
-                    Logger.Error(this.GetType().ToString() + "Could not find Id field");
-                    return 0;
-                }
-            else
-                return Id;
-        }
-
         public List<Action<ECSEntity, ECSComponent>> GetOnChangeComponentCallback()
         {
-            if (ComponentType == null)
+            if (ObjectType == null)
             {
-                ComponentType = GetType();
+                ObjectType = GetType();
             }
             try
             {
@@ -94,7 +69,7 @@ namespace NECS.ECS.ECSCore
             }
             catch
             {
-                Logger.Log(ComponentType);
+                Logger.Log(ObjectType);
                 Logger.Log("Type not has callbacks");
                 return null;
             }
@@ -131,11 +106,11 @@ namespace NECS.ECS.ECSCore
 
         public Type GetTypeFast()
         {
-            if (ComponentType == null)
+            if (ObjectType == null)
             {
-                ComponentType = GetType();
+                ObjectType = GetType();
             }
-            return ComponentType;
+            return ObjectType;
         }
 
         /// overridable functional for damage transformer, after adding component of damage effect - in this method we send transformer action to damage transformers agregator

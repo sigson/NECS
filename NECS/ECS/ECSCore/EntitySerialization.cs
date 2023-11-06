@@ -17,29 +17,68 @@ using ProtoBuf.Meta;
 using Microsoft.VisualBasic;
 using System.ComponentModel;
 using ProtoBuf;
+using NECS.Extensions;
+using System.Reflection;
+using System.Data;
 
 namespace NECS.ECS.ECSCore
 {
     public class EntitySerialization
     {
         #region setupData
-        public static void InitSerialize(ICollection<IECSObject> IECSObjects)
+
+        public static Dictionary<Type, RuntimeTypeModel> SerializationSchemaStorage = new Dictionary<Type, RuntimeTypeModel>();
+
+        public static void InitSerialize()
         {
-            foreach (var ecsobject in IECSObjects)
+            var ecsObjects = ECSAssemblyExtensions.GetAllSubclassOf(typeof(IECSObject)).Where(x => !x.IsAbstract).Select(x => (IECSObject)Activator.CreateInstance(x)).ToList();
+            foreach (var ecsobject in ecsObjects)
             {
-                RuntimeTypeModel.Default[ecsobject.GetType()].CompileInPlace();
+                var types = GetParentTypes(ecsobject.GetType());
+                var ecsObjectModel = RuntimeTypeModel.Create();
+
+                for(int i = 0; i < types.Count; i++)
+                {
+                    var type = types[i];
+                    var basetype = AddTypeToModel(ecsObjectModel, type);
+                    Type childType = null;
+                    try { childType = types.ElementAt(i+1); } catch { }
+                    if(childType != null)
+                    {
+                        basetype.AddSubType(childType.GetCustomAttribute<TypeUidAttribute>().Id, childType);
+                    }
+                }
+                SerializationSchemaStorage[ecsobject.GetType()] = ecsObjectModel;
             }
-            RuntimeTypeModel.Default[typeof(SerializedEntity)].CompileInPlace();
-            RuntimeTypeModel.Default[typeof(SerializedComponent)].CompileInPlace();
+            //RuntimeTypeModel.Default[typeof(SerializedEntity)].CompileInPlace();
+            //RuntimeTypeModel.Default[typeof(SerializedComponent)].CompileInPlace();
         }
 
-        private MetaType AddTypeToModel<T>(RuntimeTypeModel typeModel)
+        private static List<Type> GetParentTypes(Type type)
         {
-            var properties = typeof(T).GetProperties().Where(p => p.GetCustomAttributes(false)
+            var lastType = type;
+            var types = new List<Type>();
+            types.Add(lastType);
+            while (lastType != typeof(IECSObject))
+            {
+                lastType = lastType.BaseType;
+                types.Add(lastType);
+            }
+            types.Reverse();
+            return types;
+        }
+
+        private static MetaType AddTypeToModel(RuntimeTypeModel typeModel, Type type)
+        {
+            var properties = type.GetProperties().Where(p => p.GetCustomAttributes(false)
                 .OfType<JsonIgnoreAttribute>().Count() == 0 && p.GetCustomAttributes(false)
-                .OfType<NonSerializedAttribute>().Count() == 0)
+                .OfType<NonSerializedAttribute>().Count() == 0 && !p.GetAccessors(false).Any(x => x.IsStatic))
                 .Select(p => p.Name).OrderBy(name => name);//OrderBy added, thanks MG
-            return typeModel.Add(typeof(T), true).Add(properties.ToArray());
+            var fields = type.GetFields().Where(p => p.GetCustomAttributes(false)
+                .OfType<JsonIgnoreAttribute>().Count() == 0 && p.GetCustomAttributes(false)
+                .OfType<NonSerializedAttribute>().Count() == 0 && !p.IsStatic)
+                .Select(p => p.Name).OrderBy(name => name);//OrderBy added, thanks MG
+            return typeModel.Add(type, true).Add(fields.Concat(properties).ToArray());
         }
 
         public class SerializedEntity
@@ -54,7 +93,7 @@ namespace NECS.ECS.ECSCore
         }
         #endregion
 
-        public static byte[] FullSerialize(ECSEntity entity, bool serializeOnlyChanged = false)
+        public static byte[] FullSerializeBin(ECSEntity entity, bool serializeOnlyChanged = false)
         {
             using (var memoryStream = new MemoryStream())
             {
@@ -63,20 +102,21 @@ namespace NECS.ECS.ECSCore
             }
         }
 
-        public static Dictionary<long, byte[]> SlicedSerialize(ECSEntity entity, bool serializeOnlyChanged = false, bool clearChanged = false)
+        public static Dictionary<long, byte[]> SlicedSerializeBin(ECSEntity entity, bool serializeOnlyChanged = false, bool clearChanged = false)
         {
+            throw new NotImplementedException();
             lock (entity.entityComponents.serializationLocker)//wtf double locking is work
             {
                 var strComponents = entity.entityComponents.SlicedSerializeStorage(GlobalCachingSerialization.cachingSerializer, serializeOnlyChanged, clearChanged);
-                using (StringWriter writer = new StringWriter())
-                {
-                    GlobalCachingSerialization.cachingSerializer.Serialize(writer, entity);
-                    strEntity = writer.ToString();
-                }
-                strComponents[ECSEntity.Id] = strEntity;
-                if (Defines.SerializationResultPrint)
-                    result = "{\"Entity\":\"" + strEntity + "\",\"Components\":\"" + strComponents + "\"}";
-                return strComponents;
+                //using (StringWriter writer = new StringWriter())
+                //{
+                //    GlobalCachingSerialization.cachingSerializer.Serialize(writer, entity);
+                //    strEntity = writer.ToString();
+                //}
+                //strComponents[ECSEntity.Id] = strEntity;
+                //if (Defines.SerializationResultPrint)
+                //    result = "{\"Entity\":\"" + strEntity + "\",\"Components\":\"" + strComponents + "\"}";
+                //return strComponents;
             }
         }
 

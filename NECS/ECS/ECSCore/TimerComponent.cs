@@ -7,7 +7,7 @@ using System.Timers;
 
 namespace NECS.ECS.ECSCore
 {
-    [TypeUid(199449741865219700)]
+    [TypeUid(10)]
     public class TimerComponent : ECSComponent
     {
         static public new long Id { get; set; }

@@ -10,7 +10,7 @@ using static NECS.ECS.ECSCore.ComponentsDBComponent;
 
 namespace NECS.ECS.ECSCore
 {
-    [TypeUid(224172216465378980)]
+    [TypeUid(11)]
     public class DBComponent : ECSComponent
     {
         static public new long Id { get; set; }
@@ -46,7 +46,7 @@ namespace NECS.ECS.ECSCore
         public ComponentState componentState;
     }
 
-    [TypeUid(230758971479671600)]
+    [TypeUid(12)]
     public class ComponentsDBComponent : DBComponent
     {
         static public new long Id { get; set; }

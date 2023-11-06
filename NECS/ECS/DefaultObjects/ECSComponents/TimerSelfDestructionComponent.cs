@@ -7,7 +7,7 @@ using NECS.ECS.ECSCore;
 
 namespace NECS.ECS.Components.ECSComponents
 {
-    [TypeUid(221868751152916540)]
+    [TypeUid(13)]
     public class TimerSelfDestructionComponent : TimerComponent
     {
         static public new long Id { get; set; }

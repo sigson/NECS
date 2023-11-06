@@ -12,7 +12,7 @@ using NECS.Harness.Model;
 
 namespace NECS.ECS.DefaultsDB.ECSComponents
 {
-    [TypeUid(81877939955946870)]
+    [TypeUid(14)]
     public class EntityManagersComponent : ECSComponent, IDictionary<Type, IEntityManager>
     {
         static public new long Id { get; set; }

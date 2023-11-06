@@ -10,16 +10,13 @@ using NECS.Core.Logging;
 
 namespace NECS.ECS.ECSCore
 {
+    [TypeUid(4)]
     public abstract class ECSEvent : IECSObject
     {
         static public long Id { get; set; }
         public long EntityOwnerId;
         [NonSerialized]
         public EventWatcher eventWatcher;
-        [NonSerialized]
-        public Type EventType;
-        [NonSerialized]
-        protected long ReflectionId = 0;
         public GameDataEvent? cachedGameDataEvent = null;
         public object? cachedRawEvent = null;
         public abstract void Execute();
@@ -65,26 +62,6 @@ namespace NECS.ECS.ECSCore
                 return (GameDataEvent)cachedGameDataEvent;
         }
 
-        public long GetId()
-        {
-            if (Id == 0)
-                try
-                {
-                    if (EventType == null)
-                    {
-                        EventType = GetType();
-                    }
-                    if(ReflectionId == 0)
-                        ReflectionId = EventType.GetCustomAttribute<TypeUidAttribute>().Id;
-                    return ReflectionId;
-                }
-                catch
-                {
-                    Logger.Error(this.GetType().ToString() + "Could not find Id field");
-                    return 0;
-                }
-            else
-                return Id;
-        }
+        
     }
 }

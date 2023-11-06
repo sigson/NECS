@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace NECS.ECS.ECSCore
 {
-    [TypeUid(186696587734459620)]
+    [TypeUid(6)]
     public class ECSComponentGroup : ECSComponent
     {
         public static new long Id { get; set; }
