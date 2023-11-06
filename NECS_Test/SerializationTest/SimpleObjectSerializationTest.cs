@@ -1,5 +1,5 @@
 ﻿using NECS.ECS.DefaultsDB.ECSComponents;
-using NECS.ECS.ECSCore;
+using NECS.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +15,7 @@ namespace NECS_Test.SerializationTest
         public void ObjectSerializationTest()
         {
             EntityManagersComponent component = new EntityManagersComponent();
-            var x = BurstSerializationManager.DeepCopyByExpressionTree<EntityManagersComponent>(component);
+            var x = DeepCloneExtension.DeepCopyByExpressionTree<EntityManagersComponent>(component);
         }
     }
 }

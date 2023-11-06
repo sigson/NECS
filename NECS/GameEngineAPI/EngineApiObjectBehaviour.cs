@@ -59,7 +59,7 @@ namespace NECS.GameEngineAPI
             throw new NotImplementedException();
         }
 
-        public virtual T GetComponent<T>()
+        public virtual T GetComponent<T>() where T : IEngineApiObjectBehaviour
         {
             throw new NotImplementedException();
         }
@@ -74,7 +74,7 @@ namespace NECS.GameEngineAPI
             throw new NotImplementedException();
         }
 
-        public virtual T GetComponentInChildren<T>()
+        public virtual T GetComponentInChildren<T>() where T : IEngineApiObjectBehaviour
         {
             throw new NotImplementedException();
         }
@@ -94,12 +94,12 @@ namespace NECS.GameEngineAPI
             throw new NotImplementedException();
         }
 
-        public virtual T GetComponentInParent<T>()
+        public virtual T GetComponentInParent<T>() where T : IEngineApiObjectBehaviour
         {
             throw new NotImplementedException();
         }
 
-        public virtual void GetComponents<T>(List<T> results)
+        public virtual void GetComponents<T>(List<T> results) where T : IEngineApiObjectBehaviour
         {
             throw new NotImplementedException();
         }
@@ -109,7 +109,7 @@ namespace NECS.GameEngineAPI
             throw new NotImplementedException();
         }
 
-        public virtual T[] GetComponents<T>()
+        public virtual T[] GetComponents<T>() where T : IEngineApiObjectBehaviour
         {
             throw new NotImplementedException();
         }
@@ -119,22 +119,22 @@ namespace NECS.GameEngineAPI
             throw new NotImplementedException();
         }
 
-        public virtual void GetComponentsInChildren<T>(List<T> results)
+        public virtual void GetComponentsInChildren<T>(List<T> results) where T : IEngineApiObjectBehaviour
         {
             throw new NotImplementedException();
         }
 
-        public virtual T[] GetComponentsInChildren<T>()
+        public virtual T[] GetComponentsInChildren<T>() where T : IEngineApiObjectBehaviour
         {
             throw new NotImplementedException();
         }
 
-        public virtual void GetComponentsInChildren<T>(bool includeInactive, List<T> results)
+        public virtual void GetComponentsInChildren<T>(bool includeInactive, List<T> results) where T : IEngineApiObjectBehaviour
         {
             throw new NotImplementedException();
         }
 
-        public virtual T[] GetComponentsInChildren<T>(bool includeInactive)
+        public virtual T[] GetComponentsInChildren<T>(bool includeInactive) where T : IEngineApiObjectBehaviour
         {
             throw new NotImplementedException();
         }
@@ -144,17 +144,17 @@ namespace NECS.GameEngineAPI
             throw new NotImplementedException();
         }
 
-        public virtual T[] GetComponentsInParent<T>()
+        public virtual T[] GetComponentsInParent<T>() where T : IEngineApiObjectBehaviour
         {
             throw new NotImplementedException();
         }
 
-        public virtual void GetComponentsInParent<T>(bool includeInactive, List<T> results)
+        public virtual void GetComponentsInParent<T>(bool includeInactive, List<T> results) where T : IEngineApiObjectBehaviour
         {
             throw new NotImplementedException();
         }
 
-        public virtual T[] GetComponentsInParent<T>(bool includeInactive)
+        public virtual T[] GetComponentsInParent<T>(bool includeInactive) where T : IEngineApiObjectBehaviour
         {
             throw new NotImplementedException();
         }
@@ -289,7 +289,7 @@ namespace NECS.GameEngineAPI
             throw new NotImplementedException();
         }
 
-        public virtual bool TryGetComponent<T>(out T component)
+        public virtual bool TryGetComponent<T>(out T component) where T : IEngineApiObjectBehaviour
         {
             throw new NotImplementedException();
         }

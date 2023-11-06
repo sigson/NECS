@@ -9,12 +9,12 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace NECS.ECS.ECSCore
+namespace NECS.Extensions
 {
     /// <summary>
     /// Superfast deep copier class, which uses Expression trees.
     /// </summary>
-    public static class BurstSerializationManager
+    public static class DeepCloneExtension
     {
         private static readonly object IsStructTypeToDeepCopyDictionaryLocker = new object();
         private static Dictionary<Type, bool> IsStructTypeToDeepCopyDictionary = new Dictionary<Type, bool>();
@@ -23,22 +23,8 @@ namespace NECS.ECS.ECSCore
         private static Dictionary<Type, Func<object, Dictionary<object, object>, object>> CompiledCopyFunctionsDictionary =
             new Dictionary<Type, Func<object, Dictionary<object, object>, object>>();
 
-        private static readonly Type ObjectType = typeof(Object);
+        private static readonly Type ObjectType = typeof(object);
         private static readonly Type ObjectDictionaryType = typeof(Dictionary<object, object>);
-
-
-
-
-        public static void InitSerialize(ICollection<IECSObject> IECSObjects)
-        {
-            foreach (var ecsobject in IECSObjects)
-            {
-
-            }
-        }
-
-
-
 
 
         /// <summary>
@@ -52,7 +38,7 @@ namespace NECS.ECS.ECSCore
         {
             return (T)DeepCopyByExpressionTreeObj(original, false, copiedReferencesDict ?? new Dictionary<object, object>(new ReferenceEqualityComparer()));
         }
-        
+
         private static object DeepCopyByExpressionTreeObj(object original, bool forceDeepCopy, Dictionary<object, object> copiedReferencesDict)
         {
             if (original == null)
@@ -87,11 +73,11 @@ namespace NECS.ECS.ECSCore
             var compiledCopyFunction = GetOrCreateCompiledLambdaCopyFunction(type);
 
             object copy = compiledCopyFunction(original, copiedReferencesDict);
-            
+
             return copy;
         }
-        
-        private static Func<object, Dictionary<object,object>, object> GetOrCreateCompiledLambdaCopyFunction(Type type)
+
+        private static Func<object, Dictionary<object, object>, object> GetOrCreateCompiledLambdaCopyFunction(Type type)
         {
             // The following structure ensures that multiple threads can use the dictionary
             // even while dictionary is locked and being updated by other thread.
@@ -139,8 +125,8 @@ namespace NECS.ECS.ECSCore
                                   out inputDictionary,
                                   out outputVariable,
                                   out boxingVariable,
-                                  out endLabel, 
-                                  out variables, 
+                                  out endLabel,
+                                  out variables,
                                   out expressions);
 
             ///// RETURN NULL IF ORIGINAL IS NULL
@@ -152,7 +138,7 @@ namespace NECS.ECS.ECSCore
             MemberwiseCloneInputToOutputExpression(type, inputParameter, outputVariable, expressions);
 
             ///// STORE COPIED OBJECT TO REFERENCES DICTIONARY
-            
+
             if (IsClassOtherThanString(type))
             {
                 StoreReferencesIntoDictionaryExpression(inputParameter, inputDictionary, outputVariable, expressions);
@@ -166,7 +152,7 @@ namespace NECS.ECS.ECSCore
                                   outputVariable,
                                   boxingVariable,
                                   expressions);
-            
+
             ///// COPY ELEMENTS OF ARRAY
 
             if (IsArray(type) && IsTypeToDeepCopy(type.GetElementType()))
@@ -185,7 +171,7 @@ namespace NECS.ECS.ECSCore
 
             return lambda;
         }
-        
+
         private static void InitializeExpressions(Type type,
                                                   out ParameterExpression inputParameter,
                                                   out ParameterExpression inputDictionary,
@@ -242,7 +228,7 @@ namespace NECS.ECS.ECSCore
             ///// Intended code:
             /////
             ///// var output = (<type>)input.MemberwiseClone();
-            
+
             var memberwiseCloneMethod = ObjectType.GetMethod("MemberwiseClone", BindingFlags.NonPublic | BindingFlags.Instance);
 
             var memberwiseCloneInputExpression =
@@ -256,7 +242,7 @@ namespace NECS.ECS.ECSCore
 
             expressions.Add(memberwiseCloneInputExpression);
         }
-        
+
         private static void StoreReferencesIntoDictionaryExpression(ParameterExpression inputParameter,
                                                                           ParameterExpression inputDictionary,
                                                                           ParameterExpression outputVariable,
@@ -382,7 +368,7 @@ namespace NECS.ECS.ECSCore
 
             for (int i = 0; i < arrayRank; i++)
             {
-                var indexVariable = Expression.Variable(typeof(Int32));
+                var indexVariable = Expression.Variable(typeof(int));
 
                 indices.Add(indexVariable);
             }
@@ -415,7 +401,7 @@ namespace NECS.ECS.ECSCore
                     Expression.Call(
                         DeepCopyByExpressionTreeObjMethod,
                         Expression.Convert(indexFrom, ObjectType),
-                        Expression.Constant(forceDeepCopy, typeof(Boolean)),
+                        Expression.Constant(forceDeepCopy, typeof(bool)),
                         inputDictionary),
                     elementType);
 
@@ -445,7 +431,7 @@ namespace NECS.ECS.ECSCore
             ///// }
             ///// ENDLABELFORLOOP:
 
-            var lengthVariable = Expression.Variable(typeof(Int32));
+            var lengthVariable = Expression.Variable(typeof(int));
 
             var endLabelForThisLoop = Expression.Label();
 
@@ -558,7 +544,7 @@ namespace NECS.ECS.ECSCore
                 }
             }
         }
-        
+
         private static FieldInfo[] GetAllRelevantFields(Type type, bool forceAllFields = false)
         {
             var fieldsList = new List<FieldInfo>();
@@ -605,7 +591,7 @@ namespace NECS.ECS.ECSCore
             expressions.Add(fieldToNullExpression);
         }
 
-        private static readonly Type ThisType = typeof(BurstSerializationManager);
+        private static readonly Type ThisType = typeof(DeepCloneExtension);
         private static readonly MethodInfo DeepCopyByExpressionTreeObjMethod = ThisType.GetMethod("DeepCopyByExpressionTreeObj", BindingFlags.NonPublic | BindingFlags.Static);
 
         private static void ReadonlyFieldCopyExpression(Type type,
@@ -634,7 +620,7 @@ namespace NECS.ECS.ECSCore
                     Expression.Call(
                         DeepCopyByExpressionTreeObjMethod,
                         Expression.Convert(fieldFrom, ObjectType),
-                        Expression.Constant(forceDeepCopy, typeof(Boolean)),
+                        Expression.Constant(forceDeepCopy, typeof(bool)),
                         inputDictionary));
 
             expressions.Add(fieldDeepCopyExpression);
@@ -645,7 +631,7 @@ namespace NECS.ECS.ECSCore
             ///// Intended code:
             /////
             ///// output.<field> = (<type>)null;
-            
+
             var fieldTo = Expression.Field(outputVariable, field);
 
             var fieldToNullExpression =
@@ -668,7 +654,7 @@ namespace NECS.ECS.ECSCore
             ///// output.<field> = (<fieldType>)DeepCopyByExpressionTreeObj((Object)((<type>)input).<field>);
 
             var fieldFrom = Expression.Field(Expression.Convert(inputParameter, type), field);
-            
+
             var fieldType = field.FieldType;
 
             var fieldTo = Expression.Field(outputVariable, field);
@@ -682,7 +668,7 @@ namespace NECS.ECS.ECSCore
                         Expression.Call(
                             DeepCopyByExpressionTreeObjMethod,
                             Expression.Convert(fieldFrom, ObjectType),
-                            Expression.Constant(forceDeepCopy, typeof(Boolean)),
+                            Expression.Constant(forceDeepCopy, typeof(bool)),
                             inputDictionary),
                         fieldType));
 
@@ -707,7 +693,7 @@ namespace NECS.ECS.ECSCore
 
         private static bool IsClassOtherThanString(Type type)
         {
-            return !type.IsValueType && type != typeof(String);
+            return !type.IsValueType && type != typeof(string);
         }
 
         private static bool IsStructWhichNeedsDeepCopy(Type type)
@@ -738,19 +724,19 @@ namespace NECS.ECS.ECSCore
 
             return isStructTypeToDeepCopy;
         }
-        
+
         private static bool IsStructWhichNeedsDeepCopy_NoDictionaryUsed(Type type)
         {
             return IsStructOtherThanBasicValueTypes(type)
                    && HasInItsHierarchyFieldsWithClasses(type);
         }
-        
+
         private static bool IsStructOtherThanBasicValueTypes(Type type)
         {
             return type.IsValueType
                    && !type.IsPrimitive
                    && !type.IsEnum
-                   && type != typeof(Decimal);
+                   && type != typeof(decimal);
         }
 
         private static bool HasInItsHierarchyFieldsWithClasses(Type type, HashSet<Type> alreadyCheckedTypes = null)
@@ -773,7 +759,7 @@ namespace NECS.ECS.ECSCore
             var notBasicStructsTypes = allFieldTypes.Where(IsStructOtherThanBasicValueTypes).ToList();
 
             var typesToCheck = notBasicStructsTypes.Where(t => !alreadyCheckedTypes.Contains(t)).ToList();
-            
+
             foreach (var typeToCheck in typesToCheck)
             {
                 if (HasInItsHierarchyFieldsWithClasses(typeToCheck, alreadyCheckedTypes))
@@ -784,8 +770,8 @@ namespace NECS.ECS.ECSCore
 
             return false;
         }
-        
-        public class ReferenceEqualityComparer : EqualityComparer<Object>
+
+        public class ReferenceEqualityComparer : EqualityComparer<object>
         {
             public override bool Equals(object x, object y)
             {

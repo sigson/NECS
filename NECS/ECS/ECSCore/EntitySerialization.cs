@@ -13,12 +13,75 @@ using NECS.Network.Simple.Net;
 using NECS.Harness.Services;
 using NECS.Core.Logging;
 using NECS.ECS.DefaultsDB.ECSComponents;
+using ProtoBuf.Meta;
+using Microsoft.VisualBasic;
+using System.ComponentModel;
+using ProtoBuf;
 
 namespace NECS.ECS.ECSCore
 {
     public class EntitySerialization
     {
-        public static string[] FullSerialize(ECSEntity entity, bool serializeOnlyChanged = false)
+        #region setupData
+        public static void InitSerialize(ICollection<IECSObject> IECSObjects)
+        {
+            foreach (var ecsobject in IECSObjects)
+            {
+                RuntimeTypeModel.Default[ecsobject.GetType()].CompileInPlace();
+            }
+            RuntimeTypeModel.Default[typeof(SerializedEntity)].CompileInPlace();
+            RuntimeTypeModel.Default[typeof(SerializedComponent)].CompileInPlace();
+        }
+
+        private MetaType AddTypeToModel<T>(RuntimeTypeModel typeModel)
+        {
+            var properties = typeof(T).GetProperties().Where(p => p.GetCustomAttributes(false)
+                .OfType<JsonIgnoreAttribute>().Count() == 0 && p.GetCustomAttributes(false)
+                .OfType<NonSerializedAttribute>().Count() == 0)
+                .Select(p => p.Name).OrderBy(name => name);//OrderBy added, thanks MG
+            return typeModel.Add(typeof(T), true).Add(properties.ToArray());
+        }
+
+        public class SerializedEntity
+        {
+            public byte[] Entity;
+            public SerializedComponent[] Components;
+        }
+
+        public class SerializedComponent
+        {
+            public byte[] Component;
+        }
+        #endregion
+
+        public static byte[] FullSerialize(ECSEntity entity, bool serializeOnlyChanged = false)
+        {
+            using (var memoryStream = new MemoryStream())
+            {
+                RuntimeTypeModel.Default.Serialize(memoryStream, entity);
+                return memoryStream.ToArray();
+            }
+        }
+
+        public static Dictionary<long, byte[]> SlicedSerialize(ECSEntity entity, bool serializeOnlyChanged = false, bool clearChanged = false)
+        {
+            lock (entity.entityComponents.serializationLocker)//wtf double locking is work
+            {
+                var strComponents = entity.entityComponents.SlicedSerializeStorage(GlobalCachingSerialization.cachingSerializer, serializeOnlyChanged, clearChanged);
+                using (StringWriter writer = new StringWriter())
+                {
+                    GlobalCachingSerialization.cachingSerializer.Serialize(writer, entity);
+                    strEntity = writer.ToString();
+                }
+                strComponents[ECSEntity.Id] = strEntity;
+                if (Defines.SerializationResultPrint)
+                    result = "{\"Entity\":\"" + strEntity + "\",\"Components\":\"" + strComponents + "\"}";
+                return strComponents;
+            }
+        }
+
+
+        public static string[] FullSerialize(ECSEntity entity, bool serializeOnlyChanged = false)//tr
         {
             string result;
             string strEntity;

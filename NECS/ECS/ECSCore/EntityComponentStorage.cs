@@ -34,6 +34,8 @@ namespace NECS.ECS.ECSCore
                 StorageType = SerializationContainer.GetType();
         }
 
+        #region serialization
+
         public Dictionary<long, string> SlicedSerializeStorage(JsonSerializer serializer, bool serializeOnlyChanged, bool clearChanged)
         {
             
@@ -134,22 +136,6 @@ namespace NECS.ECS.ECSCore
             }
         }
 
-        public bool CheckChanged(Type typeComponent) => changedComponents.Keys.Contains(typeComponent);
-        public void DirectiveChange(Type typeComponent)
-        {
-            lock (this.serializationLocker)
-            {
-                lock (this.operationLocker)
-                {
-                    if (components.Keys.Contains(typeComponent))
-                    {
-                        changedComponents[typeComponent] = 1;
-                    }
-
-                }
-
-            }
-        }
         public string SerializeStorage(JsonSerializer serializer, bool serializeOnlyChanged, bool clearChanged)
         {
             using (StringWriter writer = new StringWriter())
@@ -181,7 +167,7 @@ namespace NECS.ECS.ECSCore
                 {
                     ECSComponent objComponent = (ECSComponent)objPair.Value;
                     ECSComponent component;
-                    if(ECSComponentManager.AllComponents.TryGetValue(objPair.Key, out component))
+                    if (ECSComponentManager.AllComponents.TryGetValue(objPair.Key, out component))
                     {
                         var typedComponent = (ECSComponent)Convert.ChangeType(objPair.Value, component.GetTypeFast());
                         if (typedComponent is DBComponent)
@@ -192,6 +178,26 @@ namespace NECS.ECS.ECSCore
             }
         }
 
+
+        #endregion
+
+        public bool CheckChanged(Type typeComponent) => changedComponents.Keys.Contains(typeComponent);
+        public void DirectiveChange(Type typeComponent)
+        {
+            lock (this.serializationLocker)
+            {
+                lock (this.operationLocker)
+                {
+                    if (components.Keys.Contains(typeComponent))
+                    {
+                        changedComponents[typeComponent] = 1;
+                    }
+
+                }
+
+            }
+        }
+        
         public void AddComponentImmediately(Type comType, ECSComponent component, bool restoringMode = false, bool silent = false)
         {
             bool exception = false;
