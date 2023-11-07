@@ -1,8 +1,10 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
@@ -10,6 +12,97 @@ using System.Threading.Tasks;
 
 namespace NECS.Extensions
 {
+
+    public static class InterlockedCollection
+    {
+        //private static HashSet <object> lockDB = new HashSet <object> ();
+        
+        public static bool AddI<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, object externalLockerObject, TKey key, TValue value)
+        {
+            lock (externalLockerObject)
+            {
+                lock (dictionary)
+                {
+                    if (!dictionary.ContainsKey(key))
+                        dictionary[key] = value;
+                    else
+                        return false;
+                }
+            }
+            return true;
+        }
+
+        public static TValue GetI<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, object externalLockerObject, TKey key)
+        {
+            lock (externalLockerObject)
+            {
+                lock (dictionary)
+                {
+                    if (dictionary.ContainsKey(key))
+                        return dictionary[key];
+                    else
+                        return default(TValue);
+                }
+            }
+        }
+
+        public static void SetI<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, object externalLockerObject, TKey key, TValue value)
+        {
+            lock (externalLockerObject)
+            {
+                lock (dictionary)
+                {
+                    dictionary[key]=value;
+                }
+            }
+        }
+
+        public static bool RemoveI<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, object externalLockerObject, TKey key)
+        {
+            lock (externalLockerObject)
+            {
+                lock (dictionary)
+                {
+                    return dictionary.Remove(key);
+                }
+            }
+        }
+
+        public static bool ClearI<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, object externalLockerObject)
+        {
+            lock (externalLockerObject)
+            {
+                lock (dictionary)
+                {
+                    dictionary.Clear();
+                }
+            }
+            return true;
+        }
+
+        public static IDictionary<TKey, TValue> SnapshotI<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, object externalLockerObject)
+        {
+            lock (externalLockerObject)
+            {
+                lock (dictionary)
+                {
+                    return new Dictionary<TKey, TValue>(dictionary);
+                }
+            }
+        }
+
+        public static bool ContainsKeyI<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, object externalLockerObject, TKey key)
+        {
+            lock(externalLockerObject)
+            {
+                lock (dictionary)
+                {
+                    return dictionary.ContainsKey(key);
+                }
+            }
+        }
+    }
+
     public class Collections
     {
         public static readonly object[] EmptyArray = new object[0];

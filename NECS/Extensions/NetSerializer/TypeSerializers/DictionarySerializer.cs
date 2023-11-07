@@ -26,7 +26,7 @@ namespace NetSerializer
 
 			var genTypeDef = type.GetGenericTypeDefinition();
 
-            return genTypeDef == typeof(Dictionary<,>) || genTypeDef == typeof(ConcurrentDictionary<,>);
+            return genTypeDef == typeof(Dictionary<,>);
         }
 
 		public IEnumerable<Type> GetSubtypes(Type type)
