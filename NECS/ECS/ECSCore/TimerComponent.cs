@@ -2,17 +2,20 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Timers;
 
 namespace NECS.ECS.ECSCore
 {
+    [Serializable]
     [TypeUid(10)]
     public class TimerComponent : ECSComponent
     {
         static public new long Id { get; set; }
         static public new System.Collections.Generic.List<System.Action> StaticOnChangeHandlers { get; set; }
         [NonSerialized]
+        [JsonIgnore]
         TimerEx componentTimer = new TimerEx();
         public double timerAwait = 0;
 		private double timeRemaining;
@@ -32,10 +35,11 @@ namespace NECS.ECS.ECSCore
             }
         }
         [NonSerialized]
+        [JsonIgnore]
         public Action<ECSEntity, ECSComponent> onStart;
         [NonSerialized]
+        [JsonIgnore]
         public Action<ECSEntity, ECSComponent> onEnd;
-        public List<object> args;
 
         public virtual ECSComponent TimerStart(double newUpdatedTime, ECSEntity entity, bool inSeconds = false, bool loop = false)
         {

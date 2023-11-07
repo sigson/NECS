@@ -26,18 +26,37 @@ namespace NECS.ECS.ECSCore
     public class EntitySerialization
     {
         #region setupData
-
-        public static Dictionary<Type, RuntimeTypeModel> SerializationSchemaStorage = new Dictionary<Type, RuntimeTypeModel>();
+        
 
         public static void InitSerialize()
         {
-            var ecsObjects = ECSAssemblyExtensions.GetAllSubclassOf(typeof(IECSObject)).Where(x => !x.IsAbstract).Select(x => (IECSObject)Activator.CreateInstance(x)).ToList();
+            var nonSerializedSet = new HashSet<Type>() { typeof(EntityManagersComponent) };
+
+            var ecsObjects = ECSAssemblyExtensions.GetAllSubclassOf(typeof(IECSObject)).Where(x => !x.IsAbstract).Where(x => !nonSerializedSet.Contains(x)).ToList();
+            ecsObjects.Add(typeof(ConcurrentDictionary<,>));
+            //ecsObjects.Add(typeof(ConcurrentDictionary<long, ECSEntityGroup>));
+            //ecsObjects.Add(typeof(ConcurrentDictionary<long, ECSComponentGroup>));
+            //ecsObjects.Add(typeof(ConcurrentDictionary<long, object>));
+            //ecsObjects.Add(typeof(ConcurrentDictionary<long, Type>));
+            //ecsObjects.Add(typeof(ConcurrentDictionary<long, int>));
+            //ecsObjects.Add(typeof(ConcurrentDictionary<Type, ECSComponent>));
+            //ecsObjects.Add(typeof(ConcurrentDictionary<Type, int>));
+            //ecsObjects.Add(typeof(ConcurrentDictionary<string, ECSEntity>));
+            NetSerializer.Serializer.Default = new NetSerializer.Serializer(ecsObjects);
+        }
+
+        public static Dictionary<Type, RuntimeTypeModel> SerializationSchemaStorage = new Dictionary<Type, RuntimeTypeModel>();
+
+        public static void InitSerializeProto()
+        {
+            var nonSerializedSet = new HashSet<Type>() { typeof(EntityManagersComponent) };
+
+            var ecsObjects = ECSAssemblyExtensions.GetAllSubclassOf(typeof(IECSObject)).Where(x => !x.IsAbstract).Where(x => !nonSerializedSet.Contains(x)).Select(x => (IECSObject)Activator.CreateInstance(x)).ToList();
             foreach (var ecsobject in ecsObjects)
             {
                 var types = GetParentTypes(ecsobject.GetType());
                 var ecsObjectModel = RuntimeTypeModel.Create();
-
-                for(int i = 0; i < types.Count; i++)
+                for (int i = 0; i < types.Count; i++)
                 {
                     var type = types[i];
                     var basetype = AddTypeToModel(ecsObjectModel, type);
@@ -49,6 +68,11 @@ namespace NECS.ECS.ECSCore
                     }
                 }
                 SerializationSchemaStorage[ecsobject.GetType()] = ecsObjectModel;
+            }
+            foreach (var ecsobject in ecsObjects)
+            {
+                using (var memoryStream = new MemoryStream())
+                    SerializationSchemaStorage[ecsobject.GetType()].Serialize(memoryStream, ecsobject);
             }
             //RuntimeTypeModel.Default[typeof(SerializedEntity)].CompileInPlace();
             //RuntimeTypeModel.Default[typeof(SerializedComponent)].CompileInPlace();
@@ -78,6 +102,7 @@ namespace NECS.ECS.ECSCore
                 .OfType<JsonIgnoreAttribute>().Count() == 0 && p.GetCustomAttributes(false)
                 .OfType<NonSerializedAttribute>().Count() == 0 && !p.IsStatic)
                 .Select(p => p.Name).OrderBy(name => name);//OrderBy added, thanks MG
+            //typeModel.Add(type, false).Add(fields.Concat(properties).ToArray());
             return typeModel.Add(type, true).Add(fields.Concat(properties).ToArray());
         }
 
@@ -363,7 +388,7 @@ namespace NECS.ECS.ECSCore
             #endregion
         }
     }
-    public class UnserializedEntity : CachingSerializable
+    public class UnserializedEntity
     {
         public ECSEntity entity { get; set; }
         public ConcurrentDictionary<long, object> SerializationContainer { get; set; }
@@ -376,4 +401,16 @@ namespace NECS.ECS.ECSCore
             }
         }
     }
+
+    public static class CachingSettings
+    {
+        public static JsonSerializerSettings Default = new JsonSerializerSettings();
+    }
+
+    public static class GlobalCachingSerialization
+    {
+        public static JsonSerializer cachingSerializer => standartSerializer;
+        public static JsonSerializer standartSerializer = new JsonSerializer();
+    }
+
 }

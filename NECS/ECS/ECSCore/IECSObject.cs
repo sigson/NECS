@@ -5,10 +5,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace NECS.ECS.ECSCore
 {
+    [Serializable]
     [TypeUid(1)]
     public class IECSObject
     {
@@ -16,7 +18,20 @@ namespace NECS.ECS.ECSCore
         public long instanceId = Guid.NewGuid().GuidToLong();
         [NonSerialized]
         public List<IManager> connectPoints = new List<IManager>();
-
+        [NonSerialized]
+        [JsonIgnore]
+        private int aserialStaticId = 0;
+        public int StaticId
+        {
+            get
+            {
+                return Convert.ToInt32(GetId());
+            }
+            set
+            {
+                aserialStaticId = value;
+            }
+        }
         [NonSerialized]
         public Type ObjectType;
         [NonSerialized]

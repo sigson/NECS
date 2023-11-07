@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 namespace NECS.ECS.ECSCore
 {
     [Serializable]
-    public abstract class ECSEntityGroup
+    [TypeUid(18)]
+    public class BaseCustomType : IECSObject
     {
-        public long InstanceId = Guid.NewGuid().GuidToLong();
     }
 }

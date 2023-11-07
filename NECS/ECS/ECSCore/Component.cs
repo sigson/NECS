@@ -11,6 +11,7 @@ using NECS.Network.Simple.Net;
 
 namespace NECS.ECS.ECSCore
 {
+    [Serializable]
     [TypeUid(3)]
     public class ECSComponent : IECSObject, ICloneable
     {

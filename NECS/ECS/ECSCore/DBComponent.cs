@@ -10,6 +10,7 @@ using static NECS.ECS.ECSCore.ComponentsDBComponent;
 
 namespace NECS.ECS.ECSCore
 {
+    [Serializable]
     [TypeUid(11)]
     public class DBComponent : ECSComponent
     {
@@ -37,6 +38,7 @@ namespace NECS.ECS.ECSCore
         { }
     }
 
+    [Serializable]
     public class dbRow
     {
         [NonSerialized]
@@ -46,6 +48,7 @@ namespace NECS.ECS.ECSCore
         public ComponentState componentState;
     }
 
+    [Serializable]
     [TypeUid(12)]
     public class ComponentsDBComponent : DBComponent
     {

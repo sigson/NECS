@@ -7,6 +7,7 @@ using NECS.ECS.ECSCore;
 
 namespace NECS.ECS.Events.ECSEvents
 {
+    [Serializable]
     [TypeUidAttribute(17)]
     public class TransferEntitiesEvent : ECSEvent
     {

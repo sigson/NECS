@@ -7,6 +7,7 @@ using NECS.ECS.ECSCore;
 
 namespace NECS.ECS.Components.ECSComponents
 {
+    [Serializable]
     [TypeUid(13)]
     public class TimerSelfDestructionComponent : TimerComponent
     {

@@ -9,6 +9,7 @@ using NECS.Network.Simple.Net;
 
 namespace NECS.ECS.ECSCore
 {
+    [Serializable]
     public class GroupDataAccessPolicy
     {
         public static long Id;

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace NECS.ECS.ECSCore
 {
+    [Serializable]
     [TypeUid(2)]//base type of entity
     public class ECSEntity : IECSObject, ICloneable
     {

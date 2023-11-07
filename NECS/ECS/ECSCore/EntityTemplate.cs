@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace NECS.ECS.ECSCore
 {
+    [Serializable]
     [TypeUid(5)]
     public abstract class EntityTemplate
     {

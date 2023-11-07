@@ -7,17 +7,24 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using NECS.Core.Logging;
+using System.Text.Json.Serialization;
 
 namespace NECS.ECS.ECSCore
 {
+    [Serializable]
     [TypeUid(4)]
     public abstract class ECSEvent : IECSObject
     {
         static public long Id { get; set; }
         public long EntityOwnerId;
         [NonSerialized]
+        [JsonIgnore]
         public EventWatcher eventWatcher;
+        [NonSerialized]
+        [JsonIgnore]
         public GameDataEvent? cachedGameDataEvent = null;
+        [NonSerialized]
+        [JsonIgnore]
         public object? cachedRawEvent = null;
         public abstract void Execute();
 

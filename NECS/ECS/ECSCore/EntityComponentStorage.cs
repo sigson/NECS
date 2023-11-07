@@ -14,6 +14,7 @@ using NECS.Core.Logging;
 
 namespace NECS.ECS.ECSCore
 {
+    [Serializable]
     public class EntityComponentStorage
     {
         private ECSEntity entity;

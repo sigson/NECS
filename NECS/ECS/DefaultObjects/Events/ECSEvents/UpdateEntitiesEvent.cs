@@ -9,6 +9,7 @@ using NECS.ECS.ECSCore;
 
 namespace NECS.ECS.Events.ECSEvents
 {
+    [Serializable]
     [TypeUidAttribute(15)]
     public class UpdateEntitiesEvent : ECSEvent
     {

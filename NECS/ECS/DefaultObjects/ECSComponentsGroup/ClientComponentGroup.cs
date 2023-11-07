@@ -7,6 +7,7 @@ using NECS.ECS.ECSCore;
 
 namespace NECS.ECS.Components.ECSComponentsGroup
 {
+    [Serializable]
     [TypeUid(8)]
     public class ClientComponentGroup : ECSComponentGroup
     {

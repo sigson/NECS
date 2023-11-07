@@ -12,6 +12,7 @@ using NECS.Harness.Model;
 
 namespace NECS.ECS.DefaultsDB.ECSComponents
 {
+    [Serializable]
     [TypeUid(14)]
     public class EntityManagersComponent : ECSComponent, IDictionary<Type, IEntityManager>
     {
