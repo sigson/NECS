@@ -1,4 +1,5 @@
 ﻿
+using NECS.Extensions;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
@@ -30,7 +31,7 @@ namespace NECS.ECS.ECSCore
         [NonSerialized]
         public EntityComponentStorage entityComponents;
         
-        public ConcurrentDictionary<long, int> fastEntityComponentsId;
+        public Dictionary<long, int> fastEntityComponentsId;//todo: concurrent replace to normal
         [NonSerialized]
         public List<GroupDataAccessPolicy> dataAccessPolicies;
         [NonSerialized]
@@ -46,7 +47,7 @@ namespace NECS.ECS.ECSCore
 
         public ECSEntity() {
             entityComponents = new EntityComponentStorage(this);
-            fastEntityComponentsId = new ConcurrentDictionary<long, int>();
+            fastEntityComponentsId = new Dictionary<long, int>();
             dataAccessPolicies = new List<GroupDataAccessPolicy>();
             entityGroups = new ConcurrentDictionary<long, ECSEntityGroup>();
         }
@@ -54,7 +55,7 @@ namespace NECS.ECS.ECSCore
         public ECSEntity(EntityTemplate userTemplate, ECSComponent[] eCSComponents)
         {
             entityComponents = new EntityComponentStorage(this);
-            fastEntityComponentsId = new ConcurrentDictionary<long, int>();
+            fastEntityComponentsId = new Dictionary<long, int>();
             dataAccessPolicies = new List<GroupDataAccessPolicy>();
             entityGroups = new ConcurrentDictionary<long, ECSEntityGroup>();
             foreach (var component in eCSComponents)
@@ -280,7 +281,7 @@ namespace NECS.ECS.ECSCore
             this.dataAccessPolicies.Clear();
             this.entityComponents.OnEntityDelete();
             this.entityGroups.Clear();
-            this.fastEntityComponentsId.Clear();
+            this.fastEntityComponentsId.ClearI(this.SerialLocker);
         }
 
         public void RemoveComponent<T>() where T : ECSComponent

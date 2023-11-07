@@ -25,7 +25,7 @@ namespace NECS_Test.SerializationTest
         {
             EntitySerialization.InitSerialize();
             List< ECSComponentSerializationCheck > arrayCheck = new List<ECSComponentSerializationCheck>();
-            for (int i = 0; i < 5000; i++)
+            for (int i = 0; i < 50000; i++)
             {
                 arrayCheck.Add(new ECSComponentSerializationCheck() { RandomString = new Random().RandomString(128), points = new List<ECSComponentSerializationCheck> { new ECSComponentSerializationCheck() { RandomString = new Random().RandomString(128) } } });
                 //arrayCheck.Add(new ECSComponentSerializationCheck() { RandomString = new Random().RandomString(128), points = new List<WorldPoint> { new WorldPoint() { Position = new Vector3S() { x = Random.Shared.NextSingle(), y = Random.Shared.NextSingle(), z = Random.Shared.NextSingle() } } } });

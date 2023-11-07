@@ -215,7 +215,7 @@ namespace NECS.ECS.ECSCore
                         component.ownerEntity = this.entity;
                         this.components.Add(comType, component);
                         if (this.entity != null)
-                            this.entity.fastEntityComponentsId.TryAdd(component.instanceId, 0);
+                            this.entity.fastEntityComponentsId.AddI(this.entity.SerialLocker, component.instanceId, 0);
                         else
                             Logger.LogError("null owner entity");
                         if (restoringMode)
@@ -394,7 +394,7 @@ namespace NECS.ECS.ECSCore
                         else
                         {
                             this.changedComponents.Remove(removedComponent.GetTypeFast(), out _);
-                            this.entity.fastEntityComponentsId.Remove(removedComponent.instanceId, out _);
+                            this.entity.fastEntityComponentsId.RemoveI(this.entity.SerialLocker, removedComponent.instanceId);
                             this.components.Remove(removedComponent.GetTypeFast());
                             this.SerializationContainer.Remove(removedComponent.GetId(), out _);
                             this.IdToTypeComponent.Remove(removedComponent.GetId(), out _);
@@ -485,7 +485,7 @@ namespace NECS.ECS.ECSCore
                         this.components.Remove(componentClass);
                         this.SerializationContainer.Remove(component.GetId(), out _);
                         this.IdToTypeComponent.Remove(component.GetId(), out _);
-                        this.entity.fastEntityComponentsId.Remove(component.instanceId, out _);
+                        this.entity.fastEntityComponentsId.RemoveI(this.entity.SerialLocker, component.instanceId);
                         this.RemovedComponents.Add(component.GetId());
                         ManagerScope.instance.entityManager.OnRemoveComponent(this.entity, component);
                         component2 = component;

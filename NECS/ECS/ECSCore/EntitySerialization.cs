@@ -33,7 +33,7 @@ namespace NECS.ECS.ECSCore
             var nonSerializedSet = new HashSet<Type>() { typeof(EntityManagersComponent) };
 
             var ecsObjects = ECSAssemblyExtensions.GetAllSubclassOf(typeof(IECSObject)).Where(x => !x.IsAbstract).Where(x => !nonSerializedSet.Contains(x)).ToList();
-            ecsObjects.Add(typeof(ConcurrentDictionary<,>));
+            //ecsObjects.Add(typeof(ConcurrentDictionary<,>));
             //ecsObjects.Add(typeof(ConcurrentDictionary<long, ECSEntityGroup>));
             //ecsObjects.Add(typeof(ConcurrentDictionary<long, ECSComponentGroup>));
             //ecsObjects.Add(typeof(ConcurrentDictionary<long, object>));
@@ -323,7 +323,7 @@ namespace NECS.ECS.ECSCore
                         storage.RestoreComponentsAfterSerialization(entity);
                         entity.entityComponents = storage;
                         entity.AddComponentSilent(new EntityManagersComponent());
-                        entity.fastEntityComponentsId = new ConcurrentDictionary<long, int>(entity.entityComponents.Components.ToDictionary(k => k.instanceId, t => 0));
+                        entity.fastEntityComponentsId = new Dictionary<long, int>(entity.entityComponents.Components.ToDictionary(k => k.instanceId, t => 0));
                         ManagerScope.instance.entityManager.OnAddNewEntity(entity);
                         return;
                     }
@@ -331,11 +331,11 @@ namespace NECS.ECS.ECSCore
 
                     if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
                     {
-                        entity.entityComponents.FilterRemovedComponents(bufEntity.entity.fastEntityComponentsId.Keys.ToList(), new List<long>() { ServerComponentGroup.Id });
+                        entity.entityComponents.FilterRemovedComponents(bufEntity.entity.fastEntityComponentsId.SnapshotI(bufEntity.entity.SerialLocker).Keys.ToList(), new List<long>() { ServerComponentGroup.Id });
                     }
                     else if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
                     {
-                        entity.entityComponents.FilterRemovedComponents(bufEntity.entity.fastEntityComponentsId.Keys.ToList(), new List<long>() { ClientComponentGroup.Id });
+                        entity.entityComponents.FilterRemovedComponents(bufEntity.entity.fastEntityComponentsId.SnapshotI(bufEntity.entity.SerialLocker).Keys.ToList(), new List<long>() { ClientComponentGroup.Id });
                     }
                     entity.entityComponents.RegisterAllComponents();
 
