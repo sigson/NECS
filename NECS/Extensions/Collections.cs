@@ -46,6 +46,24 @@ namespace NECS.Extensions
             }
         }
 
+        public static bool TryGetValueI<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, object externalLockerObject, TKey key, out TValue value)
+        {
+            lock (externalLockerObject)
+            {
+                lock (dictionary)
+                {
+                    if (dictionary.ContainsKey(key))
+                        value = dictionary[key];
+                    else
+                    {
+                        value = default(TValue);
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
         public static void SetI<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, object externalLockerObject, TKey key, TValue value)
         {
             lock (externalLockerObject)

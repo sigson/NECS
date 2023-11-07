@@ -37,6 +37,8 @@ namespace NECS.ECS.ECSCore
         [NonSerialized]
         protected long ReflectionId = 0;
 
+        public object SerialLocker = new object();
+
         public long GetId()
         {
             if (Id == 0)

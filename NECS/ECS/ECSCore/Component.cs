@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using NECS.Core.Logging;
+using NECS.Extensions;
 using NECS.Network.Simple.Net;
 
 namespace NECS.ECS.ECSCore
@@ -30,7 +31,7 @@ namespace NECS.ECS.ECSCore
         [NonSerialized]
         public List<string> ConfigPath = new List<string>();
 
-        public ConcurrentDictionary<long, ECSComponentGroup> ComponentGroups = new ConcurrentDictionary<long, ECSComponentGroup>();
+        public Dictionary<long, ECSComponentGroup> ComponentGroups = new Dictionary<long, ECSComponentGroup>();//todo: concurrent replace to normal
         [NonSerialized]
         static public List<Action> StaticOnChangeHandlers = new List<Action>();
         [NonSerialized]
@@ -95,13 +96,14 @@ namespace NECS.ECS.ECSCore
 
         public ECSComponent SetGlobalComponentGroup()
         {
-            this.ComponentGroups[ECSComponentManager.GlobalProgramComponentGroup.GetId()] = ECSComponentManager.GlobalProgramComponentGroup;
+            this.ComponentGroups.SetI(this.SerialLocker, ECSComponentManager.GlobalProgramComponentGroup.GetId(), ECSComponentManager.GlobalProgramComponentGroup);
+
             return this; 
         }
 
         public ECSComponent AddComponentGroup(ECSComponentGroup componentGroup)
         {
-            this.ComponentGroups[componentGroup.GetId()] = componentGroup;
+            this.ComponentGroups.SetI(this.SerialLocker, componentGroup.GetId(), componentGroup);
             return this;
         }
 
@@ -128,7 +130,7 @@ namespace NECS.ECS.ECSCore
         public void OnRemove()
         {
             ConfigPath.Clear();
-            ComponentGroups.Clear();
+            ComponentGroups.ClearI(this.SerialLocker);
             OnChangeHandlers.Clear();
         }
         public void RunOnChangeCallbacks(ECSEntity parentEntity)

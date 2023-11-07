@@ -377,7 +377,7 @@ namespace NECS.ECS.ECSCore
             {     
                 foreach (var component in components)
                 {
-                    if (component.Value.ComponentGroups.TryGetValue(componentGroup, out _))
+                    if (component.Value.ComponentGroups.TryGetValueI(component.Value.SerialLocker, componentGroup, out _))
                     {
                         toRemoveComponent.Add(component.Value);
                     }
@@ -441,7 +441,7 @@ namespace NECS.ECS.ECSCore
                 {
                     foreach (var group in filteringOnlyGroups)
                     {
-                        foreach(var componentGroup in component.Value.ComponentGroups)
+                        foreach(var componentGroup in component.Value.ComponentGroups.SnapshotI(component.Value.SerialLocker))
                         {
                             if (componentGroup.Key == group)
                             {
