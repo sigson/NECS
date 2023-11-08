@@ -4,8 +4,6 @@ using NECS.ECS.ECSCore;
 using NECS.ECS.Types.AtomicType;
 using NECS.Extensions;
 using Newtonsoft.Json;
-using ProtoBuf;
-using ProtoBuf.Meta;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

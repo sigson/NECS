@@ -19,25 +19,42 @@ namespace NECS.ECS.ECSCore
         [NonSerialized]
         public List<IManager> connectPoints = new List<IManager>();
         [NonSerialized]
-        [JsonIgnore]
-        private int aserialStaticId = 0;
-        public int StaticId
-        {
-            get
-            {
-                return Convert.ToInt32(GetId());
-            }
-            set
-            {
-                aserialStaticId = value;
-            }
-        }
-        [NonSerialized]
         public Type ObjectType;
         [NonSerialized]
         protected long ReflectionId = 0;
-
+        [NonSerialized]
         public object SerialLocker = new object();
+
+        /// <summary>
+        /// signalise IECSObject for starting process serialization
+        /// </summary>
+        public void EnterToSerialization()
+        {
+            lock(SerialLocker)
+            {
+                EnterToSerializationImpl();
+            }
+        }
+
+        /// <summary>
+        /// override this method for store property values to serializable fields
+        /// </summary>
+        protected virtual void EnterToSerializationImpl()
+        {
+
+        }
+
+        public void AfterDeserialization()
+        {
+            lock (SerialLocker)
+            {
+                AfterDeserializationImpl();
+            }
+        }
+        protected virtual void AfterDeserializationImpl()
+        {
+
+        }
 
         public long GetId()
         {

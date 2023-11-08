@@ -37,13 +37,145 @@ namespace NECS.ECS.ECSCore
 
         #region serialization
 
-        public Dictionary<long, string> SlicedSerializeStorage(JsonSerializer serializer, bool serializeOnlyChanged, bool clearChanged)
+        public Dictionary<long, byte[]> SlicedSerializeStorage(bool serializeOnlyChanged, bool clearChanged)
         {
-            
+
             {
                 if (serializeOnlyChanged)
                 {
-                    lock(this.serializationLocker)
+                    lock (this.serializationLocker)
+                    {
+                        ConcurrentDictionary<long, object> serializeContainer = new ConcurrentDictionary<long, object>();
+                        Dictionary<long, byte[]> slicedComponents = new Dictionary<long, byte[]>();
+                        directSerialized.Clear();
+                        var cachedChangedComponents = changedComponents.Keys.ToList();
+                        List<Type> errorList = new List<Type>();
+                        foreach (var changedComponent in cachedChangedComponents)
+                        {
+                            try
+                            {
+                                var component = components[changedComponent];
+                                if (component is DBComponent)
+                                {
+                                    (component as DBComponent).SerializeDB(serializeOnlyChanged, clearChanged);
+                                }
+                                if (component.DirectiveUpdate)
+                                {
+                                    component.DirectiveSerialize();
+                                    directSerialized.Add(component.GetId(), component.DirectiveUpdateContainer);
+                                }
+                                else
+                                {
+                                    serializeContainer[component.GetId()] = component;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                errorList.Add(changedComponent);
+                            }
+                        }
+                        foreach (var pairComponent in serializeContainer)
+                        {
+                            using (MemoryStream writer = new MemoryStream())
+                            {
+                                NetSerializer.Serializer.Default.Serialize(writer, pairComponent.Value);
+                                slicedComponents[pairComponent.Key] = writer.ToArray();
+                                if (pairComponent.Value is DBComponent)
+                                {
+                                    (pairComponent.Value as DBComponent).AfterSerializationDB();
+                                }
+                            }
+                        }
+                        if (clearChanged)
+                        {
+                            changedComponents.Clear();
+                            errorList.ForEach((errorType) => changedComponents.Add(errorType, 0));
+                            if (errorList.Count > 0)
+                                Logger.LogError("serialization error");
+                        }
+
+                        return slicedComponents;
+                    }
+                }
+                else
+                {
+                    lock (this.serializationLocker)
+                    {
+                        Dictionary<long, byte[]> slicedComponents = new Dictionary<long, byte[]>();
+                        var cacheSerializationContainerKeys = SerializationContainer.Keys.ToList();
+                        foreach (var pairComponentKey in cacheSerializationContainerKeys)
+                        {
+                            object pairComponent;
+                            if (SerializationContainer.TryGetValue(pairComponentKey, out pairComponent))
+                            {
+                                using (MemoryStream writer = new MemoryStream())
+                                {
+                                    if (!(pairComponent as ECSComponent).Unregistered)
+                                    {
+                                        DBComponent dbComp = null;
+                                        if (pairComponent is DBComponent)
+                                        {
+                                            dbComp = (pairComponent as DBComponent);
+                                            dbComp.SerializeDB(serializeOnlyChanged, clearChanged);
+                                        }
+                                        NetSerializer.Serializer.Default.Serialize(writer, pairComponent);
+                                        slicedComponents[pairComponentKey] = writer.ToArray();
+                                        if (dbComp != null)
+                                        {
+                                            dbComp.AfterSerializationDB();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (clearChanged)
+                            changedComponents.Clear();
+                        return slicedComponents;
+                    }
+                    return null;
+                }
+            }
+        }
+
+        public Dictionary<long, byte[]> SerializeStorage(bool serializeOnlyChanged, bool clearChanged)
+        {
+            Dictionary<long, byte[]> serializeContainer = new Dictionary<long, byte[]>();
+            if (serializeOnlyChanged)
+            {
+                foreach (var changedComponent in changedComponents)
+                {
+                    using (MemoryStream writer = new MemoryStream())
+                    {
+                        var component = components[changedComponent.Key];
+                        NetSerializer.Serializer.Default.Serialize(writer, component);
+                        serializeContainer[component.GetId()] = writer.ToArray();
+                    }
+                }
+            }
+            else
+            {
+                foreach (var changedComponent in SerializationContainer)
+                {
+                    using (MemoryStream writer = new MemoryStream())
+                    {
+                        NetSerializer.Serializer.Default.Serialize(writer, changedComponent.Value);
+                        serializeContainer[changedComponent.Key] = writer.ToArray();
+                    }
+                }
+            }
+            if (clearChanged)
+                changedComponents.Clear();
+            return serializeContainer;
+        }
+
+
+        public Dictionary<long, string> SlicedSerializeStorageJSON(JsonSerializer serializer, bool serializeOnlyChanged, bool clearChanged)
+        {
+
+            {
+                if (serializeOnlyChanged)
+                {
+                    lock (this.serializationLocker)
                     {
                         ConcurrentDictionary<long, object> serializeContainer = new ConcurrentDictionary<long, object>();
                         Dictionary<long, string> slicedComponents = new Dictionary<long, string>();
@@ -93,7 +225,7 @@ namespace NECS.ECS.ECSCore
                             if (errorList.Count > 0)
                                 Logger.LogError("serialization error");
                         }
-                        
+
                         return slicedComponents;
                     }
                 }
@@ -120,7 +252,7 @@ namespace NECS.ECS.ECSCore
                                         }
                                         serializer.Serialize(writer, pairComponent);
                                         slicedComponents[pairComponentKey] = writer.ToString();
-                                        if(dbComp != null)
+                                        if (dbComp != null)
                                         {
                                             dbComp.AfterSerializationDB();
                                         }
@@ -137,7 +269,7 @@ namespace NECS.ECS.ECSCore
             }
         }
 
-        public string SerializeStorage(JsonSerializer serializer, bool serializeOnlyChanged, bool clearChanged)
+        public string SerializeStorageJSON(JsonSerializer serializer, bool serializeOnlyChanged, bool clearChanged)
         {
             using (StringWriter writer = new StringWriter())
             {
@@ -158,6 +290,8 @@ namespace NECS.ECS.ECSCore
                 return writer.ToString();
             }
         }
+
+
 
         public void RestoreComponentsAfterSerialization(ECSEntity entity)
         {

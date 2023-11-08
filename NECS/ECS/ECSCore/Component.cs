@@ -122,6 +122,11 @@ namespace NECS.ECS.ECSCore
             this.MarkAsChanged();
         }
 
+        public virtual void OnChange(ECSEntity entity)
+        {
+
+        }
+
         public virtual void OnRemoving(ECSEntity entity)
         {
 
@@ -137,7 +142,8 @@ namespace NECS.ECS.ECSCore
         {
             List<Action<ECSEntity, ECSComponent>> callbackActions;
             ECSComponentManager.OnChangeCallbacksDB.TryGetValue(this.GetId(), out callbackActions);
-            if(callbackActions!=null)
+            this.OnChange(parentEntity);
+            if (callbackActions!=null)
             {
                 foreach (var act in callbackActions)
                 {

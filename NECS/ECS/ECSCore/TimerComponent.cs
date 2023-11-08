@@ -18,7 +18,8 @@ namespace NECS.ECS.ECSCore
         [JsonIgnore]
         TimerEx componentTimer = new TimerEx();
         public double timerAwait = 0;
-		private double timeRemaining;
+
+		public double timeRemaining;
         public double TimeRemaining { 
             get {
                 if (this.componentTimer.inited)
@@ -108,6 +109,11 @@ namespace NECS.ECS.ECSCore
         public virtual void TimerResume()
         {
             componentTimer.Resume();
+        }
+
+        protected override void EnterToSerializationImpl()
+        {
+            timeRemaining = TimeRemaining;
         }
     }
 }
