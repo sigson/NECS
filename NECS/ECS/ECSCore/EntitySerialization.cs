@@ -329,6 +329,7 @@ namespace NECS.ECS.ECSCore
                     entity.AddOrChangeComponentSilentWithOwnerRestoring(tComponent);
                     if (tComponent is DBComponent)
                         TaskEx.RunAsync(() => (entity.GetComponent<DBComponent>(tComponent.GetId())).UnserializeDB());
+                    tComponent.AfterDeserialization();
                 }
                 entity.entityComponents.RegisterAllComponents();
             }

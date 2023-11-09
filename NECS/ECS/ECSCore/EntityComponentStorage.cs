@@ -53,18 +53,22 @@ namespace NECS.ECS.ECSCore
                         try
                         {
                             var component = components[changedComponent];
-                            if (component is DBComponent)
+                            lock (component.SerialLocker)
                             {
-                                (component as DBComponent).SerializeDB(serializeOnlyChanged, clearChanged);
-                            }
-                            if (component.DirectiveUpdate)
-                            {
-                                component.DirectiveSerialize();
-                                directSerialized.Add(component.GetId(), component.DirectiveUpdateContainer);
-                            }
-                            else
-                            {
-                                serializeContainer[component.GetId()] = component;
+                                component.EnterToSerialization();
+                                if (component is DBComponent)
+                                {
+                                    (component as DBComponent).SerializeDB(serializeOnlyChanged, clearChanged);
+                                }
+                                if (component.DirectiveUpdate)
+                                {
+                                    component.DirectiveSerialize();
+                                    directSerialized.Add(component.GetId(), component.DirectiveUpdateContainer);
+                                }
+                                else
+                                {
+                                    serializeContainer[component.GetId()] = component;
+                                }
                             }
                         }
                         catch (Exception ex)
@@ -317,6 +321,7 @@ namespace NECS.ECS.ECSCore
                         if (typedComponent is DBComponent)
                             new Task(() => (typedComponent as DBComponent).UnserializeDB()).Start();
                         AddComponentImmediately(component.GetTypeFast(), typedComponent, true, true);
+                        typedComponent.AfterDeserialization();
                     }
                 }
             }

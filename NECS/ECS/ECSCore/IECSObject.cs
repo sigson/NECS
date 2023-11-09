@@ -30,7 +30,7 @@ namespace NECS.ECS.ECSCore
         /// </summary>
         public void EnterToSerialization()
         {
-            lock(SerialLocker)
+            //lock(SerialLocker)
             {
                 EnterToSerializationImpl();
             }
