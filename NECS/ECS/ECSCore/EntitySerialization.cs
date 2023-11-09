@@ -18,6 +18,7 @@ using System.ComponentModel;
 using NECS.Extensions;
 using System.Reflection;
 using System.Data;
+using System.Runtime.ConstrainedExecution;
 
 namespace NECS.ECS.ECSCore
 {
@@ -41,7 +42,35 @@ namespace NECS.ECS.ECSCore
         public class SerializedEntity
         {
             public byte[] Entity;
-            public Dictionary<long, byte[]> Components;
+            [NonSerialized]
+            public ECSEntity desEntity = null;
+            [NonSerialized]
+            public ConcurrentDictionary<long, ECSComponent> SerializationContainer = new ConcurrentDictionary<long, ECSComponent>();
+            public Dictionary<long, byte[]> Components = new Dictionary<long, byte[]>();
+
+            public void DeserializeEntity()
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    memoryStream.Write(this.Entity, 0, this.Entity.Length);
+                    memoryStream.Position = 0;
+                    desEntity = (ECSEntity)NetSerializer.Serializer.Default.Deserialize(memoryStream);
+                }
+            }
+
+            public void DeserializeComponents()
+            {
+                foreach(var sComp in Components)
+                {
+                    using (var memoryStream = new MemoryStream())
+                    {
+                        memoryStream.Write(sComp.Value, 0, sComp.Value.Length);
+                        memoryStream.Position = 0;
+                        SerializationContainer[sComp.Key] = (ECSComponent)NetSerializer.Serializer.Default.Deserialize(memoryStream);
+                    }
+                }
+                
+            }
         }
         #endregion
 
@@ -61,11 +90,213 @@ namespace NECS.ECS.ECSCore
             }
         }
 
-        public static Dictionary<long, byte[]> SlicedSerializeBin(ECSEntity entity, bool serializeOnlyChanged = false, bool clearChanged = false)
+        public static Dictionary<long, byte[]> SlicedSerialize(ECSEntity entity, bool serializeOnlyChanged = false, bool clearChanged = false)
         {
-            
+            var resultObject = new SerializedEntity();
+
+            lock (entity.entityComponents.serializationLocker)//wtf double locking is work
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    NetSerializer.Serializer.Default.Serialize(memoryStream, entity);
+                    resultObject.Entity = memoryStream.ToArray();
+                    resultObject.Components = entity.entityComponents.SlicedSerializeStorage(serializeOnlyChanged, clearChanged);
+                }
+                resultObject.Components[ECSEntity.Id] = resultObject.Entity;
+            }
+            return resultObject.Components;
         }
 
+        public static void SerializeEntity(ECSEntity entity, bool serializeOnlyChanged = false)
+        {
+            var serializedData = SlicedSerialize(entity, serializeOnlyChanged, true);
+            bool emptyData = true;
+            foreach (var GDAP in entity.dataAccessPolicies)
+            {
+                GDAP.JsonAvailableComponents = "";
+                GDAP.rawUpdateAvailableComponents.Clear();
+                GDAP.BinAvailableComponents.Clear();
+                GDAP.JsonRestrictedComponents = "";
+                GDAP.rawUpdateRestrictedComponents.Clear();
+                GDAP.BinRestrictedComponents.Clear();
+                GDAP.IncludeRemovedAvailable = false;
+                GDAP.IncludeRemovedRestricted = false;
+                foreach (var availableComp in GDAP.AvailableComponents)
+                {
+                    byte[] serialData = null;
+                    if (entity.entityComponents.RemovedComponents.Contains(availableComp))
+                    {
+                        GDAP.IncludeRemovedAvailable = true;
+                        emptyData = false;
+                    }
+                    if (entity.entityComponents.directSerialized.Keys.Contains(availableComp))
+                    {
+                        GDAP.rawUpdateAvailableComponents.Add(availableComp, entity.entityComponents.directSerialized[availableComp]);
+                        emptyData = false;
+                    }
+                    if (!serializedData.TryGetValue(availableComp, out serialData))
+                        continue;
+                    GDAP.BinAvailableComponents[availableComp] = serialData;
+                    emptyData = false;
+                }
+                foreach (var availableComp in GDAP.RestrictedComponents)
+                {
+                    byte[] serialData = null;
+                    if (entity.entityComponents.RemovedComponents.Contains(availableComp))
+                    {
+                        GDAP.IncludeRemovedRestricted = true;
+                        emptyData = false;
+                    }
+                    if (entity.entityComponents.directSerialized.Keys.Contains(availableComp))
+                    {
+                        GDAP.rawUpdateRestrictedComponents.Add(availableComp, entity.entityComponents.directSerialized[availableComp]);
+                        emptyData = false;
+                    }
+                    if (!serializedData.TryGetValue(availableComp, out serialData))
+                        continue;
+                    GDAP.BinRestrictedComponents[availableComp] = serialData;
+                    emptyData = false;
+                }
+            }
+            entity.entityComponents.RemovedComponents.Clear();
+            entity.binSerializedEntity = serializedData[ECSEntity.Id];
+            entity.emptySerialized = emptyData;
+        }
+
+        public static (byte[], List<INetSerializable>) BuildSerializedEntityWithGDAP(ECSEntity toEntity, ECSEntity fromEntity, bool ignoreNullData = false)
+        {
+            var data = GroupDataAccessPolicy.ComponentsFilter(toEntity, fromEntity);
+            var resultObject = new SerializedEntity();
+            if (data.Item1 == "" && !ignoreNullData)
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    NetSerializer.Serializer.Default.Serialize(memoryStream, resultObject);
+                    return (memoryStream.ToArray(), data.Item2);
+                }
+            }
+            resultObject.Entity = fromEntity.binSerializedEntity;
+            if (!(data.Item1 == "#INCLUDEREMOVED#" || ignoreNullData))
+            {
+                data.Item1 = "";
+                resultObject.Components = data.Item3;
+            }
+            using (var memoryStream = new MemoryStream())
+            {
+                NetSerializer.Serializer.Default.Serialize(memoryStream, resultObject);
+                return (memoryStream.ToArray(), data.Item2);
+            }
+        }
+
+        public static byte[] BuildFullSerializedEntityWithGDAP(ECSEntity toEntity, ECSEntity fromEntity)
+        {
+            var componentData = GroupDataAccessPolicy.RawComponentsFilter(toEntity, fromEntity);
+            var resultObject = new SerializedEntity();
+            if (componentData.Count == 0)
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    NetSerializer.Serializer.Default.Serialize(memoryStream, resultObject);
+                    return memoryStream.ToArray();
+                }
+            }
+            var serializedData = SlicedSerialize(fromEntity);
+            foreach (var comp in componentData)
+            {
+                byte[] serialData = null;
+                if (!serializedData.TryGetValue(comp, out serialData))
+                    continue;
+                resultObject.Components[comp] = serialData;
+            }
+            resultObject.Entity = fromEntity.binSerializedEntity;
+            using (var memoryStream = new MemoryStream())
+            {
+                NetSerializer.Serializer.Default.Serialize(memoryStream, resultObject);
+                return memoryStream.ToArray();
+            }
+        }
+
+        public static byte[] BuildFullSerializedEntity(ECSEntity Entity)
+        {
+            var serializedData = FullSerialize(Entity, false);
+            return serializedData;
+        }
+
+        public static ECSEntity Deserialize(byte[] serializedData)
+        {
+            SerializedEntity bufEntity;
+            EntityComponentStorage storage;
+
+            using (var memoryStream = new MemoryStream())
+            {
+                memoryStream.Write(serializedData, 0, serializedData.Length);
+                memoryStream.Position = 0;
+                bufEntity = (SerializedEntity)NetSerializer.Serializer.Default.Deserialize(memoryStream);
+            }
+            bufEntity.DeserializeEntity();
+
+
+            storage = new EntityComponentStorage(bufEntity.desEntity);
+            storage.DeserializeStorage(bufEntity.Components);
+            storage.RestoreComponentsAfterSerialization(bufEntity.desEntity);
+            bufEntity.desEntity.entityComponents = storage;
+            return bufEntity.desEntity;
+        }
+
+        public static void UpdateDeserialize(byte[] serializedData)
+        {
+            ECSEntity entity;
+            SerializedEntity bufEntity;
+            EntityComponentStorage storage;
+
+            lock (ManagerScope.instance)
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    memoryStream.Write(serializedData, 0, serializedData.Length);
+                    memoryStream.Position = 0;
+                    bufEntity = (SerializedEntity)NetSerializer.Serializer.Default.Deserialize(memoryStream);
+                }
+                bufEntity.DeserializeEntity();
+
+                if (!ManagerScope.instance.entityManager.EntityStorage.TryGetValue(bufEntity.desEntity.instanceId, out entity))
+                {
+                    Logger.Log(bufEntity.desEntity.instanceId.ToString() + " new entity");
+                    entity = bufEntity.desEntity;
+                    storage = new EntityComponentStorage(entity);
+                    storage.DeserializeStorage(bufEntity.Components);
+                    storage.RestoreComponentsAfterSerialization(entity);
+                    entity.entityComponents = storage;
+                    entity.AddComponentSilent(new EntityManagersComponent());
+                    entity.fastEntityComponentsId = new Dictionary<long, int>(entity.entityComponents.Components.ToDictionary(k => k.instanceId, t => 0));
+                    ManagerScope.instance.entityManager.OnAddNewEntity(entity);
+                    return;
+                }
+
+
+                if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+                {
+                    entity.entityComponents.FilterRemovedComponents(bufEntity.desEntity.fastEntityComponentsId.Keys.ToList(), new List<long>() { ServerComponentGroup.Id });
+                }
+                else if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
+                {
+                    entity.entityComponents.FilterRemovedComponents(bufEntity.desEntity.fastEntityComponentsId.Keys.ToList(), new List<long>() { ClientComponentGroup.Id });
+                }
+                entity.entityComponents.RegisterAllComponents();
+
+                foreach (var component in bufEntity.SerializationContainer)
+                {
+                    var tComponent = (ECSComponent)component.Value;
+                    entity.AddOrChangeComponentSilentWithOwnerRestoring(tComponent);
+                    if (tComponent is DBComponent)
+                        TaskEx.RunAsync(() => (entity.GetComponent<DBComponent>(tComponent.GetId())).UnserializeDB());
+                }
+                entity.entityComponents.RegisterAllComponents();
+            }
+        }
+
+
+        #region oldest JSON serialization implementation
 
         public static string[] FullSerializeJSON(ECSEntity entity, bool serializeOnlyChanged = false)//tr
         {
@@ -76,7 +307,7 @@ namespace NECS.ECS.ECSCore
                 GlobalCachingSerialization.cachingSerializer.Serialize(writer, entity);
                 strEntity = writer.ToString();
             }
-            string strComponents = entity.entityComponents.SerializeStorage(GlobalCachingSerialization.cachingSerializer, serializeOnlyChanged, true);
+            string strComponents = entity.entityComponents.SerializeStorageJSON(GlobalCachingSerialization.cachingSerializer, serializeOnlyChanged, true);
             if(Defines.SerializationResultPrint)
                 result = "{\"Entity\":\"" + strEntity + "\",\"Components\":\"" + strComponents + "\"}";
             return new string[] { strEntity, strComponents };
@@ -89,7 +320,7 @@ namespace NECS.ECS.ECSCore
             
             lock(entity.entityComponents.serializationLocker)//wtf double locking is work
             {
-                var strComponents = entity.entityComponents.SlicedSerializeStorage(GlobalCachingSerialization.cachingSerializer, serializeOnlyChanged, clearChanged);
+                var strComponents = entity.entityComponents.SlicedSerializeStorageJSON(GlobalCachingSerialization.cachingSerializer, serializeOnlyChanged, clearChanged);
                 using (StringWriter writer = new StringWriter())
                 {
                     GlobalCachingSerialization.cachingSerializer.Serialize(writer, entity);
@@ -308,6 +539,7 @@ namespace NECS.ECS.ECSCore
             //}
             #endregion
         }
+        #endregion
     }
     public class UnserializedEntity
     {

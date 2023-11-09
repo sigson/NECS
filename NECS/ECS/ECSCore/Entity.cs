@@ -39,6 +39,8 @@ namespace NECS.ECS.ECSCore
         [NonSerialized]
         public string serializedEntity;
         [NonSerialized]
+        public byte[] binSerializedEntity;
+        [NonSerialized]
         public bool emptySerialized = true;
         [JsonIgnore]
         public List<string> ConfigPath { get; }

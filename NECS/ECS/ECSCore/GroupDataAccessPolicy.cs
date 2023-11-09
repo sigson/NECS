@@ -20,15 +20,18 @@ namespace NECS.ECS.ECSCore
         protected long ReflectionId = 0;
         public Dictionary<long, INetSerializable> rawUpdateAvailableComponents = new Dictionary<long, INetSerializable>();
         public Dictionary<long, INetSerializable> rawUpdateRestrictedComponents = new Dictionary<long, INetSerializable>();
+        public Dictionary<long, byte[]> BinAvailableComponents = new Dictionary<long, byte[]>();
+        public Dictionary<long, byte[]> BinRestrictedComponents = new Dictionary<long, byte[]>();
         public string JsonAvailableComponents = "";
         public string JsonRestrictedComponents = "";
         public bool IncludeRemovedAvailable = false;
         public bool IncludeRemovedRestricted = false;
 
-        public static (string, List<INetSerializable>) ComponentsFilter(ECSEntity baseEntity, ECSEntity otherEntity)
+        public static (string, List<INetSerializable>, Dictionary<long, byte[]>) ComponentsFilter(ECSEntity baseEntity, ECSEntity otherEntity)
         {
             string filteredComponents = "";
             List<INetSerializable> rawFilteredComponents = new List<INetSerializable>();
+            Dictionary<long, byte[]> binFilteredComponents = new Dictionary<long, byte[]>();
             bool includeRemovedAvailable = false;
             bool includeRemovedRestricted = false;
             if(!otherEntity.emptySerialized)
@@ -43,6 +46,7 @@ namespace NECS.ECS.ECSCore
                         {
                             filteredComponents += otherDataAP.JsonAvailableComponents;
                             rawFilteredComponents = rawFilteredComponents.Concat(otherDataAP.rawUpdateAvailableComponents.Values).ToList();
+                            binFilteredComponents = binFilteredComponents.Concat(otherDataAP.BinAvailableComponents.Where(x => !binFilteredComponents.ContainsKey(x.Key))).ToDictionary(x => x.Key, x => x.Value);
                             if (otherDataAP.IncludeRemovedAvailable)
                                 includeRemovedAvailable = true;
                         }
@@ -50,6 +54,7 @@ namespace NECS.ECS.ECSCore
                         {
                             filteredComponents += otherDataAP.JsonRestrictedComponents;
                             rawFilteredComponents = rawFilteredComponents.Concat(otherDataAP.rawUpdateRestrictedComponents.Values).ToList();
+                            binFilteredComponents = binFilteredComponents.Concat(otherDataAP.BinRestrictedComponents.Where(x => !binFilteredComponents.ContainsKey(x.Key))).ToDictionary(x => x.Key, x => x.Value);
                             if (otherDataAP.IncludeRemovedRestricted)
                                 includeRemovedRestricted = true;
                         }
@@ -57,34 +62,12 @@ namespace NECS.ECS.ECSCore
                 }
             }
             
-            if (filteredComponents == "" && (includeRemovedAvailable || includeRemovedRestricted))
-                return ("#INCLUDEREMOVED#", rawFilteredComponents);
+            if ((binFilteredComponents.Count() == 0 && rawFilteredComponents.Count() == 0) && (includeRemovedAvailable || includeRemovedRestricted))
+                return ("#INCLUDEREMOVED#", rawFilteredComponents, binFilteredComponents);
             else
-                return (filteredComponents, rawFilteredComponents);
+                return (filteredComponents, rawFilteredComponents, binFilteredComponents);
         }
 
-        public static (string, List<long>) ComponentsFilterRawStand(ECSEntity baseEntity, ECSEntity otherEntity)
-        {
-            string filteredComponents = "";
-            List<long> filteredComponentsId = new List<long>();
-            foreach (var baseDataAP in baseEntity.dataAccessPolicies)
-            {
-                foreach (var otherDataAP in otherEntity.dataAccessPolicies)
-                {
-                    if (baseDataAP.instanceId == otherDataAP.instanceId)
-                    {
-                        filteredComponents += otherDataAP.JsonAvailableComponents;
-                        filteredComponentsId = filteredComponentsId.Concat(otherDataAP.AvailableComponents).ToList();
-                    }
-                    else if (baseDataAP.GetId() == otherDataAP.GetId())
-                    {
-                        filteredComponents += otherDataAP.JsonRestrictedComponents;
-                        filteredComponentsId = filteredComponentsId.Concat(otherDataAP.RestrictedComponents).ToList();
-                    }
-                }
-            }
-            return (filteredComponents, filteredComponentsId);
-        }
         public static List<long> RawComponentsFilter(ECSEntity baseEntity, ECSEntity otherEntity)
         {
             List<long> filteredComponents = new List<long>();

@@ -168,6 +168,18 @@ namespace NECS.ECS.ECSCore
             return serializeContainer;
         }
 
+        public void DeserializeStorage(Dictionary<long, byte[]> serializedComponents)
+        {
+            foreach(var serComponent in serializedComponents)
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    memoryStream.Write(serComponent.Value, 0, serComponent.Value.Length);
+                    memoryStream.Position = 0;
+                    this.SerializationContainer[serComponent.Key] =  (ECSComponent)NetSerializer.Serializer.Default.Deserialize(memoryStream);
+                }
+            }
+        }
 
         public Dictionary<long, string> SlicedSerializeStorageJSON(JsonSerializer serializer, bool serializeOnlyChanged, bool clearChanged)
         {
