@@ -15,7 +15,7 @@ namespace NECS.ECS.Events.ECSEvents
     {
         static public new long Id { get; set; } = 230864384312783680;
         public long EntityIdRecipient; //ID of user with socket component
-        public List<string> Entities;
+        public List<byte[]> Entities;
         public override void Execute()
         {
             foreach (var entity in Entities)

@@ -74,7 +74,13 @@ namespace NECS.ECS.ECSCore
         }
         #endregion
 
-        public static byte[] FullSerialize(ECSEntity entity, bool serializeOnlyChanged = false)
+        /// <summary>
+        /// OBSOLETE, not has in use
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="serializeOnlyChanged"></param>
+        /// <returns></returns>
+        private static byte[] FullSerialize(ECSEntity entity, bool serializeOnlyChanged = false)
         {
             var resultObject = new SerializedEntity();
             using (var memoryStream = new MemoryStream())
@@ -89,8 +95,14 @@ namespace NECS.ECS.ECSCore
                 return memoryStream.ToArray();
             }
         }
-
-        public static Dictionary<long, byte[]> SlicedSerialize(ECSEntity entity, bool serializeOnlyChanged = false, bool clearChanged = false)
+        /// <summary>
+        /// inner method of entity serialization, need for build serialized atomic data
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="serializeOnlyChanged"></param>
+        /// <param name="clearChanged"></param>
+        /// <returns></returns>
+        private static Dictionary<long, byte[]> SlicedSerialize(ECSEntity entity, bool serializeOnlyChanged = false, bool clearChanged = false)
         {
             var resultObject = new SerializedEntity();
 
@@ -107,6 +119,11 @@ namespace NECS.ECS.ECSCore
             return resultObject.Components;
         }
 
+        /// <summary>
+        /// Setup method of entity serialization, freezes the serialized state of an object for next gdap building manipulation.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="serializeOnlyChanged">set true only if you have fully serialized the object at least once before</param>
         public static void SerializeEntity(ECSEntity entity, bool serializeOnlyChanged = false)
         {
             var serializedData = SlicedSerialize(entity, serializeOnlyChanged, true);
@@ -162,7 +179,13 @@ namespace NECS.ECS.ECSCore
             entity.binSerializedEntity = serializedData[ECSEntity.Id];
             entity.emptySerialized = emptyData;
         }
-
+        /// <summary>
+        /// high perfomance data exchange building method, building component exchange storage based on cached serialized in SerializeEntity components (no use serialization)
+        /// </summary>
+        /// <param name="toEntity"></param>
+        /// <param name="fromEntity"></param>
+        /// <param name="ignoreNullData"></param>
+        /// <returns></returns>
         public static (byte[], List<INetSerializable>) BuildSerializedEntityWithGDAP(ECSEntity toEntity, ECSEntity fromEntity, bool ignoreNullData = false)
         {
             var data = GroupDataAccessPolicy.ComponentsFilter(toEntity, fromEntity);
@@ -187,7 +210,12 @@ namespace NECS.ECS.ECSCore
                 return (memoryStream.ToArray(), data.Item2);
             }
         }
-
+        /// <summary>
+        /// gdap data exchange building with full entity serialization, mainly needed for setup data exchange, because slower then BuildSerializedEntityWithGDAP and takes up too much space in network traffic
+        /// </summary>
+        /// <param name="toEntity"></param>
+        /// <param name="fromEntity"></param>
+        /// <returns></returns>
         public static byte[] BuildFullSerializedEntityWithGDAP(ECSEntity toEntity, ECSEntity fromEntity)
         {
             var componentData = GroupDataAccessPolicy.RawComponentsFilter(toEntity, fromEntity);
@@ -215,14 +243,22 @@ namespace NECS.ECS.ECSCore
                 return memoryStream.ToArray();
             }
         }
-
-        public static byte[] BuildFullSerializedEntity(ECSEntity Entity)
+        /// <summary>
+        /// OBSOLETE, not has in use
+        /// </summary>
+        /// <param name="Entity"></param>
+        /// <returns></returns>
+        private static byte[] BuildFullSerializedEntity(ECSEntity Entity)
         {
             var serializedData = FullSerialize(Entity, false);
             return serializedData;
         }
-
-        public static ECSEntity Deserialize(byte[] serializedData)
+        /// <summary>
+        /// OBSOLETE, use UpdateDeserialize
+        /// </summary>
+        /// <param name="serializedData"></param>
+        /// <returns></returns>
+        private static ECSEntity Deserialize(byte[] serializedData)
         {
             SerializedEntity bufEntity;
             EntityComponentStorage storage;
@@ -242,7 +278,10 @@ namespace NECS.ECS.ECSCore
             bufEntity.desEntity.entityComponents = storage;
             return bufEntity.desEntity;
         }
-
+        /// <summary>
+        /// Deserialization with adding new entity or update exist with add|update|remove components
+        /// </summary>
+        /// <param name="serializedData"></param>
         public static void UpdateDeserialize(byte[] serializedData)
         {
             ECSEntity entity;
