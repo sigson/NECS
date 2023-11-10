@@ -24,6 +24,7 @@ namespace NECS.ECS.ECSCore
         {
             entityManager = new ECSEntityManager();
             componentManager = new ECSComponentManager();
+            EntitySerialization.InitSerialize();
             ECSComponentManager.IdStaticCache();
             eventManager = new ECSEventManager();
             eventManager.IdStaticCache();

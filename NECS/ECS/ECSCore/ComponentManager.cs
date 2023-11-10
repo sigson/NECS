@@ -36,8 +36,10 @@ namespace NECS.ECS.ECSCore
                 {
                     var field = comp.GetType().GetField("<Id>k__BackingField", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
                     var customAttrib = comp.GetType().GetCustomAttribute<TypeUidAttribute>();
-                    if (customAttrib != null)
+                    if (customAttrib != null && field != null)
                         field.SetValue(null, customAttrib.Id);
+                    else
+                        Logger.LogError($"WARNING! Type{comp.GetType().ToString()} no have static id field or ID attribute");
                     entity.AddComponentSilent((ECSComponent)comp.Clone());
                 }
                 catch(Exception ex)
@@ -49,7 +51,7 @@ namespace NECS.ECS.ECSCore
                     DirectiveUpdateComponents.Add(comp.GetId());
             }
             //var checkData = EntitySerialization.FullSerialize(entity); // fill json serialization cache
-            EntitySerialization.InitSerialize(); // fill json serialization cache
+            //EntitySerialization.InitSerialize(); // fill json serialization cache
             entity.entityComponents.OnEntityDelete();
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
                 GlobalProgramComponentGroup = new ClientComponentGroup();

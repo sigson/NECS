@@ -25,7 +25,20 @@ namespace NECS_Test.SerializationTest
             List< ECSComponentSerializationCheck > arrayCheck = new List<ECSComponentSerializationCheck>();
             for (int i = 0; i < 50000; i++)
             {
-                arrayCheck.Add(new ECSComponentSerializationCheck() { RandomString = new Random().RandomString(128), points = new List<ECSComponentSerializationCheck> { new ECSComponentSerializationCheck() { RandomString = new Random().RandomString(128) } } });
+                arrayCheck.Add(new ECSComponentSerializationCheck() { 
+                    RandomString = new Random().RandomString(128),
+                    points = new List<ECSComponentSerializationCheck> { 
+                        new ECSComponentSerializationCheck() { RandomString = new Random().RandomString(128) } 
+                    },
+                    Vector3Sw = new List<Vector3S>()
+                    {
+                        new Vector3S()
+                        {
+                            x = 4440, y = 1240, z = 1230
+                        }
+                    }
+                }
+                );
                 //arrayCheck.Add(new ECSComponentSerializationCheck() { RandomString = new Random().RandomString(128), points = new List<WorldPoint> { new WorldPoint() { Position = new Vector3S() { x = Random.Shared.NextSingle(), y = Random.Shared.NextSingle(), z = Random.Shared.NextSingle() } } } });
             }
 
@@ -87,15 +100,32 @@ namespace NECS_Test.SerializationTest
 
             watch.Reset();
 
-            
+            watch.Start();
+
+            foreach (var comp in protobuf)
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    memoryStream.Write(comp, 0, comp.Length);
+                    memoryStream.Position = 0;
+                    var component = NetSerializer.Serializer.Default.Deserialize(memoryStream);
+                    //var protoser = EntitySerialization.SerializationSchemaStorage[typeof(ECSComponentSerializationCheck)];
+                    //protoser.Serialize(memoryStream, comp);
+                }
+            }
+
+            watch.Stop();
 
             var serializationbinaryelapsed = watch.ElapsedMilliseconds;
+
+            watch.Reset();
         }
     }
     [Serializable]
     public class ECSComponentSerializationCheck : ECSComponent
     {
         public string RandomString = "";
+        public List<Vector3S> Vector3Sw = new List<Vector3S>();
         public List<ECSComponentSerializationCheck> points = new List<ECSComponentSerializationCheck>();
     }
 }

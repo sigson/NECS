@@ -15,7 +15,7 @@ namespace NECS.ECS.ECSCore
     [TypeUid(2)]//base type of entity
     public class ECSEntity : IECSObject, ICloneable
     {
-        static public long Id = 200155515534159360;
+        static new public long Id { get; set; } = 2;
         [NonSerialized]
         public List<Type> TemplateAccessor = new List<Type>();
 

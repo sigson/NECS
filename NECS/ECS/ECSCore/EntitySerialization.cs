@@ -190,7 +190,7 @@ namespace NECS.ECS.ECSCore
         {
             var data = GroupDataAccessPolicy.ComponentsFilter(toEntity, fromEntity);
             var resultObject = new SerializedEntity();
-            if (data.Item1 == "" && !ignoreNullData)
+            if (data.Item1 == "" && data.Item2.Count() == 0 && data.Item3.Count() == 0 && !ignoreNullData)
             {
                 using (var memoryStream = new MemoryStream())
                 {
@@ -254,11 +254,11 @@ namespace NECS.ECS.ECSCore
             return serializedData;
         }
         /// <summary>
-        /// OBSOLETE, use UpdateDeserialize
+        /// OBSOLETE, for tests reason, use UpdateDeserialize
         /// </summary>
         /// <param name="serializedData"></param>
         /// <returns></returns>
-        private static ECSEntity Deserialize(byte[] serializedData)
+        public static ECSEntity Deserialize(byte[] serializedData)
         {
             SerializedEntity bufEntity;
             EntityComponentStorage storage;

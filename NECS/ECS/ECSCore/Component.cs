@@ -16,7 +16,7 @@ namespace NECS.ECS.ECSCore
     [TypeUid(3)]
     public class ECSComponent : IECSObject, ICloneable
     {
-        static public long Id { get; set; } = 0;
+        static new public long Id { get; set; } = 0;
 
         [NonSerialized]
         public ECSEntity ownerEntity;

@@ -15,7 +15,7 @@ namespace NECS.ECS.ECSCore
     [TypeUid(4)]
     public abstract class ECSEvent : IECSObject
     {
-        static public long Id { get; set; }
+        static new public long Id { get; set; } = 4;
         public long EntityOwnerId;
         [NonSerialized]
         [JsonIgnore]

@@ -28,16 +28,23 @@ namespace NECS.Harness.Model
                     instances.TryGetValue(singletonType, out instance);
                     if (instance == null)
                     {
-                        instance = (SGT)behaviour.GetComponent(singletonType);
-                        if (instance == null)
+                        if (behaviour != null)
                         {
-                            if (behaviour != null)
-                                instance = (SGT)behaviour.gameObject.AddComponent(singletonType);
-                            else
+                            instance = (SGT)behaviour.GetComponent(singletonType);
+                            if (instance == null)
                             {
-                                instance = (SGT)new EngineApiObjectBehaviour().AddComponent(singletonType);
-                                DontDestroyOnLoad(instance.gameObject);
+                                if (behaviour != null)
+                                    instance = (SGT)behaviour.gameObject.AddComponent(singletonType);
+                                else
+                                {
+                                    instance = (SGT)new EngineApiObjectBehaviour().AddComponent(singletonType);
+                                    DontDestroyOnLoad(instance.gameObject);
+                                }
                             }
+                        }
+                        else
+                        {
+                            instance = (SGT)Activator.CreateInstance(singletonType);
                         }
                         instances.Add(singletonType, instance);
                     }
