@@ -12,7 +12,8 @@ namespace NECS.Harness.Services
         public static GlobalProgramState instance => SGT.Get<GlobalProgramState>();
 
         public string ConfigDir { get; set; }
-        public string PathSeparator { get; set; }
+        public string PathSystemSeparator { get; set; }
+        public string PathSeparator = "/";
 
         public ProgramTypeEnum ProgramType;
         public enum ProgramTypeEnum

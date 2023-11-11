@@ -88,14 +88,18 @@ namespace NECS.Harness.Services
                             case "public":
                                 nowObject.Deserialized = jObject;
                                 break;
-                            case "public_en":
-                                nowObject.DeserializedInfo = jObject;
-                                break;
                         }
-                        nowObject.LibName = nowLib.Replace(Directory.GetParent(nowLib).FullName, "").Replace(GlobalProgramState.instance.PathSeparator, "");
-                        nowObject.HeadLibName = Directory.GetParent(nowLib).Name;
-                        nowObject.Path = file.Replace(gameConfDirectory, "").Replace(GlobalProgramState.instance.PathSeparator + Path.GetFileName(file), "").Substring(1).Replace("/", "\\");
-                        nowObject.LibTree = new Lib() { LibName = nowObject.LibName, Path = nowObject.Path };
+                        var libname = nowLib.Replace(Directory.GetParent(nowLib).FullName, "").Replace(GlobalProgramState.instance.PathSystemSeparator, "");
+                        if (nowObject.Deserialized == null)
+                        {
+                            nowObject.Path = file.Replace(gameConfDirectory, "").Replace(GlobalProgramState.instance.PathSystemSeparator + Path.GetFileName(file), "") + GlobalProgramState.instance.PathSeparator + Path.GetFileNameWithoutExtension(file);
+                            nowObject.Path = nowObject.Path.Substring(1).Replace(GlobalProgramState.instance.PathSystemSeparator, GlobalProgramState.instance.PathSeparator);
+                        }
+                        else
+                        {
+                            nowObject.Path = file.Replace(gameConfDirectory, "").Replace(GlobalProgramState.instance.PathSystemSeparator + Path.GetFileName(file), "").Substring(1).Replace(GlobalProgramState.instance.PathSystemSeparator, GlobalProgramState.instance.PathSeparator);
+                        }
+                        nowObject.LibTree = new Lib() { LibName = libname, Path = nowObject.Path };
                     }
                 }
                 ConstantDB[nowObject.Path] = nowObject;
@@ -153,7 +157,7 @@ namespace NECS.Harness.Services
             List<ConfigObj> result = new List<ConfigObj>();
             foreach (ConfigObj configObj in ConstantDB.Values)
             {
-                if (configObj.LibName == libName)
+                if (configObj.LibTree.LibName == libName)
                     result.Add(configObj);
             }
             return result.ToArray();
@@ -163,7 +167,7 @@ namespace NECS.Harness.Services
             List<ConfigObj> result = new List<ConfigObj>();
             foreach (ConfigObj configObj in ConstantDB.Values)
             {
-                if (configObj.HeadLibName == libName)
+                if (configObj.LibTree.HeadLib.LibName == libName)
                     result.Add(configObj);
             }
             return result.ToArray();
@@ -209,28 +213,19 @@ namespace NECS.Harness.Services
 
     public class ConfigObj
     {
-        public static char delim = '\\';
         public long Id;
         public string Path;
-        public string LibName;
-        public string HeadLibName;
         public Lib LibTree;
-        public JObject Deserialized;
-        public JObject DeserializedInfo;
+        public JObject Deserialized = null;
 
         public T GetObject<T>(string path)
         {
             return GetObjectImpl<T>(this.Deserialized, path);
         }
 
-        public T GetObjectInfo<T>(string path)
-        {
-            return GetObjectImpl<T>(this.DeserializedInfo, path);
-        }
-
         protected T GetObjectImpl<T>(JObject storage, string path)
         {
-            var pathSplit = path.Split(delim);
+            var pathSplit = path.Split(GlobalProgramState.instance.PathSeparator);
             var nowStorage = storage[pathSplit[0]];
             for (int i = 1; i < pathSplit.Length; i++)
             {

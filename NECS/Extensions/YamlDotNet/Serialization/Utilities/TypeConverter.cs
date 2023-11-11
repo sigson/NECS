@@ -42,7 +42,7 @@ namespace YamlDotNet.Serialization.Utilities
         /// </summary>
         /// <typeparam name="TConvertible">The type to which the converter should be associated.</typeparam>
         /// <typeparam name="TConverter">The type of the converter.</typeparam>
-        [System.Security.Permissions.PermissionSet(System.Security.Permissions.SecurityAction.LinkDemand, Name = "FullTrust")]
+        //[System.Security.Permissions.PermissionSet(System.Security.Permissions.SecurityAction.LinkDemand, Name = "FullTrust")]
         public static void RegisterTypeConverter<TConvertible, TConverter>()
             where TConverter : System.ComponentModel.TypeConverter
         {
