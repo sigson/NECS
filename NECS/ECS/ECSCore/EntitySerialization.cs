@@ -54,7 +54,7 @@ namespace NECS.ECS.ECSCore
                 {
                     memoryStream.Write(this.Entity, 0, this.Entity.Length);
                     memoryStream.Position = 0;
-                    desEntity = (ECSEntity)NetSerializer.Serializer.Default.Deserialize(memoryStream);
+                    desEntity = (ECSEntity)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
                 }
             }
 
@@ -66,7 +66,7 @@ namespace NECS.ECS.ECSCore
                     {
                         memoryStream.Write(sComp.Value, 0, sComp.Value.Length);
                         memoryStream.Position = 0;
-                        SerializationContainer[sComp.Key] = (ECSComponent)NetSerializer.Serializer.Default.Deserialize(memoryStream);
+                        SerializationContainer[sComp.Key] = (ECSComponent)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
                     }
                 }
                 
@@ -272,10 +272,9 @@ namespace NECS.ECS.ECSCore
             bufEntity.DeserializeEntity();
 
 
-            storage = new EntityComponentStorage(bufEntity.desEntity);
+            storage = bufEntity.desEntity.entityComponents;
             storage.DeserializeStorage(bufEntity.Components);
             storage.RestoreComponentsAfterSerialization(bufEntity.desEntity);
-            bufEntity.desEntity.entityComponents = storage;
             return bufEntity.desEntity;
         }
         /// <summary>
@@ -302,10 +301,9 @@ namespace NECS.ECS.ECSCore
                 {
                     Logger.Log(bufEntity.desEntity.instanceId.ToString() + " new entity");
                     entity = bufEntity.desEntity;
-                    storage = new EntityComponentStorage(entity);
+                    storage = bufEntity.desEntity.entityComponents;
                     storage.DeserializeStorage(bufEntity.Components);
                     storage.RestoreComponentsAfterSerialization(entity);
-                    entity.entityComponents = storage;
                     entity.AddComponentSilent(new EntityManagersComponent());
                     entity.fastEntityComponentsId = new Dictionary<long, int>(entity.entityComponents.Components.ToDictionary(k => k.instanceId, t => 0));
                     ManagerScope.instance.entityManager.OnAddNewEntity(entity);

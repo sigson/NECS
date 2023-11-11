@@ -1,19 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Reflection;
 using System.ArrayExtensions;
+using Newtonsoft.Json.Linq;
 
 namespace System
 {
     public static class ReflectionCopy
     {
-
-        /// <summary>
-        /// Makes a shallow copy of the object
-        /// </summary>
-        /// <param name="Object">Object to copy</param>
-        /// <param name="SimpleTypesOnly">If true, it only copies simple types (no classes, only items like int, string, etc.), false copies everything.</param>
-        /// <returns>A copy of the object</returns>
-        public static object MakeShallowCopy(object Object, bool SimpleTypesOnly)
+        public static object MakeReverseShallowCopy(object Object)
         {
             try
             {
@@ -26,14 +20,8 @@ namespace System
                 {
                     try
                     {
-                        if (SimpleTypesOnly)
-                        {
-                            SetPropertyifSimpleType(Property, ClassInstance, Object);
-                        }
-                        else
-                        {
-                            SetProperty(Property, ClassInstance, Object);
-                        }
+                        if(Property.GetCustomAttributes(false).OfType<NonSerializedAttribute>().Count() != 0)
+                            SetProperty(Property, Object, ClassInstance);
                     }
                     catch { }
                 }
@@ -42,29 +30,16 @@ namespace System
                 {
                     try
                     {
-                        if (SimpleTypesOnly)
-                        {
-                            SetFieldifSimpleType(Field, ClassInstance, Object);
-                        }
-                        else
-                        {
-                            SetField(Field, ClassInstance, Object);
-                        }
+                        if (Field.GetCustomAttributes(false).OfType<NonSerializedAttribute>().Count() != 0)
+                            SetField(Field, Object, ClassInstance);
                     }
                     catch { }
                 }
 
-                return ClassInstance;
+                return Object;
             }
             catch { throw; }
         }
-
-        /// <summary>
-        /// Copies a field value
-        /// </summary>
-        /// <param name="Field">Field object</param>
-        /// <param name="ClassInstance">Class to copy to</param>
-        /// <param name="Object">Class to copy from</param>
         private static void SetField(FieldInfo Field, object ClassInstance, object Object)
         {
             try
@@ -74,28 +49,6 @@ namespace System
             catch { }
         }
 
-        /// <summary>
-        /// Copies a field value
-        /// </summary>
-        /// <param name="Field">Field object</param>
-        /// <param name="ClassInstance">Class to copy to</param>
-        /// <param name="Object">Class to copy from</param>
-        private static void SetFieldifSimpleType(FieldInfo Field, object ClassInstance, object Object)
-        {
-            try
-            {
-                SetFieldifSimpleType(Field, Field, ClassInstance, Object);
-            }
-            catch { }
-        }
-
-        /// <summary>
-        /// Copies a field value
-        /// </summary>
-        /// <param name="ChildField">Child field object</param>
-        /// <param name="Field">Field object</param>
-        /// <param name="ClassInstance">Class to copy to</param>
-        /// <param name="Object">Class to copy from</param>
         private static void SetField(FieldInfo ChildField, FieldInfo Field, object ClassInstance, object Object)
         {
             try
@@ -108,52 +61,6 @@ namespace System
             catch { }
         }
 
-        /// <summary>
-        /// Copies a field value
-        /// </summary>
-        /// <param name="ChildField">Child field object</param>
-        /// <param name="Field">Field object</param>
-        /// <param name="ClassInstance">Class to copy to</param>
-        /// <param name="Object">Class to copy from</param>
-        private static void SetFieldifSimpleType(FieldInfo ChildField, FieldInfo Field, object ClassInstance, object Object)
-        {
-            try
-            {
-                Type FieldType = Field.FieldType;
-                if (Field.FieldType.FullName.StartsWith("System.Collections.Generic.List", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    FieldType = Field.FieldType.GetGenericArguments()[0];
-                }
-
-                if (FieldType.FullName.StartsWith("System"))
-                {
-                    SetField(ChildField, Field, ClassInstance, Object);
-                }
-            }
-            catch { throw; }
-        }
-
-        /// <summary>
-        /// Copies a property value
-        /// </summary>
-        /// <param name="Property">Property object</param>
-        /// <param name="ClassInstance">Class to copy to</param>
-        /// <param name="Object">Class to copy from</param>
-        private static void SetPropertyifSimpleType(PropertyInfo Property, object ClassInstance, object Object)
-        {
-            try
-            {
-                SetPropertyifSimpleType(Property, Property, ClassInstance, Object);
-            }
-            catch { }
-        }
-
-        /// <summary>
-        /// Copies a property value
-        /// </summary>
-        /// <param name="Property">Property object</param>
-        /// <param name="ClassInstance">Class to copy to</param>
-        /// <param name="Object">Class to copy from</param>
         private static void SetProperty(PropertyInfo Property, object ClassInstance, object Object)
         {
             try
@@ -163,13 +70,6 @@ namespace System
             catch { }
         }
 
-        /// <summary>
-        /// Copies a property value
-        /// </summary>
-        /// <param name="ChildProperty">Child property object</param>
-        /// <param name="Property">Property object</param>
-        /// <param name="ClassInstance">Class to copy to</param>
-        /// <param name="Object">Class to copy from</param>
         private static void SetProperty(PropertyInfo ChildProperty, PropertyInfo Property, object ClassInstance, object Object)
         {
             try
@@ -180,31 +80,6 @@ namespace System
                 }
             }
             catch { }
-        }
-
-        /// <summary>
-        /// Copies a property value
-        /// </summary>
-        /// <param name="ChildProperty">Child property object</param>
-        /// <param name="Property">Property object</param>
-        /// <param name="ClassInstance">Class to copy to</param>
-        /// <param name="Object">Class to copy from</param>
-        private static void SetPropertyifSimpleType(PropertyInfo ChildProperty, PropertyInfo Property, object ClassInstance, object Object)
-        {
-            try
-            {
-                Type PropertyType = Property.PropertyType;
-                if (Property.PropertyType.FullName.StartsWith("System.Collections.Generic.List", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    PropertyType = Property.PropertyType.GetGenericArguments()[0];
-                }
-
-                if (PropertyType.FullName.StartsWith("System"))
-                {
-                    SetProperty(ChildProperty, Property, ClassInstance, Object);
-                }
-            }
-            catch { throw; }
         }
 
     }

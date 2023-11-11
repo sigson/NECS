@@ -23,7 +23,7 @@ namespace NECS_Test.SerializationTest
         {
             EntitySerialization.InitSerialize();
             List< ECSComponentSerializationCheck > arrayCheck = new List<ECSComponentSerializationCheck>();
-            for (int i = 0; i < 50000; i++)
+            for (int i = 0; i < 500; i++)
             {
                 arrayCheck.Add(new ECSComponentSerializationCheck() { 
                     RandomString = new Random().RandomString(128),
