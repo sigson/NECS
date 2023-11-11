@@ -22,6 +22,20 @@ namespace NECS.Harness.Services
 #endif
             }
         }
+
+        public string TechConfigDir
+        {
+            get
+            {
+#if UNITY
+                return Path.Combine(Application.dataPath, "Config");
+#endif
+#if NET
+                return Path.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "Config");
+#endif
+            }
+        }
+
         public string PathSystemSeparator
         {
             get

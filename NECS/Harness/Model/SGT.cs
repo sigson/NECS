@@ -18,7 +18,7 @@ namespace NECS.Harness.Model
             return (T)InitalizeSingleton(typeof(T), behaviour);
         }
 
-        public static SGT InitalizeSingleton(Type singletonType, IEngineApiObjectBehaviour behaviour = null)
+        public static SGT InitalizeSingleton(Type singletonType, IEngineApiObjectBehaviour behaviour = null, bool packetInitialize = false)
         {
             SGT instance = null;
             lock (instances)
@@ -54,7 +54,8 @@ namespace NECS.Harness.Model
                     Logger.Error("Escape from lock: " + ex.Message + " _________ " + ex.StackTrace);
                 }
             }
-            instance.InitializeProcess();
+            if(!packetInitialize)
+                instance.InitializeProcess();
             return instance;
         }
 

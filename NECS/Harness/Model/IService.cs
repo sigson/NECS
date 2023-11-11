@@ -19,7 +19,8 @@ namespace NECS.Harness.Model
         public static void InitializeAllServices()
         {
             //FindObjectsOfType<IService>();
-            var services = ECSAssemblyExtensions.GetAllSubclassOf(typeof(IService)).Where(x => !x.IsAbstract).Select(x => IService.InitalizeSingleton(x, ServiceStorage)).Cast<IService>().ToList();
+            var services = ECSAssemblyExtensions.GetAllSubclassOf(typeof(IService)).Where(x => !x.IsAbstract).Select(x => IService.InitalizeSingleton(x, ServiceStorage, true)).Cast<IService>().ToList();
+            services.ForEach(x => x.InitializeProcess());
             services.ForEach(x => x.PostInitializeProcess());
         }
         #endregion

@@ -11,14 +11,9 @@ namespace NECS.Harness.Services
     {
         public static NetworkingService instance => SGT.Get<NetworkingService>();
 
-        private void InitializeNetwork()
-        {
-            ConstantService.instance.GetByConfigPath("");
-        }
-
         public override void InitializeProcess()
         {
-            
+            ConstantService.instance.GetByConfigPath("socket");
         }
 
         public override void OnDestroyReaction()
