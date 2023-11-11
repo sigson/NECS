@@ -88,5 +88,12 @@ namespace NECS.Extensions
             using (GZipStream zipStream = new GZipStream(inFile, CompressionMode.Decompress, true))
                 while (DecompressFile(sDir, zipStream, progress)) ;
         }
+
+        public static void DecompressToDirectory(byte[] sCompressedFile, string sDir, ProgressDelegate progress)
+        {
+            using (MemoryStream inFile = new MemoryStream(sCompressedFile))
+            using (GZipStream zipStream = new GZipStream(inFile, CompressionMode.Decompress, true))
+                while (DecompressFile(sDir, zipStream, progress)) ;
+        }
     }
 }

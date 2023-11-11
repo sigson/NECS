@@ -123,6 +123,42 @@ namespace NECS
         //}
     }
 
+    public static class Lambda
+    {
+        public static Action<T> AddListener<T>(this Action<T> unityEvent, System.Action<T> action)
+        {
+            Action<T> uaction = (T arg) => action(arg);
+            unityEvent.AddListener(uaction);
+            return unityEvent;
+        }
+
+        public static Action AddListener(this Action unityEvent, System.Action action)
+        {
+            Action uaction = () => action();
+            unityEvent.AddListener(uaction);
+            return unityEvent;
+        }
+
+        public static bool TryExecute(Action act)
+        {
+            try
+            {
+                act();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+
+        public static T LineFunction<T>(this T obj, Action<T> action)
+        {
+            action(obj);
+            return obj;
+        }
+    }
+
     public class TaskEx : Task
     {
         public TaskEx(Action action) : base(action)

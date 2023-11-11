@@ -10,7 +10,12 @@ namespace NECS.Harness.Services
     public class NetworkingService : IService
     {
         public static NetworkingService instance => SGT.Get<NetworkingService>();
-        public int bufferSize = 2048;
+
+        private void InitializeNetwork()
+        {
+            ConstantService.instance.GetByConfigPath("");
+        }
+
         public override void InitializeProcess()
         {
             
