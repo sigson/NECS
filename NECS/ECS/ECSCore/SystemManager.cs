@@ -58,14 +58,11 @@ namespace NECS.ECS.ECSCore
                 if (Interlocked.Equals(SystemPair.Key.Enabled, true) && Interlocked.Equals(SystemPair.Key.InWork, false) && SystemPair.Key.LastEndExecutionTimestamp + DateTimeExtensions.MillisecondToTicks
                     (SystemPair.Key.DelayRunMilliseconds) < DateTime.Now.Ticks)
                 {
-                    Func<Task> asyncUpd = async () =>
+                    SystemPair.Key.InWork = true;
+                    TaskEx.RunAsync(() =>
                     {
-                        SystemPair.Key.InWork = true;
-                        await Task.Run(() => {
-                            SystemPair.Key.Run(SystemsInterestedEntityDatabase[SystemPair.Key].Keys.ToArray());
-                        });
-                    };
-                    asyncUpd();
+                        SystemPair.Key.Run(SystemsInterestedEntityDatabase[SystemPair.Key].Keys.ToArray());
+                    });
                 }
                     
             }

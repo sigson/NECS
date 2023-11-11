@@ -299,7 +299,10 @@ namespace NECS.ECS.ECSCore
                     {
                         var typedComponent = (ECSComponent)Convert.ChangeType(objPair.Value, component.GetTypeFast());
                         if (typedComponent is DBComponent)
-                            new Task(() => (typedComponent as DBComponent).UnserializeDB()).Start();
+                            TaskEx.RunAsync(() =>
+                            {
+                                (typedComponent as DBComponent).UnserializeDB();
+                            });
                         AddComponentImmediately(component.GetTypeFast(), typedComponent, true, true);
                         typedComponent.AfterDeserialization();
                     }
@@ -390,7 +393,7 @@ namespace NECS.ECS.ECSCore
 
         public void MarkComponentChanged(ECSComponent component, bool silent = false)
         {
-            lock(this.serializationLocker)
+            lock (this.serializationLocker)
             {
                 lock (this.operationLocker)
                 {
@@ -400,15 +403,12 @@ namespace NECS.ECS.ECSCore
                         changedComponents[componentClass] = 1;
                     }
                 }
-               
+
             }
-            Func<Task> asyncUpd = async () =>
+            TaskEx.RunAsync(() =>
             {
-                await Task.Run(() => {
-                    component.RunOnChangeCallbacks(this.entity);
-                });
-            };
-            asyncUpd();
+                component.RunOnChangeCallbacks(this.entity);
+            });
         }
 
         public void ChangeComponent(ECSComponent component, bool silent = false, ECSEntity restoringOwner = null)

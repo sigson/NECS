@@ -20,48 +20,38 @@ namespace NECS.ECS.ECSCore
             Entity.manager = this;
             if (!EntityStorage.TryAdd(Entity.instanceId, Entity))
                 Logger.Error("error add entity to storage");
-            Func<Task> asyncUpd = async () =>
+            TaskEx.RunAsync(() =>
             {
-                await Task.Run(() => {
-                    Entity.entityComponents.RegisterAllComponents();
-                    ManagerScope.instance.systemManager.OnEntityCreated(Entity);
-                });
-            };
-            asyncUpd();
+                Entity.entityComponents.RegisterAllComponents();
+                ManagerScope.instance.systemManager.OnEntityCreated(Entity);
+            });
         }
 
         public void OnRemoveEntity(ECSEntity Entity)
         {
             EntityStorage.Remove(Entity.instanceId, out Entity);
             Entity.OnDelete();
-            Func<Task> asyncUpd = async () =>
+            TaskEx.RunAsync(() =>
             {
-                await Task.Run(() => {
-                    ManagerScope.instance.systemManager.OnEntityDestroyed(Entity);
-                });
-            };
-            asyncUpd();
+                ManagerScope.instance.systemManager.OnEntityDestroyed(Entity);
+            });
         }
 
 
         public void OnAddComponent(ECSEntity Entity, ECSComponent Component)
         {
-            Func<Task> asyncUpd = async () =>
+            TaskEx.RunAsync(() =>
             {
-                await Task.Run(() => {
-                    ManagerScope.instance.systemManager.OnEntityComponentAddedReaction(Entity, Component);
-                });
-            };
-            asyncUpd();
+                ManagerScope.instance.systemManager.OnEntityComponentAddedReaction(Entity, Component);
+            });
         }
 
         public void OnRemoveComponent(ECSEntity Entity, ECSComponent Component)
         {
-            Func<Task> asyncUpd = async () =>
+            TaskEx.RunAsync(() =>
             {
-                await Task.Run(() => ManagerScope.instance.systemManager.OnEntityComponentRemovedReaction(Entity, Component));
-            };
-            asyncUpd();
+                ManagerScope.instance.systemManager.OnEntityComponentRemovedReaction(Entity, Component);
+            });
         }
     }
 }

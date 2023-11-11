@@ -83,28 +83,24 @@ namespace NECS.ECS.ECSCore
             {
                 foreach(var func in system.Value)
                 {
-                    Func<Task> asyncUpd = async () =>
+                    TaskEx.RunAsync(() =>
                     {
-                        await Task.Run(() =>
+                        try
                         {
-                            try
-                            {
-                                func.DynamicInvoke(ecsEvent);
-                            }
-                            catch(Exception ex)
-                            {
-                                Logger.LogError(ex);
+                            func.DynamicInvoke(ecsEvent);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogError(ex);
 #if DEBUG
-                                throw;
+                            throw;
 #endif
-                            }
-                            finally
-                            {
-                                ecsEvent.eventWatcher.Watchers--;
-                            }
-                        });
-                    };
-                    asyncUpd();
+                        }
+                        finally
+                        {
+                            ecsEvent.eventWatcher.Watchers--;
+                        }
+                    });
                 }
             }
         }

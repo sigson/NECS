@@ -31,17 +31,11 @@ namespace NECS.ECS.ECSCore
             systemManager = new ECSSystemManager();
             systemManager.InitializeSystems();
             eventManager.InitializeEventManager();
-            Func<Task> asyncSystems = async () =>
+            TaskEx.RunAsync(() =>
             {
-                await Task.Run(() => {
-                    while(true)
-                    {
-                        systemManager.RunSystems();
-                        Thread.Sleep(5);
-                    }
-                });
-            };
-            asyncSystems();
+                systemManager.RunSystems();
+                Task.Delay(5).Wait();
+            });
             Logger.Log("ECS managers initialized");
         }
 

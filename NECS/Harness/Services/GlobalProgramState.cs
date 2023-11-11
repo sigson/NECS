@@ -11,9 +11,26 @@ namespace NECS.Harness.Services
     {
         public static GlobalProgramState instance => SGT.Get<GlobalProgramState>();
 
-        public string ConfigDir { get; set; }
-        public string PathSystemSeparator { get; set; }
+        public string ConfigDir {
+            get
+            {
+#if UNITY
+                return Path.Combine(Application.persistentDataPath, "GameData");
+#endif
+#if NET
+                return Path.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "GameData");
+#endif
+            }
+        }
+        public string PathSystemSeparator
+        {
+            get
+            {
+                return Path.DirectorySeparatorChar.ToString();
+            }
+        }
         public string PathSeparator = "/";
+        public string PathAltSeparator = "\\";
 
         public ProgramTypeEnum ProgramType;
         public enum ProgramTypeEnum

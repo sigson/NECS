@@ -31,16 +31,19 @@ namespace NECS.Harness.Services
         {
             
         }
-
-        public void Initialize()
+        /// <summary>
+        /// can be running from another location, example for tech config loading
+        /// </summary>
+        /// <param name="config_path">path to techical config, like socket info</param>
+        public void SetupConfigs(string config_path = "")
         {
             lock(this)
             {
                 if (Loaded)
                     return;
-                var gameConfDirectory = GlobalProgramState.instance.ConfigDir + "GameConfig";
+                var gameConfDirectory = config_path == "" ? GlobalProgramState.instance.ConfigDir : config_path;
 
-                if (checkedConfigVersion != hashConfig)
+                if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client && checkedConfigVersion != hashConfig)
                 {
                     Logger.Log("Constant service update config");
                     if (Directory.Exists(GlobalProgramState.instance.ConfigDir))
@@ -104,33 +107,36 @@ namespace NECS.Harness.Services
                 }
                 ConstantDB[nowObject.Path] = nowObject;
 
-                var allTemplates = ECSAssemblyExtensions.GetAllSubclassOf(typeof(EntityTemplate)).Select(x => (EntityTemplate)Activator.CreateInstance(x)).ToList(); //load interested configs to template accessor db
-                foreach (EntityTemplate templateAccessor in allTemplates)
-                {
-                    List<ConfigObj> interestedList = new List<ConfigObj>();
-                    AllTemplates[templateAccessor.GetId()] = templateAccessor;
-                    foreach (var path in templateAccessor.ConfigPath)
-                    {
-                        var result = ConstantDB.Values.Where(x => x.Path == path).FirstOrDefault();
-                        if (result != null)
-                            interestedList.Add(result);
-                    }
-                    try
-                    {
-                        var field = templateAccessor.GetType().GetField("<Id>k__BackingField", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
-                        var customAttrib = templateAccessor.GetType().GetCustomAttribute<TypeUidAttribute>();
-                        if (customAttrib != null)
-                            field.SetValue(null, customAttrib.Id);
-                        //Console.WriteLine(comp.GetId().ToString() + "  " + comp.GetType().Name);
-                    }
-                    catch
-                    {
-                        Console.WriteLine(templateAccessor.GetType().Name);
-                    }
-                    TemplateInterestDB.Add(templateAccessor.GetId(), interestedList);
-                }
                 #endregion
-                Loaded = true;
+            }
+        }
+
+        private void TemplateSetup()
+        {
+            var allTemplates = ECSAssemblyExtensions.GetAllSubclassOf(typeof(EntityTemplate)).Select(x => (EntityTemplate)Activator.CreateInstance(x)).ToList(); //load interested configs to template accessor db
+            foreach (EntityTemplate templateAccessor in allTemplates)
+            {
+                List<ConfigObj> interestedList = new List<ConfigObj>();
+                AllTemplates[templateAccessor.GetId()] = templateAccessor;
+                foreach (var path in templateAccessor.ConfigPath)
+                {
+                    var result = ConstantDB.Values.Where(x => x.Path == path).FirstOrDefault();
+                    if (result != null)
+                        interestedList.Add(result);
+                }
+                try
+                {
+                    var field = templateAccessor.GetType().GetField("<Id>k__BackingField", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+                    var customAttrib = templateAccessor.GetType().GetCustomAttribute<TypeUidAttribute>();
+                    if (customAttrib != null)
+                        field.SetValue(null, customAttrib.Id);
+                    //Console.WriteLine(comp.GetId().ToString() + "  " + comp.GetType().Name);
+                }
+                catch
+                {
+                    Console.WriteLine(templateAccessor.GetType().Name);
+                }
+                TemplateInterestDB[templateAccessor.GetId()] = interestedList;
             }
         }
 
@@ -147,7 +153,7 @@ namespace NECS.Harness.Services
         public ConfigObj GetByConfigPath(string path)
         {
             ConfigObj obj;
-            if (ConstantDB.TryGetValue(path, out obj))
+            if (ConstantDB.TryGetValue(path.Replace(GlobalProgramState.instance.PathAltSeparator, GlobalProgramState.instance.PathSeparator), out obj))
                 return obj;
             return null;
         }
@@ -155,6 +161,7 @@ namespace NECS.Harness.Services
         public ConfigObj[] GetByLibName(string libName)
         {
             List<ConfigObj> result = new List<ConfigObj>();
+            libName = libName.Replace(GlobalProgramState.instance.PathAltSeparator, GlobalProgramState.instance.PathSeparator);
             foreach (ConfigObj configObj in ConstantDB.Values)
             {
                 if (configObj.LibTree.LibName == libName)
@@ -165,6 +172,7 @@ namespace NECS.Harness.Services
         public ConfigObj[] GetByHeadLibName(string libName)
         {
             List<ConfigObj> result = new List<ConfigObj>();
+            libName = libName.Replace(GlobalProgramState.instance.PathAltSeparator, GlobalProgramState.instance.PathSeparator);
             foreach (ConfigObj configObj in ConstantDB.Values)
             {
                 if (configObj.LibTree.HeadLib.LibName == libName)
@@ -175,6 +183,7 @@ namespace NECS.Harness.Services
         public List<string> GetRecursFiles(string start_path)
         {
             List<string> ls = new List<string>();
+            start_path = start_path.Replace(GlobalProgramState.instance.PathAltSeparator, GlobalProgramState.instance.PathSeparator);
             try
             {
                 string[] folders = Directory.GetDirectories(start_path);
@@ -205,9 +214,24 @@ namespace NECS.Harness.Services
 
         }
 
+        /// <summary>
+        /// for normal service setup
+        /// </summary>
         public override void PostInitializeProcess()
         {
-
+            TaskEx.RunAsync(() => {
+                if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+                {
+                    while(hashConfig == 0)
+                    {
+                        Task.Delay(100).Wait();
+                    }
+                }
+                SetupConfigs();
+                TemplateSetup();
+                Loaded = true;
+            });
+            
         }
     }
 
