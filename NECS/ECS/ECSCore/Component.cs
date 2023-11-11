@@ -1,14 +1,5 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using NECS.Core.Logging;
+﻿using NECS.Core.Logging;
 using NECS.Extensions;
-using NECS.Network.Simple.Net;
 
 namespace NECS.ECS.ECSCore
 {
@@ -20,11 +11,6 @@ namespace NECS.ECS.ECSCore
 
         [NonSerialized]
         public ECSEntity ownerEntity;
-
-        [NonSerialized]
-        public bool DirectiveUpdate;
-        [NonSerialized]
-        public INetSerializable DirectiveUpdateContainer;
         [NonSerialized]
         public ReaderWriterLockSlim locker = new ReaderWriterLockSlim();
 
@@ -40,19 +26,6 @@ namespace NECS.ECS.ECSCore
         public bool Unregistered = true;
         [NonSerialized]
         public ComponentManagers componentManagers;
-
-        public void DirectiveSerialize()
-        {
-            if(DirectiveUpdate)
-            {
-                ImplDirectiveSerialization();
-            }
-        }
-
-        protected virtual void ImplDirectiveSerialization()
-        {
-
-        }
 
         public List<Action<ECSEntity, ECSComponent>> GetOnChangeComponentCallback()
         {

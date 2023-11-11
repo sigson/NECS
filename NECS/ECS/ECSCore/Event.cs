@@ -1,13 +1,4 @@
-﻿using Assets.ClientCore.CoreImpl.Network.NetworkEvents.GameData;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using NECS.Core.Logging;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace NECS.ECS.ECSCore
 {
@@ -22,53 +13,23 @@ namespace NECS.ECS.ECSCore
         public EventWatcher eventWatcher;
         [NonSerialized]
         [JsonIgnore]
-        public GameDataEvent? cachedGameDataEvent = null;
-        [NonSerialized]
-        [JsonIgnore]
-        public object? cachedRawEvent = null;
+        public byte[] cachedGameDataEvent = null;
         public abstract void Execute();
 
-        public string Serialization()
+        protected virtual void SerializeEvent()
         {
-            using (StringWriter writer = new StringWriter())
+            using (MemoryStream writer = new MemoryStream())
             {
-                GlobalCachingSerialization.cachingSerializer.Serialize(writer, this);
-                return writer.ToString();
+                NetSerializer.Serializer.Default.Serialize(writer, this);
+                cachedGameDataEvent = writer.ToArray();
             }
         }
 
-        public virtual GameDataEvent PackToNetworkPacket()
-        {
-            return new GameDataEvent()
-            {
-                jsonData = this.Serialization(),
-                typeId = this.GetId(),
-                packetId = (int)Guid.NewGuid().GuidToLong()
-            };
-        }
-
-        public virtual GameDataEvent CachePackToNetworkPacket()
-        {
-            if(cachedGameDataEvent == null)
-            {
-                cachedGameDataEvent = new GameDataEvent()
-                {
-                    jsonData = this.Serialization(),
-                    typeId = this.GetId(),
-                    packetId = (int)Guid.NewGuid().GuidToLong()
-                };
-            }
-            return (GameDataEvent)cachedGameDataEvent;
-        }
-
-        public GameDataEvent GetGameDataEvent()
+        public virtual byte[] GetNetworkPacket()
         {
             if (cachedGameDataEvent == null)
-                return PackToNetworkPacket();
-            else
-                return (GameDataEvent)cachedGameDataEvent;
+                SerializeEvent();
+            return cachedGameDataEvent;
         }
-
-        
     }
 }

@@ -1,15 +1,7 @@
 ﻿
 using Newtonsoft.Json;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using NECS.Extensions;
-using NECS.Network.Simple.Net;
 using NECS.Core.Logging;
 
 namespace NECS.ECS.ECSCore
@@ -24,7 +16,6 @@ namespace NECS.ECS.ECSCore
         private readonly IDictionary<Type, int> changedComponents = new ConcurrentDictionary<Type, int>();
         public readonly IDictionary<long, Type> IdToTypeComponent = new ConcurrentDictionary<long, Type>();
         public ConcurrentDictionary<long, object> SerializationContainer = new ConcurrentDictionary<long, object>();
-        public Dictionary<long, INetSerializable> directSerialized = new Dictionary<long, INetSerializable>();
         public List<long> RemovedComponents = new List<long>();
         public object serializationLocker = new object();
         public object operationLocker = new object();
@@ -45,7 +36,6 @@ namespace NECS.ECS.ECSCore
                 {
                     ConcurrentDictionary<long, object> serializeContainer = new ConcurrentDictionary<long, object>();
                     Dictionary<long, byte[]> slicedComponents = new Dictionary<long, byte[]>();
-                    directSerialized.Clear();
                     var cachedChangedComponents = changedComponents.Keys.ToList();
                     List<Type> errorList = new List<Type>();
                     foreach (var changedComponent in cachedChangedComponents)
@@ -60,11 +50,7 @@ namespace NECS.ECS.ECSCore
                                 {
                                     (component as DBComponent).SerializeDB(serializeOnlyChanged, clearChanged);
                                 }
-                                if (component.DirectiveUpdate)
-                                {
-                                    component.DirectiveSerialize();
-                                    directSerialized.Add(component.GetId(), component.DirectiveUpdateContainer);
-                                }
+                                
                                 else
                                 {
                                     serializeContainer[component.GetId()] = component;
@@ -192,7 +178,6 @@ namespace NECS.ECS.ECSCore
                     {
                         ConcurrentDictionary<long, object> serializeContainer = new ConcurrentDictionary<long, object>();
                         Dictionary<long, string> slicedComponents = new Dictionary<long, string>();
-                        directSerialized.Clear();
                         var cachedChangedComponents = changedComponents.Keys.ToList();
                         List<Type> errorList = new List<Type>();
                         foreach (var changedComponent in cachedChangedComponents)
@@ -203,11 +188,6 @@ namespace NECS.ECS.ECSCore
                                 if (component is DBComponent)
                                 {
                                     (component as DBComponent).SerializeDB(serializeOnlyChanged, clearChanged);
-                                }
-                                if (component.DirectiveUpdate)
-                                {
-                                    component.DirectiveSerialize();
-                                    directSerialized.Add(component.GetId(), component.DirectiveUpdateContainer);
                                 }
                                 else
                                 {

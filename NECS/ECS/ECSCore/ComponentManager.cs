@@ -15,7 +15,6 @@ namespace NECS.ECS.ECSCore
     public class ECSComponentManager
     {
         public static Dictionary<long, ECSComponent> AllComponents = new Dictionary<long, ECSComponent>();
-        public static HashSet<long> DirectiveUpdateComponents = new HashSet<long>();
 
         public static Dictionary<long, List<Action<ECSEntity, ECSComponent>>> OnChangeCallbacksDB = new Dictionary<long, List<Action<ECSEntity, ECSComponent>>>();
 
@@ -47,8 +46,6 @@ namespace NECS.ECS.ECSCore
                     Console.WriteLine(comp.GetType().Name);
                     entity.AddComponentSilent((ECSComponent)comp.Clone());
                 }
-                if (comp.DirectiveUpdate)
-                    DirectiveUpdateComponents.Add(comp.GetId());
             }
             //var checkData = EntitySerialization.FullSerialize(entity); // fill json serialization cache
             //EntitySerialization.InitSerialize(); // fill json serialization cache

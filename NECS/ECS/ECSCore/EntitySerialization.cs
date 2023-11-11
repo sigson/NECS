@@ -1,24 +1,12 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using NECS.ECS.Components;
 using NECS.ECS.Components.ECSComponentsGroup;
-using NECS.Network.Simple.Net;
 using NECS.Harness.Services;
 using NECS.Core.Logging;
 using NECS.ECS.DefaultsDB.ECSComponents;
-using Microsoft.VisualBasic;
-using System.ComponentModel;
 using NECS.Extensions;
-using System.Reflection;
 using System.Data;
-using System.Runtime.ConstrainedExecution;
 
 namespace NECS.ECS.ECSCore
 {
@@ -131,10 +119,8 @@ namespace NECS.ECS.ECSCore
             foreach (var GDAP in entity.dataAccessPolicies)
             {
                 GDAP.JsonAvailableComponents = "";
-                GDAP.rawUpdateAvailableComponents.Clear();
                 GDAP.BinAvailableComponents.Clear();
                 GDAP.JsonRestrictedComponents = "";
-                GDAP.rawUpdateRestrictedComponents.Clear();
                 GDAP.BinRestrictedComponents.Clear();
                 GDAP.IncludeRemovedAvailable = false;
                 GDAP.IncludeRemovedRestricted = false;
@@ -144,11 +130,6 @@ namespace NECS.ECS.ECSCore
                     if (entity.entityComponents.RemovedComponents.Contains(availableComp))
                     {
                         GDAP.IncludeRemovedAvailable = true;
-                        emptyData = false;
-                    }
-                    if (entity.entityComponents.directSerialized.Keys.Contains(availableComp))
-                    {
-                        GDAP.rawUpdateAvailableComponents.Add(availableComp, entity.entityComponents.directSerialized[availableComp]);
                         emptyData = false;
                     }
                     if (!serializedData.TryGetValue(availableComp, out serialData))
@@ -162,11 +143,6 @@ namespace NECS.ECS.ECSCore
                     if (entity.entityComponents.RemovedComponents.Contains(availableComp))
                     {
                         GDAP.IncludeRemovedRestricted = true;
-                        emptyData = false;
-                    }
-                    if (entity.entityComponents.directSerialized.Keys.Contains(availableComp))
-                    {
-                        GDAP.rawUpdateRestrictedComponents.Add(availableComp, entity.entityComponents.directSerialized[availableComp]);
                         emptyData = false;
                     }
                     if (!serializedData.TryGetValue(availableComp, out serialData))
@@ -186,28 +162,28 @@ namespace NECS.ECS.ECSCore
         /// <param name="fromEntity"></param>
         /// <param name="ignoreNullData"></param>
         /// <returns></returns>
-        public static (byte[], List<INetSerializable>) BuildSerializedEntityWithGDAP(ECSEntity toEntity, ECSEntity fromEntity, bool ignoreNullData = false)
+        public static byte[] BuildSerializedEntityWithGDAP(ECSEntity toEntity, ECSEntity fromEntity, bool ignoreNullData = false)
         {
             var data = GroupDataAccessPolicy.ComponentsFilter(toEntity, fromEntity);
             var resultObject = new SerializedEntity();
-            if (data.Item1 == "" && data.Item2.Count() == 0 && data.Item3.Count() == 0 && !ignoreNullData)
+            if (data.Item1 == "" && data.Item2.Count() == 0 && !ignoreNullData)
             {
                 using (var memoryStream = new MemoryStream())
                 {
                     NetSerializer.Serializer.Default.Serialize(memoryStream, resultObject);
-                    return (memoryStream.ToArray(), data.Item2);
+                    return memoryStream.ToArray();
                 }
             }
             resultObject.Entity = fromEntity.binSerializedEntity;
             if (!(data.Item1 == "#INCLUDEREMOVED#" || ignoreNullData))
             {
                 data.Item1 = "";
-                resultObject.Components = data.Item3;
+                resultObject.Components = data.Item2;
             }
             using (var memoryStream = new MemoryStream())
             {
                 NetSerializer.Serializer.Default.Serialize(memoryStream, resultObject);
-                return (memoryStream.ToArray(), data.Item2);
+                return memoryStream.ToArray();
             }
         }
         /// <summary>
@@ -336,7 +312,7 @@ namespace NECS.ECS.ECSCore
 
         #region oldest JSON serialization implementation
 
-        public static string[] FullSerializeJSON(ECSEntity entity, bool serializeOnlyChanged = false)//tr
+        private static string[] FullSerializeJSON(ECSEntity entity, bool serializeOnlyChanged = false)//tr
         {
             string result;
             string strEntity;
@@ -351,7 +327,7 @@ namespace NECS.ECS.ECSCore
             return new string[] { strEntity, strComponents };
         }
 
-        public static Dictionary<long, string> SlicedSerializeJSON(ECSEntity entity, bool serializeOnlyChanged = false, bool clearChanged = false)
+        private static Dictionary<long, string> SlicedSerializeJSON(ECSEntity entity, bool serializeOnlyChanged = false, bool clearChanged = false)
         {
             string result;
             string strEntity;
@@ -372,16 +348,14 @@ namespace NECS.ECS.ECSCore
             
         }
 
-        public static void SerializeEntityJSON(ECSEntity entity, bool serializeOnlyChanged = false)
+        private static void SerializeEntityJSON(ECSEntity entity, bool serializeOnlyChanged = false)
         {
             var serializedData = SlicedSerializeJSON(entity, serializeOnlyChanged, true);
             bool emptyData = true;
             foreach(var GDAP in entity.dataAccessPolicies)
             {
                 GDAP.JsonAvailableComponents = "";
-                GDAP.rawUpdateAvailableComponents.Clear();
                 GDAP.JsonRestrictedComponents = "";
-                GDAP.rawUpdateRestrictedComponents.Clear();
                 GDAP.IncludeRemovedAvailable = false;
                 GDAP.IncludeRemovedRestricted = false;
                 foreach (var availableComp in GDAP.AvailableComponents)
@@ -390,11 +364,6 @@ namespace NECS.ECS.ECSCore
                     if (entity.entityComponents.RemovedComponents.Contains(availableComp))
                     {
                         GDAP.IncludeRemovedAvailable = true;
-                        emptyData = false;
-                    }
-                    if (entity.entityComponents.directSerialized.Keys.Contains(availableComp))   
-                    {
-                        GDAP.rawUpdateAvailableComponents.Add(availableComp, entity.entityComponents.directSerialized[availableComp]);
                         emptyData = false;
                     }
                     if (!serializedData.TryGetValue(availableComp, out serialData))
@@ -410,11 +379,6 @@ namespace NECS.ECS.ECSCore
                         GDAP.IncludeRemovedRestricted = true;
                         emptyData = false;
                     }
-                    if (entity.entityComponents.directSerialized.Keys.Contains(availableComp))
-                    {
-                        GDAP.rawUpdateAvailableComponents.Add(availableComp, entity.entityComponents.directSerialized[availableComp]);
-                        emptyData = false;
-                    }
                     if (!serializedData.TryGetValue(availableComp, out serialData))
                         continue;
                     GDAP.JsonRestrictedComponents += "\"" + availableComp + "\":" + serialData + ",";
@@ -426,22 +390,22 @@ namespace NECS.ECS.ECSCore
             entity.emptySerialized = emptyData;
         }
 
-        public static (string, List<INetSerializable>) BuildSerializedEntityWithGDAPJSON(ECSEntity toEntity, ECSEntity fromEntity, bool ignoreNullData = false)
+        private static string BuildSerializedEntityWithGDAPJSON(ECSEntity toEntity, ECSEntity fromEntity, bool ignoreNullData = false)
         {
             var data = GroupDataAccessPolicy.ComponentsFilter(toEntity, fromEntity);
             if(data.Item1 == "" && !ignoreNullData)
             {
-                return ("", data.Item2);
+                return "";
             }
             if(data.Item1 == "#INCLUDEREMOVED#" || ignoreNullData)
             {
                 data.Item1 = "";
-                return ("{\"entity\":" + fromEntity.serializedEntity + ",\"SerializationContainer\":{" + data.Item1 + "}}", data.Item2);
+                return "{\"entity\":" + fromEntity.serializedEntity + ",\"SerializationContainer\":{" + data.Item1 + "}}";
             }
-            return ("{\"entity\":" + fromEntity.serializedEntity + ",\"SerializationContainer\":{" + data.Item1.Substring(0, data.Item1.Length - 1) + "}}", data.Item2);
+            return "{\"entity\":" + fromEntity.serializedEntity + ",\"SerializationContainer\":{" + data.Item1.Substring(0, data.Item1.Length - 1) + "}}";
         }
 
-        public static string BuildFullSerializedEntityWithGDAPJSON(ECSEntity toEntity, ECSEntity fromEntity)
+        private static string BuildFullSerializedEntityWithGDAPJSON(ECSEntity toEntity, ECSEntity fromEntity)
         {
             var componentData = GroupDataAccessPolicy.RawComponentsFilter(toEntity, fromEntity);
             if (componentData.Count == 0)
@@ -460,7 +424,7 @@ namespace NECS.ECS.ECSCore
             return "{\"entity\":" + fromEntity.serializedEntity + ",\"SerializationContainer\":{" + data.Substring(0, data.Length - 1) + "}}";
         }
 
-        public static string BuildFullSerializedEntityJSON(ECSEntity Entity)
+        private static string BuildFullSerializedEntityJSON(ECSEntity Entity)
         {
             var serializedData = FullSerializeJSON(Entity, false);
             if(serializedData[1] == "")
@@ -470,7 +434,7 @@ namespace NECS.ECS.ECSCore
             return "{\"entity\":" + serializedData[0] + ",\"SerializationContainer\":{" + serializedData[1] + "}}";
         }
 
-        public static ECSEntity DeserializeJSON(string serializedData)
+        private static ECSEntity DeserializeJSON(string serializedData)
         {
             ECSEntity entity;
             UnserializedEntity bufEntity;
@@ -489,7 +453,7 @@ namespace NECS.ECS.ECSCore
             entity.entityComponents = storage;
             return entity;
         }
-        public static void UpdateDeserializeJSON(string serializedData)
+        private static void UpdateDeserializeJSON(string serializedData)
         {
             ECSEntity entity;
             UnserializedEntity bufEntity;

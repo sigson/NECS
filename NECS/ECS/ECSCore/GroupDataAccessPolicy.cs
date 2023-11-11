@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Reflection;
 using NECS.Core.Logging;
-using NECS.Network.Simple.Net;
 
 namespace NECS.ECS.ECSCore
 {
@@ -18,8 +12,6 @@ namespace NECS.ECS.ECSCore
         public List<long> RestrictedComponents = new List<long>();
         public Type GroupDataAccessPolicyType;
         protected long ReflectionId = 0;
-        public Dictionary<long, INetSerializable> rawUpdateAvailableComponents = new Dictionary<long, INetSerializable>();
-        public Dictionary<long, INetSerializable> rawUpdateRestrictedComponents = new Dictionary<long, INetSerializable>();
         public Dictionary<long, byte[]> BinAvailableComponents = new Dictionary<long, byte[]>();
         public Dictionary<long, byte[]> BinRestrictedComponents = new Dictionary<long, byte[]>();
         public string JsonAvailableComponents = "";
@@ -27,10 +19,9 @@ namespace NECS.ECS.ECSCore
         public bool IncludeRemovedAvailable = false;
         public bool IncludeRemovedRestricted = false;
 
-        public static (string, List<INetSerializable>, Dictionary<long, byte[]>) ComponentsFilter(ECSEntity baseEntity, ECSEntity otherEntity)
+        public static (string, Dictionary<long, byte[]>) ComponentsFilter(ECSEntity baseEntity, ECSEntity otherEntity)
         {
             string filteredComponents = "";
-            List<INetSerializable> rawFilteredComponents = new List<INetSerializable>();
             Dictionary<long, byte[]> binFilteredComponents = new Dictionary<long, byte[]>();
             bool includeRemovedAvailable = false;
             bool includeRemovedRestricted = false;
@@ -45,7 +36,6 @@ namespace NECS.ECS.ECSCore
                         if (baseDataAP.instanceId == otherDataAP.instanceId)
                         {
                             filteredComponents += otherDataAP.JsonAvailableComponents;
-                            rawFilteredComponents = rawFilteredComponents.Concat(otherDataAP.rawUpdateAvailableComponents.Values).ToList();
                             binFilteredComponents = binFilteredComponents.Concat(otherDataAP.BinAvailableComponents.Where(x => !binFilteredComponents.ContainsKey(x.Key))).ToDictionary(x => x.Key, x => x.Value);
                             if (otherDataAP.IncludeRemovedAvailable)
                                 includeRemovedAvailable = true;
@@ -53,7 +43,6 @@ namespace NECS.ECS.ECSCore
                         else if (baseDataAP.GetId() == otherDataAP.GetId())
                         {
                             filteredComponents += otherDataAP.JsonRestrictedComponents;
-                            rawFilteredComponents = rawFilteredComponents.Concat(otherDataAP.rawUpdateRestrictedComponents.Values).ToList();
                             binFilteredComponents = binFilteredComponents.Concat(otherDataAP.BinRestrictedComponents.Where(x => !binFilteredComponents.ContainsKey(x.Key))).ToDictionary(x => x.Key, x => x.Value);
                             if (otherDataAP.IncludeRemovedRestricted)
                                 includeRemovedRestricted = true;
@@ -62,10 +51,10 @@ namespace NECS.ECS.ECSCore
                 }
             }
             
-            if ((binFilteredComponents.Count() == 0 && rawFilteredComponents.Count() == 0) && (includeRemovedAvailable || includeRemovedRestricted))
-                return ("#INCLUDEREMOVED#", rawFilteredComponents, binFilteredComponents);
+            if ((binFilteredComponents.Count() == 0) && (includeRemovedAvailable || includeRemovedRestricted))
+                return ("#INCLUDEREMOVED#", binFilteredComponents);
             else
-                return (filteredComponents, rawFilteredComponents, binFilteredComponents);
+                return (filteredComponents, binFilteredComponents);
         }
 
         public static List<long> RawComponentsFilter(ECSEntity baseEntity, ECSEntity otherEntity)
@@ -122,8 +111,6 @@ namespace NECS.ECS.ECSCore
         public object Clone()
         {
             var cloned =  MemberwiseClone() as GroupDataAccessPolicy;
-            cloned.rawUpdateAvailableComponents = new Dictionary<long, INetSerializable>();
-            cloned.rawUpdateRestrictedComponents = new Dictionary<long, INetSerializable>();
             return cloned;
         }
     }

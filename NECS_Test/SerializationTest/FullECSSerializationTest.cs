@@ -24,7 +24,7 @@ namespace NECS_Test.SerializationTest
 
             EntitySerialization.SerializeEntity(entity);
             var serialized = EntitySerialization.BuildSerializedEntityWithGDAP(entity, entity);
-            var deserialized = EntitySerialization.Deserialize(serialized.Item1);
+            var deserialized = EntitySerialization.Deserialize(serialized);
         }
 
         [Serializable]

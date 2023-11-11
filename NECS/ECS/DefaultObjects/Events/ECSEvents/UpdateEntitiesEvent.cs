@@ -1,11 +1,4 @@
-﻿using Assets.ClientCore.CoreImpl.Network.NetworkEvents.GameData;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using NECS.ECS.Components;
-using NECS.ECS.ECSCore;
+﻿using NECS.ECS.ECSCore;
 
 namespace NECS.ECS.Events.ECSEvents
 {
@@ -22,11 +15,6 @@ namespace NECS.ECS.Events.ECSEvents
             {
                 EntitySerialization.UpdateDeserialize(entity);
             }
-        }
-
-        public override GameDataEvent PackToNetworkPacket()
-        {
-            return base.PackToNetworkPacket();
         }
     }
 }
