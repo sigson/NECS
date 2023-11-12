@@ -17,7 +17,7 @@ namespace NECS.Extensions
     public static class InterlockedCollection
     {
         //private static HashSet <object> lockDB = new HashSet <object> ();
-        
+        #region dictionary
         public static bool AddI<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue value, object externalLockerObject = null)
         {
             if(externalLockerObject == null)
@@ -134,6 +134,60 @@ namespace NECS.Extensions
                 }
             }
         }
+        #endregion
+
+        #region list
+        public static void AddI<TValue>(this ICollection<TValue> list, TValue value, object externalLockerObject = null)
+        {
+            if (externalLockerObject == null)
+            {
+                if (value is IECSObject)
+                {
+                    externalLockerObject = (value as IECSObject).SerialLocker;
+                }
+            }
+            lock (externalLockerObject)
+            {
+                lock (list)
+                {
+                    list.Add(value);
+                }
+            }
+        }
+
+        public static void ClearI<TValue>(this ICollection<TValue> list, object externalLockerObject)
+        {
+            lock (externalLockerObject)
+            {
+                lock (list)
+                {
+                    list.Clear();
+                }
+            }
+        }
+
+        public static bool RemoveI<TValue>(this ICollection<TValue> list, TValue value, object externalLockerObject)
+        {
+            lock (externalLockerObject)
+            {
+                lock (list)
+                {
+                    return list.Remove(value);
+                }
+            }
+        }
+
+        public static bool ContainsI<TValue>(this ICollection<TValue> list, TValue value, object externalLockerObject)
+        {
+            lock (externalLockerObject)
+            {
+                lock (list)
+                {
+                    return list.Contains( value);
+                }
+            }
+        }
+        #endregion
     }
 
     public class Collections
