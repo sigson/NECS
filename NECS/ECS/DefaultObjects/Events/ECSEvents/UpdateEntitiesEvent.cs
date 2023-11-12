@@ -6,7 +6,7 @@ namespace NECS.ECS.Events.ECSEvents
     [TypeUidAttribute(15)]
     public class UpdateEntitiesEvent : ECSEvent
     {
-        static public new long Id { get; set; } = 230864384312783680;
+        static public new long Id { get; set; } = 15;
         public long EntityIdRecipient; //ID of user with socket component
         public List<byte[]> Entities;
         public override void Execute()

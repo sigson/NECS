@@ -54,6 +54,15 @@ namespace NECS.ECS.ECSCore
             entityGroups = new ConcurrentDictionary<long, ECSEntityGroup>();
         }
 
+        public ECSEntity(long instanceid)
+        {
+            entityComponents = new EntityComponentStorage(this);
+            fastEntityComponentsId = new Dictionary<long, int>();
+            dataAccessPolicies = new List<GroupDataAccessPolicy>();
+            entityGroups = new ConcurrentDictionary<long, ECSEntityGroup>();
+            this.instanceId = instanceid;
+        }
+
         public ECSEntity(EntityTemplate userTemplate, ECSComponent[] eCSComponents)
         {
             entityComponents = new EntityComponentStorage(this);

@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using NECS.Core.Logging;
 using NECS.Extensions;
+using NECS.Harness.Services;
 
 namespace NECS.ECS.ECSCore
 {
@@ -75,6 +76,13 @@ namespace NECS.ECS.ECSCore
 
         public void OnEventAdd(ECSEvent ecsEvent)
         {
+            if(ecsEvent.SocketSourceId != 0)
+            {
+                if(NetworkMaliciousEventCounteractionService.instance.maliciousScoringStorage.TryGetValue(ecsEvent.SocketSourceId, out var scoreObject))
+                {
+                    scoreObject.Score += ecsEvent.GetType().GetCustomAttribute<NetworkScore>().Score;
+                }
+            }
             ecsEvent.Execute();
             ecsEvent.eventWatcher = watcherPool.Get().EventWatcherUpdate(SystemHandlers[ecsEvent.GetId()].Count, ecsEvent.instanceId);
             if (!EventBus.TryAdd(ecsEvent.instanceId, ecsEvent))

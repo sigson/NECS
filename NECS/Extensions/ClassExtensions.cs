@@ -156,10 +156,15 @@ namespace NECS
             }
         }
 
-        public static T LineFunction<T>(this T obj, Action<T> action)
+        public static T LineAction<T>(this T obj, Action<T> action)
         {
             action(obj);
             return obj;
+        }
+
+        public static T LineFunction<T>(Func<T> action)
+        {
+            return action();
         }
     }
 

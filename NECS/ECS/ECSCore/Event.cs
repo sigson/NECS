@@ -2,12 +2,16 @@
 
 namespace NECS.ECS.ECSCore
 {
+    [NetworkScore(0)]
     [Serializable]
     [TypeUid(4)]
     public abstract class ECSEvent : IECSObject
     {
         static new public long Id { get; set; } = 4;
         public long EntityOwnerId;
+        [NonSerialized]
+        [JsonIgnore]
+        public long SocketSourceId = 0;
         [NonSerialized]
         [JsonIgnore]
         public EventWatcher eventWatcher;

@@ -7,6 +7,16 @@ using System.Threading.Tasks;
 namespace NECS.ECS.ECSCore
 {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface)]
+    public sealed class NetworkScore : Attribute
+    {
+        public int Score { get; set; }
+
+        public NetworkScore(int score)
+        {
+            Score = score;
+        }
+    }
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface)]
     public sealed class TypeUidAttribute : Attribute
     {
         public int Id { get; set; }

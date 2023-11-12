@@ -1,7 +1,10 @@
-﻿using NECS.Harness.Model;
+﻿using NECS.ECS.DefaultObjects.Events.ECSEvents;
+using NECS.ECS.ECSCore;
+using NECS.Harness.Model;
 using NECS.Network.NetworkModels;
 using NetCoreServer;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,6 +19,9 @@ namespace NECS.Harness.Services
         public int Port;
         public int BufferSize;
         public string Protocol;
+        public int MaxNetworkMaliciousScore = 1000;
+        public int MaliciousIPTimeoutInSeconds = 300;
+        public ConcurrentDictionary<long, SocketAdapter> SocketAdapters = new ConcurrentDictionary<long, SocketAdapter>();
 
         #region NetworkRealization
         private TcpClient tcpClient;
@@ -61,11 +67,25 @@ namespace NECS.Harness.Services
         {
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {
-
+                ManagerScope.instance.eventManager.OnEventAdd(new ClientDisconnectedEvent()
+                {
+                    SocketSourceId = socketAdapter.Id
+                });
             }
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
             {
+                TaskEx.RunAsync(() =>
+                {
+                    bool stop_check = false;
+                    while (!stop_check)
+                    {
+                        Task.Delay(1000).Wait();
 
+                        // Try to connect again
+                        //Connect();
+                    }
+                });
+                
             }
         }
 
