@@ -1,4 +1,5 @@
 ﻿using NECS.Harness.Model;
+using NECS.Network.NetworkModels;
 using NetCoreServer;
 using System;
 using System.Collections.Generic;
@@ -44,7 +45,15 @@ namespace NECS.Harness.Services
             }
         }
 
-        //public Action OnConnected();
+        public void OnConnected(SocketAdapter socketAdapter)
+        {
+
+        }
+
+        public void OnDisconnected(SocketAdapter socketAdapter)
+        {
+
+        }
 
         public override void OnDestroyReaction()
         {

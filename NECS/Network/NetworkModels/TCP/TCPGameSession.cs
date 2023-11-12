@@ -10,7 +10,11 @@ namespace NECS.Network.NetworkModels.TCP
 {
     public class TCPGameSession : TcpSession
     {
-        public TCPGameSession(TcpServer server) : base(server) { }
+        private SocketAdapter socketAdapter;
+        public TCPGameSession(TcpServer server) : base(server)
+        {
+            socketAdapter = new SocketAdapter(this);
+        }
 
         protected override void OnConnected()
         {
