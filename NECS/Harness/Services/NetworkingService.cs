@@ -47,12 +47,91 @@ namespace NECS.Harness.Services
 
         public void OnConnected(SocketAdapter socketAdapter)
         {
+            if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
+            {
 
+            }
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+            {
+
+            }
         }
 
         public void OnDisconnected(SocketAdapter socketAdapter)
         {
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
+            {
 
+            }
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+            {
+
+            }
+        }
+
+        public void OnReceived(byte[] buffer, long offset, long size, SocketAdapter socketAdapter)
+        {
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
+            {
+
+            }
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+            {
+
+            }
+        }
+
+        public void OnError(System.Net.Sockets.SocketError error, SocketAdapter socketAdapter)
+        {
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
+            {
+
+            }
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+            {
+
+            }
+        }
+
+        public void OnServerError(System.Net.Sockets.SocketError error)
+        {
+
+        }
+
+        public void Connect(SocketAdapter socketAdapter)
+        {
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
+            {
+
+            }
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+            {
+
+            }
+        }
+
+        public void Send(SocketAdapter socketAdapter, byte[] packet)
+        {
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
+            {
+
+            }
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+            {
+
+            }
+        }
+
+        public void Disconnect(SocketAdapter socketAdapter)
+        {
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
+            {
+
+            }
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+            {
+
+            }
         }
 
         public override void OnDestroyReaction()
