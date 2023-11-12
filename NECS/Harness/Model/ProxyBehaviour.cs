@@ -21,7 +21,7 @@ namespace NECS.Harness.Model
         {
             TaskEx.RunAsync(() =>
             {
-                ecsEvent.instanceId = Guid.NewGuid().GuidToLong() + DateTime.Now.Ticks;
+                ecsEvent.instanceId = Guid.NewGuid().GuidToLongR() + DateTime.Now.Ticks;
                 ManagerScope.instance.eventManager.OnEventAdd(ecsEvent);
             });
         }
@@ -32,7 +32,7 @@ namespace NECS.Harness.Model
         {
             if (Thread.CurrentThread != unityThread)
             {
-                var actionkey = Guid.NewGuid().GuidToLong();
+                var actionkey = Guid.NewGuid().GuidToLongR();
                 {
                     ExecuteInstructionEvent.TryAdd(actionkey, () =>
                     {
@@ -77,7 +77,7 @@ namespace NECS.Harness.Model
         {
             if (Thread.CurrentThread != unityThread)
             {
-                var actionkey = Guid.NewGuid().GuidToLong();
+                var actionkey = Guid.NewGuid().GuidToLongR();
                 {
                     ExecuteInstructionEvent.TryAdd(actionkey, () =>
                     {
@@ -123,9 +123,9 @@ namespace NECS.Harness.Model
             if (Thread.CurrentThread != unityThread)
             {
                 long resuldUID = 0;
-                var actionkey = Guid.NewGuid().GuidToLong();
+                var actionkey = Guid.NewGuid().GuidToLongR();
                 {
-                    resuldUID = Guid.NewGuid().GuidToLong();
+                    resuldUID = Guid.NewGuid().GuidToLongR();
                     Action<long, Func<T>> resultActionWrapper = (id, func) =>
                     {
                         T result = default(T);

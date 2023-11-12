@@ -15,7 +15,7 @@ namespace NECS.ECS.ECSCore
     public class IECSObject
     {
         static public long Id { get; set; } = 0;
-        public long instanceId = Guid.NewGuid().GuidToLong();
+        public long instanceId = Guid.NewGuid().GuidToLongR();
         [NonSerialized]
         public List<IManager> connectPoints = new List<IManager>();
         [NonSerialized]

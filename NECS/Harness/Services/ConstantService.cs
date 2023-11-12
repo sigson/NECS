@@ -244,7 +244,7 @@ namespace NECS.Harness.Services
 
         public T GetObject<T>(string path)
         {
-            return GetObjectImpl<T>(this.Deserialized, path);
+            return GetObjectImpl<T>(this.Deserialized, path.Replace(GlobalProgramState.instance.PathAltSeparator, GlobalProgramState.instance.PathSeparator));
         }
 
         protected T GetObjectImpl<T>(JObject storage, string path)

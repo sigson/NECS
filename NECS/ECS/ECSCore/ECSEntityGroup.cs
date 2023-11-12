@@ -9,6 +9,6 @@ namespace NECS.ECS.ECSCore
     [Serializable]
     public abstract class ECSEntityGroup
     {
-        public long InstanceId = Guid.NewGuid().GuidToLong();
+        public long InstanceId = Guid.NewGuid().GuidToLongR();
     }
 }

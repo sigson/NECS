@@ -6,12 +6,17 @@ using System.Net.Sockets;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using NECS.Harness.Services;
 
 namespace NECS.Network.NetworkModels.TCP
 {
     public class TCPGameServer : TcpServer
     {
-        public TCPGameServer(IPAddress address, int port) : base(address, port) { }
+        public TCPGameServer(IPAddress address, int port) : base(address, port)
+        {
+            this.OptionReceiveBufferSize = NetworkingService.instance.BufferSize;
+            this.OptionSendBufferSize = NetworkingService.instance.BufferSize;
+        }
 
         protected override TcpSession CreateSession() { return new TCPGameSession(this); }
 

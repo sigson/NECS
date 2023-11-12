@@ -1,4 +1,5 @@
-﻿using NetCoreServer;
+﻿using NECS.Harness.Services;
+using NetCoreServer;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +10,13 @@ namespace NECS.Network.NetworkModels.TCP
 {
     public class TCPGameClient : TcpClient
     {
-        public TCPGameClient(string address, int port) : base(address, port) { }
+        private SocketAdapter socketAdapter;
+        public TCPGameClient(string address, int port) : base(address, port)
+        {
+            this.OptionReceiveBufferSize = NetworkingService.instance.BufferSize;
+            this.OptionSendBufferSize = NetworkingService.instance.BufferSize;
+            socketAdapter = new SocketAdapter(this);
+        }
 
         public void DisconnectAndStop()
         {

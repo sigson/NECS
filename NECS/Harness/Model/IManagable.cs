@@ -9,7 +9,7 @@ namespace NECS.Harness.Model
     public abstract class IManagable : ProxyBehaviour
     {
         public IEntityManager ownerManagerSpace = null;
-        public long instanceId = Guid.NewGuid().GuidToLong();
+        public long instanceId = Guid.NewGuid().GuidToLongR();
         public List<IEngineApiObjectBehaviour> ChildTemp = new List<IEngineApiObjectBehaviour>();
 
         protected virtual void AwakeImpl()

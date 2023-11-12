@@ -107,9 +107,13 @@ namespace NECS
             return float.Parse(str, System.Globalization.CultureInfo.InvariantCulture);
         }
 
-        public static long GuidToLong(this Guid guid)
+        public static long GuidToLongR(this Guid guid)
         {
             return DateTime.UtcNow.Ticks + BitConverter.ToInt64(guid.ToByteArray(), 8);
+        }
+        public static long GuidToLong(this Guid guid)
+        {
+            return BitConverter.ToInt64(guid.ToByteArray(), 8);
         }
 
         //public static T[] Concat<T>(this T[] x, T[] y)

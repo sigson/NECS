@@ -547,7 +547,7 @@ namespace NECS.Extensions
 
         public ConcurrentList(IEnumerable<T> items = null)
         {
-            var prime = (items ?? Enumerable.Empty<T>()).Select(x => new KeyValuePair<long, T>(Guid.NewGuid().GuidToLong(), x));
+            var prime = (items ?? Enumerable.Empty<T>()).Select(x => new KeyValuePair<long, T>(Guid.NewGuid().GuidToLongR(), x));
             _store = new ConcurrentDictionary<long, T>(prime);
         }
 
@@ -563,7 +563,7 @@ namespace NECS.Extensions
 
         public void Add(T item)
         {
-            if (_store.TryAdd(Guid.NewGuid().GuidToLong(), item) == false)
+            if (_store.TryAdd(Guid.NewGuid().GuidToLongR(), item) == false)
                 throw new ApplicationException("Unable to concurrently add item to list");
         }
 

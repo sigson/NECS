@@ -7,7 +7,7 @@ namespace NECS.ECS.ECSCore
     public class GroupDataAccessPolicy
     {
         public static long Id;
-        public long instanceId = Guid.NewGuid().GuidToLong();
+        public long instanceId = Guid.NewGuid().GuidToLongR();
         public List<long> AvailableComponents = new List<long>();
         public List<long> RestrictedComponents = new List<long>();
         public Type GroupDataAccessPolicyType;

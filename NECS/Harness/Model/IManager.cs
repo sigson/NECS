@@ -13,7 +13,7 @@ namespace NECS.Harness.Model
 {
     public abstract class IManager : ProxyBehaviour
     {
-        public long instanceId = Guid.NewGuid().GuidToLong();
+        public long instanceId = Guid.NewGuid().GuidToLongR();
         #region typeId
         private static Type _managerTypeValue = null;
         public static Type ManagerType
