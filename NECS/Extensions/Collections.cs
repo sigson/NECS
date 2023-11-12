@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using NECS.ECS.ECSCore;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -17,8 +18,15 @@ namespace NECS.Extensions
     {
         //private static HashSet <object> lockDB = new HashSet <object> ();
         
-        public static bool AddI<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, object externalLockerObject, TKey key, TValue value)
+        public static bool AddI<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue value, object externalLockerObject = null)
         {
+            if(externalLockerObject == null)
+            {
+                if(value is IECSObject)
+                {
+                    externalLockerObject = (value as IECSObject).SerialLocker;
+                }
+            }
             lock (externalLockerObject)
             {
                 lock (dictionary)
@@ -32,7 +40,7 @@ namespace NECS.Extensions
             return true;
         }
 
-        public static TValue GetI<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, object externalLockerObject, TKey key)
+        public static TValue GetI<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, object externalLockerObject)
         {
             lock (externalLockerObject)
             {
@@ -46,7 +54,7 @@ namespace NECS.Extensions
             }
         }
 
-        public static bool TryGetValueI<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, object externalLockerObject, TKey key, out TValue value)
+        public static bool TryGetValueI<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, out TValue value, object externalLockerObject)
         {
             lock (externalLockerObject)
             {
@@ -64,8 +72,15 @@ namespace NECS.Extensions
             return true;
         }
 
-        public static void SetI<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, object externalLockerObject, TKey key, TValue value)
+        public static void SetI<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue value, object externalLockerObject = null)
         {
+            if (externalLockerObject == null)
+            {
+                if (value is IECSObject)
+                {
+                    externalLockerObject = (value as IECSObject).SerialLocker;
+                }
+            }
             lock (externalLockerObject)
             {
                 lock (dictionary)
@@ -75,7 +90,7 @@ namespace NECS.Extensions
             }
         }
 
-        public static bool RemoveI<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, object externalLockerObject, TKey key)
+        public static bool RemoveI<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, object externalLockerObject)
         {
             lock (externalLockerObject)
             {
@@ -109,7 +124,7 @@ namespace NECS.Extensions
             }
         }
 
-        public static bool ContainsKeyI<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, object externalLockerObject, TKey key)
+        public static bool ContainsKeyI<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, object externalLockerObject)
         {
             lock(externalLockerObject)
             {

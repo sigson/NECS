@@ -69,14 +69,14 @@ namespace NECS.ECS.ECSCore
 
         public ECSComponent SetGlobalComponentGroup()
         {
-            this.ComponentGroups.SetI(this.SerialLocker, ECSComponentManager.GlobalProgramComponentGroup.GetId(), ECSComponentManager.GlobalProgramComponentGroup);
+            this.ComponentGroups.SetI(ECSComponentManager.GlobalProgramComponentGroup.GetId(), ECSComponentManager.GlobalProgramComponentGroup, this.SerialLocker);
 
             return this; 
         }
 
         public ECSComponent AddComponentGroup(ECSComponentGroup componentGroup)
         {
-            this.ComponentGroups.SetI(this.SerialLocker, componentGroup.GetId(), componentGroup);
+            this.ComponentGroups.SetI(componentGroup.GetId(), componentGroup, this.SerialLocker);
             return this;
         }
 
