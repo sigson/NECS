@@ -20,6 +20,15 @@ namespace NECS.ECS.ECSCore
         public byte[] cachedGameDataEvent = null;
         public abstract void Execute();
 
+        /// <summary>
+        /// example if in chat message has 200+ symbols - it add score to packet
+        /// </summary>
+        /// <returns></returns>
+        public virtual int NetworkScoreBooster()
+        {
+            return 0;
+        }
+
         protected virtual void SerializeEvent()
         {
             using (MemoryStream writer = new MemoryStream())

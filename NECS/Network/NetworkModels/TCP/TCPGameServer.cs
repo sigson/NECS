@@ -12,7 +12,7 @@ namespace NECS.Network.NetworkModels.TCP
 {
     public class TCPGameServer : TcpServer
     {
-        public TCPGameServer(IPAddress address, int port) : base(address, port)
+        public TCPGameServer(string address, int port) : base(address, port)
         {
             this.OptionReceiveBufferSize = NetworkingService.instance.BufferSize;
             this.OptionSendBufferSize = NetworkingService.instance.BufferSize;

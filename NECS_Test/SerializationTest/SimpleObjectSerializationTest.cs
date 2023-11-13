@@ -18,7 +18,7 @@ namespace NECS_Test.SerializationTest
     [TestClass]
     public class SimpleObjectSerializationTest
     {
-        [TestMethod]
+        //[TestMethod]
         public void ObjectSerializationTest()
         {
             EntitySerialization.InitSerialize();

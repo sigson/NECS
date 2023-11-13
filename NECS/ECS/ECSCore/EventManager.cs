@@ -80,7 +80,7 @@ namespace NECS.ECS.ECSCore
             {
                 if(NetworkMaliciousEventCounteractionService.instance.maliciousScoringStorage.TryGetValue(ecsEvent.SocketSourceId, out var scoreObject))
                 {
-                    scoreObject.Score += ecsEvent.GetType().GetCustomAttribute<NetworkScore>().Score;
+                    scoreObject.Score += ecsEvent.GetType().GetCustomAttribute<NetworkScore>().Score + ecsEvent.NetworkScoreBooster();
                 }
             }
             ecsEvent.Execute();

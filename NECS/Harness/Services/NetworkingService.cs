@@ -1,7 +1,9 @@
-﻿using NECS.ECS.DefaultObjects.Events.ECSEvents;
+﻿using NECS.Core.Logging;
+using NECS.ECS.DefaultObjects.Events.ECSEvents;
 using NECS.ECS.ECSCore;
 using NECS.Harness.Model;
 using NECS.Network.NetworkModels;
+using NECS.Network.NetworkModels.TCP;
 using NetCoreServer;
 using System;
 using System.Collections.Concurrent;
@@ -19,13 +21,10 @@ namespace NECS.Harness.Services
         public int Port;
         public int BufferSize;
         public string Protocol;
-        public int MaxNetworkMaliciousScore = 1000;
-        public int MaliciousIPTimeoutInSeconds = 300;
         public ConcurrentDictionary<long, SocketAdapter> SocketAdapters = new ConcurrentDictionary<long, SocketAdapter>();
-
         #region NetworkRealization
-        private TcpClient tcpClient;
-        private TcpServer tcpServer;
+        private TCPGameClient tcpClient;
+        private TCPGameServer tcpServer;
         #endregion
 
 
@@ -41,11 +40,11 @@ namespace NECS.Harness.Services
                 case "tcp":
                     if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
                     {
-                        tcpClient = new TcpClient(HostAddress, Port);
+                        tcpClient = new TCPGameClient(HostAddress, Port);
                     }
                     else
                     {
-                        tcpServer = new TcpServer(HostAddress, Port);
+                        tcpServer = new TCPGameServer(HostAddress, Port);
                     }
                     break;
             }
@@ -53,13 +52,21 @@ namespace NECS.Harness.Services
 
         public void OnConnected(SocketAdapter socketAdapter)
         {
-            if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
+            SocketAdapters[socketAdapter.Id] = socketAdapter;
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {
-
+                if(Defines.LowLevelNetworkEventsLogging)
+                {
+                    Logger.LogNetwork($"Connection start from {socketAdapter.Address}:{socketAdapter.Port}");
+                }
+                NetworkMaliciousEventCounteractionService.instance.maliciousScoringStorage[socketAdapter.Id] = new ScoreObject() { SocketId = socketAdapter.Id };
             }
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
             {
-
+                if (Defines.LowLevelNetworkEventsLogging)
+                {
+                    Logger.LogNetwork($"Connected to server on {socketAdapter.Address}:{socketAdapter.Port}");
+                }
             }
         }
 
@@ -71,18 +78,26 @@ namespace NECS.Harness.Services
                 {
                     SocketSourceId = socketAdapter.Id
                 });
+                if (Defines.LowLevelNetworkEventsLogging)
+                {
+                    Logger.LogNetwork($"Client {socketAdapter.Address}:{socketAdapter.Port} disconnected from server");
+                }
             }
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
             {
+
                 TaskEx.RunAsync(() =>
                 {
                     bool stop_check = false;
                     while (!stop_check)
                     {
                         Task.Delay(1000).Wait();
-
+                        if (Defines.LowLevelNetworkEventsLogging)
+                        {
+                            Logger.LogNetwork($"Disconnected from server {socketAdapter.Address}:{socketAdapter.Port} try to connect");
+                        }
                         // Try to connect again
-                        //Connect();
+                        socketAdapter.Connect();
                     }
                 });
                 
@@ -93,7 +108,7 @@ namespace NECS.Harness.Services
         {
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {
-
+                //NetSerializer.Serializer.Default.Deserialize()
             }
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
             {

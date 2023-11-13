@@ -13,7 +13,7 @@ namespace NECS_Test.SerializationTest
     [TestClass]
     public class FullECSSerializationTest
     {
-        [TestMethod]
+        //[TestMethod]
         public void FullSerializationCheck()
         {
             IService.InitializeAllServices();

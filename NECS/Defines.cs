@@ -9,4 +9,5 @@ public static class Defines
     public static bool SerializationResultPrint = false;
     public static bool ECSNetworkTypeLogging = false;
     public static bool LowLevelNetworkEventsLogging = false;
+    public static bool DBEventsLogging = false;
 }
