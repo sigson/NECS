@@ -121,7 +121,7 @@ namespace NetCoreServer
 
             if (capacity > Capacity)
             {
-                byte[] data = new byte[Math.Max(capacity, 2 * Capacity)];
+                byte[] data = new byte[Math.Max(capacity, Capacity)];
                 Array.Copy(_data, 0, data, 0, _size);
                 _data = data;
             }

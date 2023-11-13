@@ -19,7 +19,7 @@ namespace NECS.Harness.Services
         public static NetworkingService instance => SGT.Get<NetworkingService>();
         public string HostAddress;
         public int Port;
-        public int BufferSize;
+        public int BufferSize = 1024;
         public string Protocol;
         public ConcurrentDictionary<long, SocketAdapter> SocketAdapters = new ConcurrentDictionary<long, SocketAdapter>();
         #region NetworkRealization
@@ -30,6 +30,7 @@ namespace NECS.Harness.Services
 
         public override void InitializeProcess()
         {
+            return;
             HostAddress = ConstantService.instance.GetByConfigPath("socket").GetObject<string>("Networking/HostAddress");
             Port = ConstantService.instance.GetByConfigPath("socket").GetObject<int>("Networking/Port");
             BufferSize = ConstantService.instance.GetByConfigPath("socket").GetObject<int>("Networking/BufferSize");
