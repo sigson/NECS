@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Net.Sockets;
 using System.Threading;
-using Core;
+using NECS.Core.Logging;
 
 namespace BitNet
 {

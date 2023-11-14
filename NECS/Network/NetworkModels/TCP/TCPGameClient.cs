@@ -1,58 +1,180 @@
-﻿using NECS.Harness.Services;
-using NetCoreServer;
+﻿using BitNet;
+using NECS.Harness.Services;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Sockets;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using UTanksServer.Network.Simple.Net;
 
 namespace NECS.Network.NetworkModels.TCP
 {
-    public class TCPGameClient : TcpClient
+    public class TCPGameClient : IPeer
     {
-        private SocketAdapter socketAdapter;
-        public TCPGameClient(string address, int port) : base(address, port)
+        SocketAdapter socketAdapter;
+        public long Id = 0;
+        public Socket Socket => token.socket;
+        public bool IsConnected { get => token != null ? token.is_connected() : false; }
+        public bool IsConnecting { get; private set; }
+        public bool IsDisposed { get; private set; }
+        public bool IsSocketDisposed { get; private set; }
+
+        public CUserToken token;
+        public CNetworkService service;
+        public CConnector connector;
+
+        public string Address;
+        public int Port;
+        public int BufferSize;
+
+        private void Setup()
         {
-            this.OptionReceiveBufferSize = NetworkingService.instance.BufferSize;
-            this.OptionSendBufferSize = NetworkingService.instance.BufferSize;
             socketAdapter = new SocketAdapter(this);
+            Id = Guid.NewGuid().GuidToLong();
         }
 
-        public void DisconnectAndStop()
+        public TCPGameClient(string host, int port, int bufferSize = 1024)
         {
-            _stop = true;
-            DisconnectAsync();
-            while (IsConnected)
-                Thread.Yield();
+            service = new CNetworkService(true);
+            connector = new CConnector(service);
+            connector.connected_callback += OnConnect;
+
+            this.Address = host;
+            this.Port = port;
+            this.BufferSize = port;
         }
 
-        protected override void OnConnected()
+        public void Connect()
         {
-            Console.WriteLine($"Chat TCP client connected a new session with Id {Id}");
+            IPEndPoint endpoint = new IPEndPoint(IPAddress.Parse(this.Address), this.Port);
+            connector.connect(endpoint);
+            Setup();
         }
 
-        protected override void OnDisconnected()
+        void OnConnect(CUserToken server_token)
         {
-            Console.WriteLine($"Chat TCP client disconnected a session with Id {Id}");
-
-            // Wait for a while...
-            Thread.Sleep(1000);
-
-            // Try to connect again
-            if (!_stop)
-                ConnectAsync();
+            this.token = server_token;
+            this.token.set_peer(this);
+            server_token.on_connected();
+            Setup();
+            NetworkingService.instance.OnConnected(this.socketAdapter);
         }
 
-        protected override void OnReceived(byte[] buffer, long offset, long size)
+        public void on_message(CPacket msg)
         {
-            Console.WriteLine(Encoding.UTF8.GetString(buffer, (int)offset, (int)size));
+            msg.pop_protocol_id();
+            OnReceive(msg.pop_bytepack());
         }
 
-        protected override void OnError(System.Net.Sockets.SocketError error)
+        public void on_removed()
         {
-            Console.WriteLine($"Chat TCP client caught an error with code {error}");
+            DisconnectProcess();
         }
 
-        private bool _stop;
+        public void send(CPacket msg)
+        {
+            msg.record_size();
+            this.token.send(new ArraySegment<byte>(msg.buffer, 0, msg.position));
+        }
+
+        public void disconnect()
+        {
+            this.token.ban();
+            DisconnectProcess();
+        }
+
+
+        void OnReceive(byte[] newBuffer)
+        {
+            if (newBuffer.Length == 0)
+            {
+                this.disconnect();
+                return;
+            }
+
+            //Array.Copy(buffer, newBuffer, newBuffer.Length);
+            var result = NetworkPacketBuilderService.instance.UnpackNetworkPacket(newBuffer);
+
+            if (result.Item2)
+            {
+                NetworkingService.instance.OnReceived(result.Item1, 0, 0, this.socketAdapter);
+            }
+        }
+
+        public void SendImpl(byte[] sendBuffer)
+        {
+            var byteBuffer = new List<byte>(sendBuffer);
+            int position = 0;
+            CPacket cPacket = null;
+            while ((((float)byteBuffer.Count) / ((float)this.BufferSize)) - position - 1 > 0)
+            {
+                cPacket = CPacket.create((short)PROTOCOL.Server);
+                cPacket.push(byteBuffer.GetRange(position * this.BufferSize, this.BufferSize).ToArray());
+                this.token.send(cPacket);
+                position++;
+            }
+            cPacket = CPacket.create((short)PROTOCOL.Server);
+            cPacket.push(byteBuffer.GetRange(position * this.BufferSize, byteBuffer.Count - position * this.BufferSize).ToArray());
+            this.token.send(cPacket);
+        }
+
+        public void DisconnectProcess()
+        {
+            if (IsConnected)
+            {
+                token.close();
+            }
+            if (NetworkingService.instance.SocketAdapters.ContainsKey(this.socketAdapter.Id))
+                NetworkingService.instance.OnDisconnected(this.socketAdapter);
+        }
+
+        public bool Reconnect()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ConnectAsync()
+        {
+            TaskEx.RunAsync(() =>
+            {
+                this.Connect();
+            });
+        }
+
+        public void DisconnectAsync()
+        {
+            TaskEx.RunAsync(() =>
+            {
+                this.disconnect();
+            });
+        }
+
+        public bool ReconnectAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SendAsync(byte[] buffer)
+        {
+            TaskEx.RunAsync(() =>
+            {
+                SendImpl(buffer);
+            });
+        }
+
+        public void Send(byte[] buffer)
+        {
+            SendImpl(buffer);
+        }
+
+        public void Close()
+        {
+            this.token.close();
+            DisconnectProcess();
+        }
     }
 }

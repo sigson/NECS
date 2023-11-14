@@ -1,51 +1,188 @@
-﻿using NetCoreServer;
+﻿using BitNet;
+using NECS.Core.Logging;
+using NECS.Harness.Services;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using UTanksServer.Network.Simple.Net;
 
 namespace NECS.Network.NetworkModels.TCP
 {
-    public class TCPGameSession : TcpSession
+    public class TCPGameSession : IPeer
     {
-        private SocketAdapter socketAdapter;
-        public TCPGameSession(TcpServer server) : base(server)
+        SocketAdapter socketAdapter;
+        public long Id = 0;
+
+        public Socket Socket => token.socket;
+        public bool IsConnected { get; private set; }
+        public bool IsDisposed { get; private set; }
+        public bool IsSocketDisposed { get; private set; }
+
+        public CUserToken token;
+
+        public bool SocketClosed;
+        public int errorCount;//after no error - clear
+        public Timer heartBeat;
+        long pingId = 0;
+        long lastResponsesPingId = 0;
+
+        public Socket socket { get; protected set; }
+        public int userPackets = 0;
+        public int emitPackets = 0;
+        public TCPGameServer Server { get; protected set; }
+        byte[] buffer;
+        Dictionary<long, object> Events = new Dictionary<long, object>();
+
+        private void Setup()
         {
             socketAdapter = new SocketAdapter(this);
+            Id = Guid.NewGuid().GuidToLong();
         }
 
-        protected override void OnConnected()
+        public TCPGameSession()
         {
-            Console.WriteLine($"Chat TCP session with Id {Id} connected!");
-
-            // Send invite message
-            string message = "Hello from TCP chat! Please send a message or '!' to disconnect the client!";
-            SendAsync(message);
+            SocketClosed = true;
+            Setup();
         }
 
-        protected override void OnDisconnected()
+        public TCPGameSession(CUserToken token, TCPGameServer server)
         {
-            Console.WriteLine($"Chat TCP session with Id {Id} disconnected!");
+            Logger.Log("Client accepted");
+            this.Server = server;
+            this.token = token;
+            this.token.set_peer(this);
+            this.token.disable_auto_heartbeat();
+            Setup();
+            NetworkingService.instance.OnConnected(this.socketAdapter);
         }
 
-        protected override void OnReceived(byte[] buffer, long offset, long size)
+        public void on_message(CPacket msg)
         {
-            string message = Encoding.UTF8.GetString(buffer, (int)offset, (int)size);
-            Console.WriteLine("Incoming: " + message);
-
-            // Multicast message to all connected sessions
-            Server.Multicast(message);
-
-            // If the buffer starts with '!' the disconnect the current session
-            if (message == "!")
-                Disconnect();
+            msg.pop_protocol_id();
+            OnReceive(msg.pop_bytepack());
         }
 
-        protected override void OnError(SocketError error)
+        public void on_removed()
         {
-            Console.WriteLine($"Chat TCP session caught an error with code {error}");
+            Close();
+        }
+
+        public void send(CPacket msg)
+        {
+            msg.record_size();
+            this.token.send(new ArraySegment<byte>(msg.buffer, 0, msg.position));
+        }
+
+        public void disconnect()
+        {
+            this.token.ban();
+            DisconnectProcess();
+            //Close();
+        }
+
+        public void DisconnectProcess()
+        {
+            if (IsConnected)
+            {
+                token.close();
+            }
+            if (NetworkingService.instance.SocketAdapters.ContainsKey(this.socketAdapter.Id))
+                NetworkingService.instance.OnDisconnected(this.socketAdapter);
+        }
+
+        void OnReceive(byte[] newBuffer)
+        {
+            //byte[] newBuffer = null;
+
+            if (newBuffer.Length == 0)
+            {
+                Close();
+                return;
+            }
+
+            var result = NetworkPacketBuilderService.instance.UnpackNetworkPacket(newBuffer);
+
+            if(result.Item2)
+            {
+                NetworkingService.instance.OnReceived(result.Item1, 0, 0, this.socketAdapter);
+            }
+
+            //Array.Copy(buffer, newBuffer, newBuffer.Length);
+            userPackets++;
+            SocketClosed = false;
+            
+        }
+
+        private void SendImpl(byte[] packet)
+        {
+            emitPackets++;
+            var byteBuffer = new List<byte>(packet);
+            int position = 0;
+            if (SocketClosed)
+                return;
+            //Logger.Log("send data " + packet.GetType().ToString() + " " + byteBuffer.Count.ToString());
+            while ((((float)byteBuffer.Count) / ((float)this.Server.BufferSize)) - position - 1 > 0)
+            {
+                //lock(sendLocker)
+                {
+                    try
+                    {
+                        CPacket cPacket = CPacket.create((short)PROTOCOL.Server);
+                        cPacket.push(byteBuffer.GetRange(position * this.Server.BufferSize, this.Server.BufferSize).ToArray());
+                        this.token.send(cPacket);
+                        errorCount = 0;
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log("SocketEmitError: " + ex.StackTrace);
+                        errorCount++;
+                    }
+                }
+
+                position++;
+            }
+            //lock (sendLocker)
+            {
+                try
+                {
+                    CPacket cPacket = CPacket.create((short)PROTOCOL.Server);
+                    cPacket.push(byteBuffer.GetRange(position * this.Server.BufferSize, byteBuffer.Count - position * this.Server.BufferSize).ToArray());
+                    this.token.send(cPacket);
+                    errorCount = 0;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log("SocketEmitError: " + ex.StackTrace);
+                    errorCount++;
+                }
+            }
+            if (errorCount > 100)
+                SocketClosed = true;
+        }
+
+        public void Close()
+        {
+            this.token.close();
+            DisconnectProcess();
+        }
+
+        public void SendAsync(byte[] buffer)
+        {
+            TaskEx.RunAsync(() =>
+            {
+                SendImpl(buffer);
+            });
+        }
+
+        public void Send(byte[] buffer)
+        {
+            SendImpl(buffer);
         }
     }
 }

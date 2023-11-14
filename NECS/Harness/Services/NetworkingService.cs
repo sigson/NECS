@@ -4,7 +4,6 @@ using NECS.ECS.ECSCore;
 using NECS.Harness.Model;
 using NECS.Network.NetworkModels;
 using NECS.Network.NetworkModels.TCP;
-using NetCoreServer;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -30,7 +29,6 @@ namespace NECS.Harness.Services
 
         public override void InitializeProcess()
         {
-            return;
             HostAddress = ConstantService.instance.GetByConfigPath("socket").GetObject<string>("Networking/HostAddress");
             Port = ConstantService.instance.GetByConfigPath("socket").GetObject<int>("Networking/Port");
             BufferSize = ConstantService.instance.GetByConfigPath("socket").GetObject<int>("Networking/BufferSize");
@@ -41,11 +39,11 @@ namespace NECS.Harness.Services
                 case "tcp":
                     if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
                     {
-                        tcpClient = new TCPGameClient(HostAddress, Port);
+                        tcpClient = new TCPGameClient(HostAddress, Port, BufferSize);
                     }
                     else
                     {
-                        tcpServer = new TCPGameServer(HostAddress, Port);
+                        tcpServer = new TCPGameServer(HostAddress, Port, BufferSize);
                     }
                     break;
             }
