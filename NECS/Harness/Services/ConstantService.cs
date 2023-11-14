@@ -61,7 +61,7 @@ namespace NECS.Harness.Services
                 ConfigObj nowObject = new ConfigObj();
                 foreach (var file in GetRecursFiles(gameConfDirectory))
                 {
-                    if (file.Contains(".yml"))
+                    if (file.Contains(".yml") || file.Contains(".json"))
                     {
                         if (nowLib == "")
                         {
@@ -78,11 +78,21 @@ namespace NECS.Harness.Services
 
                         var input = new StreamReader(file);
                         var yaml = new YamlDotNet.Serialization.Deserializer();
-                        var yamlObject = yaml.Deserialize<ExpandoObject>(input);
-                        Newtonsoft.Json.JsonSerializer js = new Newtonsoft.Json.JsonSerializer();
-                        var w = new StringWriter();
-                        js.Serialize(w, yamlObject);
-                        string jsonText = w.ToString();
+                        string jsonText = "";
+
+                        if (file.Contains(".yml"))
+                        {
+                            var yamlObject = yaml.Deserialize<ExpandoObject>(input);
+                            Newtonsoft.Json.JsonSerializer js = new Newtonsoft.Json.JsonSerializer();
+                            var w = new StringWriter();
+                            js.Serialize(w, yamlObject);
+                            jsonText = w.ToString();
+                        }
+                        if (file.Contains(".json"))
+                        {
+                            jsonText = input.ToString();
+                        }
+                        
                         System.IO.MemoryStream mStream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonText));
                         var reader = new JsonTextReader(new StreamReader(mStream));
                         var jObject = JObject.Load(reader);
@@ -107,6 +117,10 @@ namespace NECS.Harness.Services
                             nowObject.Path = file.Replace(gameConfDirectory, "").Replace(GlobalProgramState.instance.PathSystemSeparator + Path.GetFileName(file), "").Substring(1).Replace(GlobalProgramState.instance.PathSystemSeparator, GlobalProgramState.instance.PathSeparator);
                         }
                         nowObject.LibTree = new Lib() { LibName = libname, Path = nowObject.Path };
+                    }
+                    else
+                    {
+
                     }
                 }
                 ConstantDB[nowObject.Path] = nowObject;
@@ -274,6 +288,7 @@ namespace NECS.Harness.Services
     {
         public long Id;
         public string Path;
+        public string SerializedData;//for json
         public Lib LibTree;
         public JObject Deserialized = null;
 
