@@ -231,17 +231,18 @@ namespace NECS_Test.Network
 
             var bytepacket = Encoding.UTF8.GetBytes(packet);
 
-
-            client.SendAsync(NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(bytepacket));
+            NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(bytepacket).ForEach(x => client.SendAsync(x));
 
             Thread.Sleep(1000);
 
-            client.SendAsync(NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(bytepacket));
-            client.SendAsync(NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(bytepacket));
-            client.SendAsync(NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(bytepacket));
-            client.SendAsync(NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(bytepacket));
-            client.SendAsync(NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(bytepacket));
-            client.SendAsync(NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(bytepacket));
+            NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(bytepacket).ForEach(x => client.SendAsync(x));
+            NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(bytepacket).ForEach(x => client.SendAsync(x));
+            NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(bytepacket).ForEach(x => client.SendAsync(x));
+            NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(bytepacket).ForEach(x => client.SendAsync(x));
+            Thread.Sleep(30000);
+            //client.SendAsync(NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(bytepacket));
+            NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(bytepacket).ForEach(x => client.SendAsync(x));
+
 
             Thread.Sleep(1000);
             // Disconnect the client
