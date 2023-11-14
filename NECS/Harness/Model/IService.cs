@@ -15,13 +15,18 @@ namespace NECS.Harness.Model
 
         #region static
         private static EngineApiObjectBehaviour ServiceStorage;
+        private static List<IService> AllServiceList;
+
+        public static void RegisterAllServices()
+        {
+            //FindObjectsOfType<IService>();
+            AllServiceList = ECSAssemblyExtensions.GetAllSubclassOf(typeof(IService)).Where(x => !x.IsAbstract).Select(x => IService.InitalizeSingleton(x, ServiceStorage, true)).Cast<IService>().ToList();
+        }
 
         public static void InitializeAllServices()
         {
-            //FindObjectsOfType<IService>();
-            var services = ECSAssemblyExtensions.GetAllSubclassOf(typeof(IService)).Where(x => !x.IsAbstract).Select(x => IService.InitalizeSingleton(x, ServiceStorage, true)).Cast<IService>().ToList();
-            services.ForEach(x => x.InitializeProcess());
-            services.ForEach(x => x.PostInitializeProcess());
+            AllServiceList.ForEach(x => x.InitializeProcess());
+            AllServiceList.ForEach(x => x.PostInitializeProcess());
         }
         #endregion
     }

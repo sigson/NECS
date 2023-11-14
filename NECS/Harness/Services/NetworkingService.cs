@@ -16,10 +16,10 @@ namespace NECS.Harness.Services
     public class NetworkingService : IService
     {
         public static NetworkingService instance => SGT.Get<NetworkingService>();
-        public string HostAddress;
-        public int Port;
+        public string HostAddress = "127.0.0.1";
+        public int Port = 6667;
         public int BufferSize = 1024;
-        public string Protocol;
+        public string Protocol = "tcp";
         public ConcurrentDictionary<long, SocketAdapter> SocketAdapters = new ConcurrentDictionary<long, SocketAdapter>();
         #region NetworkRealization
         private TCPGameClient tcpClient;
@@ -34,7 +34,7 @@ namespace NECS.Harness.Services
             BufferSize = ConstantService.instance.GetByConfigPath("socket").GetObject<int>("Networking/BufferSize");
             Protocol = ConstantService.instance.GetByConfigPath("socket").GetObject<string>("Networking/Protocol");
 
-            switch(Protocol.ToLower())
+            switch (Protocol.ToLower())
             {
                 case "tcp":
                     if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
@@ -136,11 +136,18 @@ namespace NECS.Harness.Services
         {
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {
-
+                if (socketAdapter != null)
+                {
+                    socketAdapter.Connect();
+                }
             }
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
             {
-
+                if (socketAdapter == null)
+                {
+                    socketAdapter = SocketAdapters.First().Value;
+                }
+                socketAdapter.Connect();
             }
         }
 
@@ -148,11 +155,18 @@ namespace NECS.Harness.Services
         {
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {
-
+                if(socketAdapter != null)
+                {
+                    socketAdapter.Send(packet);
+                }
             }
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
             {
-
+                if (socketAdapter == null)
+                {
+                    socketAdapter = SocketAdapters.First().Value;
+                }
+                socketAdapter.Send(packet);
             }
         }
 
@@ -160,11 +174,18 @@ namespace NECS.Harness.Services
         {
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {
-
+                if (socketAdapter != null)
+                {
+                    socketAdapter.Disconnect();
+                }
             }
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
             {
-
+                if (socketAdapter == null)
+                {
+                    socketAdapter = SocketAdapters.First().Value;
+                }
+                socketAdapter.Disconnect();
             }
         }
 

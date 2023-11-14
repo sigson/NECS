@@ -13,9 +13,9 @@ namespace NECS.Harness.Model
     {
         private static Dictionary<Type, SGT> instances = new Dictionary<Type, SGT>();
 
-        public static T InitalizeSingleton<T>(IEngineApiObjectBehaviour behaviour = null) where T : SGT
+        public static T InitalizeSingleton<T>(IEngineApiObjectBehaviour behaviour = null, bool packetInitialize = false) where T : SGT
         {
-            return (T)InitalizeSingleton(typeof(T), behaviour);
+            return (T)InitalizeSingleton(typeof(T), behaviour, packetInitialize);
         }
 
         public static SGT InitalizeSingleton(Type singletonType, IEngineApiObjectBehaviour behaviour = null, bool packetInitialize = false)

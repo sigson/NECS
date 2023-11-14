@@ -27,6 +27,10 @@ namespace NECS.Harness.Services
         private long hashConfig = 0;
         public bool Loaded = false;
 
+        //server
+        public List<byte> ConfigFilesZip = new List<byte>();
+        public long hashConfigFilesZip;
+
         public void PreInitialize()
         {
             
@@ -43,7 +47,7 @@ namespace NECS.Harness.Services
                     return;
                 var gameConfDirectory = config_path == "" ? GlobalProgramState.instance.ConfigDir : config_path;
 
-                if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client && checkedConfigVersion != hashConfig)
+                if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client && checkedConfigVersion != hashConfig && config_path == "")
                 {
                     Logger.Log("Constant service update config");
                     if (Directory.Exists(GlobalProgramState.instance.ConfigDir))
@@ -88,7 +92,7 @@ namespace NECS.Harness.Services
                             case "id":
                                 nowObject.Id = jObject.GetValue("id").Value<long>();
                                 break;
-                            case "public":
+                            default:
                                 nowObject.Deserialized = jObject;
                                 break;
                         }
@@ -107,6 +111,37 @@ namespace NECS.Harness.Services
                 }
                 ConstantDB[nowObject.Path] = nowObject;
 
+                #endregion
+
+
+                #region server pack
+
+                if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server && config_path == "")
+                {
+                    if (!File.Exists(GlobalProgramState.instance.ConfigDir + "zippedconfig.zip"))
+                    {
+                        #region prepareZipTemp
+                        if (Directory.Exists(GlobalProgramState.instance.ConfigDir + "ZipTemp"))
+                            Directory.Delete(GlobalProgramState.instance.ConfigDir + "ZipTemp", true);
+                        FileEx.CopyFilesRecursively(new DirectoryInfo(GlobalProgramState.instance.ConfigDir + "GameConfig"), new DirectoryInfo(GlobalProgramState.instance.ConfigDir + "ZipTemp" + GlobalProgramState.instance.PathSystemSeparator + "GameConfig"));
+                        File.Copy(GlobalProgramState.instance.ConfigDir + "donateshop.json", GlobalProgramState.instance.ConfigDir + "ZipTemp" + GlobalProgramState.instance.PathSystemSeparator + "donateshop.json");
+                        File.Copy(GlobalProgramState.instance.ConfigDir + "garageshop.json", GlobalProgramState.instance.ConfigDir + "ZipTemp" + GlobalProgramState.instance.PathSystemSeparator + "garageshop.json");
+                        File.Copy(GlobalProgramState.instance.ConfigDir + "selectablemapdb.json", GlobalProgramState.instance.ConfigDir + "ZipTemp" + GlobalProgramState.instance.PathSystemSeparator + "selectablemapdb.json");
+                        #endregion
+                        ZipExt.CompressDirectory(GlobalProgramState.instance.ConfigDir + "ZipTemp", GlobalProgramState.instance.ConfigDir + "zippedconfig.zip", (prog) => { });
+                    }
+                    Byte[] bytes = File.ReadAllBytes(GlobalProgramState.instance.ConfigDir + "zippedconfig.zip");
+                    using (MD5CryptoServiceProvider CSP = new MD5CryptoServiceProvider())
+                    {
+                        var byteHash = CSP.ComputeHash(bytes);
+                        string result = "";
+                        foreach (byte b in byteHash)
+                            result += b.ToString();
+                        hashConfigFilesZip = long.Parse(result.Substring(0, 18));
+                    }
+                    hashConfigFilesZip = BitConverter.ToInt64(MD5.Create().ComputeHash(bytes), 0);
+                    ConfigFilesZip = new List<byte>(bytes);
+                }
                 #endregion
             }
         }

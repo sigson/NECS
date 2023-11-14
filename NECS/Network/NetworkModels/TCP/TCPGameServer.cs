@@ -57,22 +57,7 @@ namespace NECS.Network.NetworkModels.TCP
             }
         }
 
-        void OnConnect(IAsyncResult asyncResult)
-        {
-            Socket client;
-            try
-            {
-                client = Socket.EndAccept(asyncResult);
-            }
-            catch
-            {
-                Socket.BeginAccept(OnConnect, null);
-                return;
-            }
-            Socket.BeginAccept(OnConnect, null);
-        }
-
-        public void broadcast(byte[] packet)
+        public void Broadcast(byte[] packet)
         {
             foreach (var user in NetworkingService.instance.SocketAdapters)
                 user.Value.SendAsync(packet);

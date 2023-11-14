@@ -150,12 +150,12 @@ namespace NECS.Network.NetworkModels
 
         public override void OnDestroyReaction()
         {
-            throw new NotImplementedException();
+            
         }
 
         public override void PostInitializeProcess()
         {
-            throw new NotImplementedException();
+            
         }
     }
 }

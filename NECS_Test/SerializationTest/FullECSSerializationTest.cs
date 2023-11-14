@@ -2,6 +2,7 @@
 using NECS.ECS.ECSCore;
 using NECS.ECS.Types.AtomicType;
 using NECS.Harness.Model;
+using NECS.Harness.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,10 +14,11 @@ namespace NECS_Test.SerializationTest
     [TestClass]
     public class FullECSSerializationTest
     {
-        //[TestMethod]
+        [TestMethod]
         public void FullSerializationCheck()
         {
-            IService.InitializeAllServices();
+            IService.RegisterAllServices();
+            //ConstantService.instance.SetupConfigs(GlobalProgramState.instance.TechConfigDir);
             var entity = new ECSEntity();
             ManagerScope.instance.entityManager.OnAddNewEntity(entity);
             entity.AddComponent(new ECSComponentSerializationCheck());

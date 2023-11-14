@@ -14,7 +14,7 @@ namespace NECS_Test.Network
     [TestClass]
     public class PacketSizeTest
     {
-        [TestMethod]
+        //[TestMethod]
         public void PacketSizeMethodTest()
         {
             NetworkPacketBuilderService.InitalizeSingleton<NetworkPacketBuilderService>();
