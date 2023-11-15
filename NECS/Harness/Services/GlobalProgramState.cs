@@ -68,7 +68,7 @@ namespace NECS.Harness.Services
 
         public override void InitializeProcess()
         {
-            ProgramType = ProgramTypeEnum.Server;
+            //ProgramType = ProgramTypeEnum.Server;
         }
 
         public override void OnDestroyReaction()

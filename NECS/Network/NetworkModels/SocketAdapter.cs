@@ -24,11 +24,11 @@ namespace NECS.Network.NetworkModels
             {
                 if(customId == -1)
                 {
-                    if (TCPGameClientSocket == null)
+                    if (TCPGameClientSocket != null)
                     {
                         return TCPGameClientSocket.Id;
                     }
-                    if (TCPGameSessionSocket == null)
+                    if (TCPGameSessionSocket != null)
                     {
                         return TCPGameSessionSocket.Id;
                     }
@@ -45,11 +45,11 @@ namespace NECS.Network.NetworkModels
         {
             get
             {
-                if (TCPGameClientSocket == null)
+                if (TCPGameClientSocket != null)
                 {
                     return TCPGameClientSocket.Address;
                 }
-                if (TCPGameSessionSocket == null)
+                if (TCPGameSessionSocket != null)
                 {
                     return TCPGameSessionSocket.Server.Address;
                 }
@@ -61,11 +61,11 @@ namespace NECS.Network.NetworkModels
         {
             get
             {
-                if (TCPGameClientSocket == null)
+                if (TCPGameClientSocket != null)
                 {
                     return TCPGameClientSocket.Port;
                 }
-                if (TCPGameSessionSocket == null)
+                if (TCPGameSessionSocket != null)
                 {
                     return TCPGameSessionSocket.Server.Port;
                 }
@@ -76,11 +76,11 @@ namespace NECS.Network.NetworkModels
         {
             get
             {
-                if (TCPGameClientSocket == null)
+                if (TCPGameClientSocket != null)
                 {
                     return TCPGameClientSocket.Socket;
                 }
-                if (TCPGameSessionSocket == null)
+                if (TCPGameSessionSocket != null)
                 {
                     return TCPGameSessionSocket.Socket;
                 }
@@ -92,11 +92,11 @@ namespace NECS.Network.NetworkModels
         {
             get
             {
-                if (TCPGameClientSocket == null)
+                if (TCPGameClientSocket != null)
                 {
                     return TCPGameClientSocket.IsConnected;
                 }
-                if (TCPGameSessionSocket == null)
+                if (TCPGameSessionSocket != null)
                 {
                     return TCPGameSessionSocket.IsConnected;
                 }
@@ -112,11 +112,11 @@ namespace NECS.Network.NetworkModels
         {
             get
             {
-                if (TCPGameClientSocket == null)
+                if (TCPGameClientSocket != null)
                 {
                     return TCPGameClientSocket.IsConnecting;
                 }
-                if (TCPGameSessionSocket == null)
+                if (TCPGameSessionSocket != null)
                 {
                     Logger.LogError("Try IsConnecting from session socket");
                 }
@@ -128,11 +128,11 @@ namespace NECS.Network.NetworkModels
         {
             get
             {
-                if (TCPGameClientSocket == null)
+                if (TCPGameClientSocket != null)
                 {
                     return TCPGameClientSocket.IsDisposed;
                 }
-                if (TCPGameSessionSocket == null)
+                if (TCPGameSessionSocket != null)
                 {
                     return TCPGameSessionSocket.IsDisposed;
                 }
@@ -144,11 +144,11 @@ namespace NECS.Network.NetworkModels
         {
             get
             {
-                if (TCPGameClientSocket == null)
+                if (TCPGameClientSocket != null)
                 {
                     return TCPGameClientSocket.IsSocketDisposed;
                 }
-                if (TCPGameSessionSocket == null)
+                if (TCPGameSessionSocket != null)
                 {
                     return TCPGameSessionSocket.IsSocketDisposed;
                 }
@@ -175,11 +175,11 @@ namespace NECS.Network.NetworkModels
         /// <returns></returns>
         public void Connect()
         {
-            if (TCPGameClientSocket == null)
+            if (TCPGameClientSocket != null)
             {
                 TCPGameClientSocket.Connect();
             }
-            if (TCPGameSessionSocket == null)
+            if (TCPGameSessionSocket != null)
             {
                 Logger.LogError("Try Connect from session socket");
             }
@@ -190,11 +190,11 @@ namespace NECS.Network.NetworkModels
         /// <returns></returns>
         public void Disconnect()
         {
-            if (TCPGameClientSocket == null)
+            if (TCPGameClientSocket != null)
             {
                 TCPGameClientSocket.disconnect();
             }
-            if (TCPGameSessionSocket == null)
+            if (TCPGameSessionSocket != null)
             {
                 TCPGameSessionSocket.disconnect();
             }
@@ -202,11 +202,11 @@ namespace NECS.Network.NetworkModels
 
         public void Close()
         {
-            if (TCPGameClientSocket == null)
+            if (TCPGameClientSocket != null)
             {
                 TCPGameClientSocket.Close();
             }
-            if (TCPGameSessionSocket == null)
+            if (TCPGameSessionSocket != null)
             {
                 TCPGameSessionSocket.Close();
             }
@@ -218,11 +218,11 @@ namespace NECS.Network.NetworkModels
         /// <returns></returns>
         public void Reconnect()
         {
-            if (TCPGameClientSocket == null)
+            if (TCPGameClientSocket != null)
             {
                 TCPGameClientSocket.Reconnect();
             }
-            if (TCPGameSessionSocket == null)
+            if (TCPGameSessionSocket != null)
             {
                 Logger.LogError("Try Reconnect from session socket");
             }
@@ -233,11 +233,11 @@ namespace NECS.Network.NetworkModels
         /// <returns></returns>
         public void ConnectAsync()
         {
-            if (TCPGameClientSocket == null)
+            if (TCPGameClientSocket != null)
             {
                 TCPGameClientSocket.ConnectAsync();
             }
-            if (TCPGameSessionSocket == null)
+            if (TCPGameSessionSocket != null)
             {
                 Logger.LogError("Try ConnectAsync from session socket");
             }
@@ -248,11 +248,11 @@ namespace NECS.Network.NetworkModels
         /// <returns></returns>
         public void DisconnectAsync()
         {
-            if (TCPGameClientSocket == null)
+            if (TCPGameClientSocket != null)
             {
                 TCPGameClientSocket.DisconnectAsync();
             }
-            if (TCPGameSessionSocket == null)
+            if (TCPGameSessionSocket != null)
             {
                 TCPGameSessionSocket.disconnect();
             }
@@ -263,11 +263,11 @@ namespace NECS.Network.NetworkModels
         /// <returns></returns>
         public bool ReconnectAsync()
         {
-            if (TCPGameClientSocket == null)
+            if (TCPGameClientSocket != null)
             {
                 return TCPGameClientSocket.ReconnectAsync();
             }
-            if (TCPGameSessionSocket == null)
+            if (TCPGameSessionSocket != null)
             {
                 Logger.LogError("Try ReconnectAsync from session socket");
             }
@@ -278,11 +278,11 @@ namespace NECS.Network.NetworkModels
         #region send
         public virtual void Send(byte[] buffer)
         {
-            if (TCPGameClientSocket == null)
+            if (TCPGameClientSocket != null)
             {
                 TCPGameClientSocket.Send(buffer);
             }
-            if (TCPGameSessionSocket == null)
+            if (TCPGameSessionSocket != null)
             {
                 TCPGameSessionSocket.Send(buffer);
             }
@@ -290,11 +290,11 @@ namespace NECS.Network.NetworkModels
 
         public virtual void SendAsync(byte[] buffer)
         {
-            if (TCPGameClientSocket == null)
+            if (TCPGameClientSocket != null)
             {
                 TCPGameClientSocket.SendAsync(buffer);
             }
-            if (TCPGameSessionSocket == null)
+            if (TCPGameSessionSocket != null)
             {
                 TCPGameSessionSocket.SendAsync(buffer);
             }

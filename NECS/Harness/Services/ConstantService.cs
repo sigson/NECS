@@ -12,6 +12,8 @@ using System.Text;
 using System.Threading.Tasks;
 using NECS.Harness.Model;
 using System.Security.Cryptography;
+using System.Security.Principal;
+using static NECS.Harness.Services.NetworkingService;
 
 namespace NECS.Harness.Services
 {
@@ -262,7 +264,19 @@ namespace NECS.Harness.Services
 
         public override void InitializeProcess()
         {
-            SetupConfigs();
+            if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+            {
+                CustomSetupInitialized = true;
+                var socketAction = (Network.NetworkModels.SocketAdapter socketAdapter) => {
+                    if (!Loaded)
+                    {
+                        
+                    }
+                };
+                NetworkingService.instance.OnConnectExternal += new SocketHandler(socketAction);
+            }
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
+                SetupConfigs();
         }
 
         public override void OnDestroyReaction()

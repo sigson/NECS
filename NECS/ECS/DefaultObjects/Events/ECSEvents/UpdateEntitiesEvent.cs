@@ -3,7 +3,7 @@
 namespace NECS.ECS.Events.ECSEvents
 {
     [Serializable]
-    [TypeUidAttribute(15)]
+    [TypeUid(15)]
     public class UpdateEntitiesEvent : ECSEvent
     {
         static public new long Id { get; set; } = 15;

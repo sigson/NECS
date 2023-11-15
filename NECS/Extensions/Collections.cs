@@ -1,4 +1,5 @@
 ﻿using NECS.ECS.ECSCore;
+using NECS.Harness.Model;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
@@ -504,6 +505,12 @@ namespace NECS.Extensions
     {
         private ConcurrentDictionary<T, int> storage = new ConcurrentDictionary<T, int>();
 
+        public ConcurrentHashSet() { }
+
+        public ConcurrentHashSet(ICollection<T> collection)
+        {
+            collection.ForEach(x => this.Add(x));
+        }
 
         public int Count => storage.Count;
 

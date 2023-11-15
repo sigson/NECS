@@ -5,17 +5,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NECS.ECS.DefaultObjects.Events.ECSEvents
+namespace NECS.ECS.DefaultObjects.Events.LowLevelNetEvent.ConfigEvent
 {
     [NetworkScore(0)]
     [Serializable]
-    [TypeUid(17)]
-    public class ClientDisconnectedEvent : ECSEvent
+    [TypeUid(20)]
+    public class ConfigCheckResultEvent : ECSEvent
     {
-        static public new long Id { get; set; } = 17;
+        static public new long Id { get; set; } = 20;
         public override void Execute()
         {
-            
+
         }
     }
 }

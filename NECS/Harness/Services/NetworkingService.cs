@@ -21,6 +21,26 @@ namespace NECS.Harness.Services
         public int BufferSize = 1024;
         public string Protocol = "tcp";
         public ConcurrentDictionary<long, SocketAdapter> SocketAdapters = new ConcurrentDictionary<long, SocketAdapter>();
+        #region client
+        public delegate void SocketHandler(SocketAdapter socketAdapter);
+        public event SocketHandler? OnConnectExternal;
+        public event SocketHandler? OnDisconnectExternal;
+        public static long ClientEntityId = 0;
+        private SocketAdapter cachedClientSocket;
+        public SocketAdapter ClientSocket
+        {
+            get
+            {
+                if(cachedClientSocket == null)
+                {
+                    var socket = SocketAdapters.First().Value;
+                    if(socket != null)
+                        cachedClientSocket = socket;
+                }
+                return cachedClientSocket;
+            }
+        }
+        #endregion
         #region NetworkRealization
         private TCPGameClient tcpClient;
         private TCPGameServer tcpServer;
@@ -40,12 +60,18 @@ namespace NECS.Harness.Services
                     if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
                     {
                         tcpClient = new TCPGameClient(HostAddress, Port, BufferSize);
+                        tcpClient.Connect();
                     }
                     else
                     {
                         tcpServer = new TCPGameServer(HostAddress, Port, BufferSize);
+                        tcpServer.Listen();
                     }
                     break;
+            }
+            if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+            {
+                CustomSetupInitialized = true;
             }
         }
 
@@ -66,6 +92,9 @@ namespace NECS.Harness.Services
                 {
                     Logger.LogNetwork($"Connected to server on {socketAdapter.Address}:{socketAdapter.Port}");
                 }
+                ServiceInitialized = true;
+                initializedCallbackCache();
+                OnConnectExternal.Invoke(socketAdapter);
             }
         }
 
@@ -84,7 +113,6 @@ namespace NECS.Harness.Services
             }
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
             {
-
                 TaskEx.RunAsync(() =>
                 {
                     bool stop_check = false;
@@ -99,7 +127,7 @@ namespace NECS.Harness.Services
                         socketAdapter.Connect();
                     }
                 });
-                
+                OnDisconnectExternal.Invoke(socketAdapter);
             }
         }
 
