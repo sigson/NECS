@@ -13,6 +13,9 @@ namespace NECS.Harness.Model
     {
         public bool ServiceInitialized;
         public bool ServicePostInitialized;
+        protected bool CustomSetupInitialized;
+        protected Action initializedCallbackCache;
+        protected Action postInitializedCallbackCache;
         public void ServicePostInitializeProcessAsync(Action initializedCallback)
         {
             TaskEx.RunAsync(() =>
@@ -32,15 +35,29 @@ namespace NECS.Harness.Model
         public void ServicePostInitialize(Action initializedCallback)
         {
             PostInitializeProcess();
-            ServicePostInitialized = true;
-            initializedCallback?.Invoke();
+            if(!CustomSetupInitialized)
+            {
+                ServicePostInitialized = true;
+                initializedCallback?.Invoke();
+            }
+            else
+            {
+                postInitializedCallbackCache = initializedCallback;
+            }
         }
 
         public void ServiceInitialize(Action initializedCallback)
         {
             InitializeProcess();
-            ServiceInitialized = true;
-            initializedCallback?.Invoke();
+            if (!CustomSetupInitialized)
+            {
+                ServiceInitialized = true;
+                initializedCallback?.Invoke();
+            }
+            else
+            {
+                initializedCallbackCache = initializedCallback;
+            }
         }
 
 

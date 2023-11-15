@@ -45,7 +45,7 @@ namespace NECS.Harness.Services
             {
                 if (Loaded)
                     return;
-                var gameConfDirectory = config_path == "" ? GlobalProgramState.instance.ConfigDir : config_path;
+                var gameConfDirectory = config_path == "" ? GlobalProgramState.instance.GameConfigDir : config_path;
 
                 if(!Directory.Exists(gameConfDirectory))
                 {
@@ -55,11 +55,11 @@ namespace NECS.Harness.Services
                 if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client && checkedConfigVersion != hashConfig && config_path == "")
                 {
                     Logger.Log("Constant service update config");
-                    if (Directory.Exists(GlobalProgramState.instance.ConfigDir))
-                        Directory.Delete(GlobalProgramState.instance.ConfigDir, true);
-                    Directory.CreateDirectory(GlobalProgramState.instance.ConfigDir);
-                    File.WriteAllBytes(GlobalProgramState.instance.ConfigDir + "zippedconfig.zip", loadedConfigFile.ToArray());
-                    ZipExt.DecompressToDirectory(loadedConfigFile.ToArray(), GlobalProgramState.instance.ConfigDir, (info) => { });
+                    if (Directory.Exists(GlobalProgramState.instance.GameDataDir))
+                        Directory.Delete(GlobalProgramState.instance.GameDataDir, true);
+                    Directory.CreateDirectory(GlobalProgramState.instance.GameDataDir);
+                    File.WriteAllBytes(GlobalProgramState.instance.GameDataDir + "zippedconfig.zip", loadedConfigFile.ToArray());
+                    ZipExt.DecompressToDirectory(loadedConfigFile.ToArray(), GlobalProgramState.instance.GameDataDir, (info) => { });
                 }
                 #region initload
                 var nowLib = "";
@@ -119,7 +119,7 @@ namespace NECS.Harness.Services
                         }
                         else
                         {
-                            nowObject.Path = file.Replace(gameConfDirectory, "").Replace(GlobalProgramState.instance.PathSystemSeparator + Path.GetFileName(file), "").Substring(1).Replace(GlobalProgramState.instance.PathSystemSeparator, GlobalProgramState.instance.PathSeparator);
+                            nowObject.Path = file.Replace(gameConfDirectory, "").Replace(Path.GetFileName(file), "").Substring(1).Replace(GlobalProgramState.instance.PathSystemSeparator, GlobalProgramState.instance.PathSeparator) + Path.GetFileNameWithoutExtension(file);
                         }
                         nowObject.LibTree = new Lib() { LibName = libname, Path = nowObject.Path };
                     }
@@ -138,19 +138,20 @@ namespace NECS.Harness.Services
 
                 if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server && config_path == "")
                 {
-                    if (!File.Exists(GlobalProgramState.instance.ConfigDir + "zippedconfig.zip"))
+                    if (!File.Exists(GlobalProgramState.instance.GameDataDir + "zippedconfig.zip"))
                     {
                         #region prepareZipTemp
-                        if (Directory.Exists(GlobalProgramState.instance.ConfigDir + "ZipTemp"))
-                            Directory.Delete(GlobalProgramState.instance.ConfigDir + "ZipTemp", true);
-                        FileEx.CopyFilesRecursively(new DirectoryInfo(GlobalProgramState.instance.ConfigDir + "GameConfig"), new DirectoryInfo(GlobalProgramState.instance.ConfigDir + "ZipTemp" + GlobalProgramState.instance.PathSystemSeparator + "GameConfig"));
-                        File.Copy(GlobalProgramState.instance.ConfigDir + "donateshop.json", GlobalProgramState.instance.ConfigDir + "ZipTemp" + GlobalProgramState.instance.PathSystemSeparator + "donateshop.json");
-                        File.Copy(GlobalProgramState.instance.ConfigDir + "garageshop.json", GlobalProgramState.instance.ConfigDir + "ZipTemp" + GlobalProgramState.instance.PathSystemSeparator + "garageshop.json");
-                        File.Copy(GlobalProgramState.instance.ConfigDir + "selectablemapdb.json", GlobalProgramState.instance.ConfigDir + "ZipTemp" + GlobalProgramState.instance.PathSystemSeparator + "selectablemapdb.json");
+
+                        var ziptempfolder = Path.Combine(GlobalProgramState.instance.GameDataDir, "ZipTemp");
+                        var ziptempgamedir = Path.Combine(ziptempfolder, GlobalProgramState.instance.GameConfigDir.Split(GlobalProgramState.instance.PathSystemSeparator).Last());
+
+                        if (Directory.Exists(ziptempfolder))
+                            Directory.Delete(ziptempfolder, true);
+                        FileEx.CopyFilesRecursively(new DirectoryInfo(GlobalProgramState.instance.GameConfigDir), new DirectoryInfo(ziptempgamedir));
                         #endregion
-                        ZipExt.CompressDirectory(GlobalProgramState.instance.ConfigDir + "ZipTemp", GlobalProgramState.instance.ConfigDir + "zippedconfig.zip", (prog) => { });
+                        ZipExt.CompressDirectory(ziptempfolder, Path.Combine(GlobalProgramState.instance.GameDataDir, "zippedconfig.zip"), (prog) => { });
                     }
-                    Byte[] bytes = File.ReadAllBytes(GlobalProgramState.instance.ConfigDir + "zippedconfig.zip");
+                    Byte[] bytes = File.ReadAllBytes(Path.Combine(GlobalProgramState.instance.GameDataDir, "zippedconfig.zip"));
                     using (MD5CryptoServiceProvider CSP = new MD5CryptoServiceProvider())
                     {
                         var byteHash = CSP.ComputeHash(bytes);
@@ -244,13 +245,13 @@ namespace NECS.Harness.Services
                 string[] folders = Directory.GetDirectories(start_path);
                 foreach (string folder in folders)
                 {
-                    ls.Add("Папка: " + folder);
+                    ls.Add("Folder: " + folder);
                     ls.AddRange(GetRecursFiles(folder));
                 }
                 string[] files = Directory.GetFiles(start_path);
                 foreach (string filename in files)
                 {
-                    ls.Add(filename);
+                    ls.Add(filename.Replace("\\", GlobalProgramState.instance.PathSystemSeparator).Replace("/", GlobalProgramState.instance.PathSystemSeparator));
                 }
             }
             catch (System.Exception e)
@@ -261,7 +262,7 @@ namespace NECS.Harness.Services
 
         public override void InitializeProcess()
         {
-
+            SetupConfigs();
         }
 
         public override void OnDestroyReaction()

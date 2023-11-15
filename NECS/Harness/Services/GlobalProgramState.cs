@@ -11,7 +11,20 @@ namespace NECS.Harness.Services
     {
         public static GlobalProgramState instance => SGT.Get<GlobalProgramState>();
 
-        public string ConfigDir {
+        public string GameConfigDir {
+            get
+            {
+#if UNITY
+                return Path.Combine(Path.Combine(Application.persistentDataPath, "GameData"), "GameConfig");
+#endif
+#if NET
+                return Path.Combine(Path.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "GameData"), "GameConfig");
+#endif
+            }
+        }
+
+        public string GameDataDir
+        {
             get
             {
 #if UNITY
@@ -28,10 +41,10 @@ namespace NECS.Harness.Services
             get
             {
 #if UNITY
-                return Path.Combine(Application.dataPath, "Config");
+                return Path.Combine(Path.Combine(Application.persistentDataPath, "GameData"), "Config");
 #endif
 #if NET
-                return Path.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "Config");
+                return Path.Combine(Path.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "GameData"), "Config");
 #endif
             }
         }
