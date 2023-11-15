@@ -89,10 +89,15 @@ namespace NECS.Harness.Model
             AllServiceList = new ConcurrentHashSet<IService>(ECSAssemblyExtensions.GetAllSubclassOf(typeof(IService)).Where(x => !x.IsAbstract).Select(x => IService.InitalizeSingleton(x, ServiceStorage, true)).Cast<IService>().ToList());
         }
 
-        public static void InitializeAllServices()
+        public static void InitializeService(IService service)
         {
-            
-            AllServiceList.ForEach(x => x.ServiceInitialize(() => IService.servicesInitialized.Add(x)));
+            InitializeAllServices(new List<IService> { service });
+        }
+
+        public static void InitializeAllServices(List<IService> selectedServices = null)
+        {
+            var serviceList = selectedServices == null ? AllServiceList : new ConcurrentHashSet<IService>(selectedServices);
+            serviceList.Where(x => !servicesInitialized.Contains(x)).ForEach(x => x.ServiceInitialize(() => IService.servicesInitialized.Add(x)));
             IService.servicesInitialized.ForEach(x => x.ServicePostInitialize(() => IService.servicesPostInitialized.Add(x)));
             TaskEx.RunAsync(() =>
             {

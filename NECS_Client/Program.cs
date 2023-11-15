@@ -26,6 +26,7 @@ namespace UTanksServer
             IService.RegisterAllServices();
             GlobalProgramState.instance.ProgramType = GlobalProgramState.ProgramTypeEnum.Client;
             ConstantService.instance.SetupConfigs(GlobalProgramState.instance.TechConfigDir);
+            IService.InitializeService(ManagerScope.instance);
             IService.InitializeAllServices();
 
             #region ClearScreen

@@ -83,32 +83,44 @@ namespace NECS.ECS.ECSCore
                     scoreObject.Score += ecsEvent.GetType().GetCustomAttribute<NetworkScore>().Score + ecsEvent.NetworkScoreBooster();
                 }
             }
-            ecsEvent.Execute();
-            ecsEvent.eventWatcher = watcherPool.Get().EventWatcherUpdate(SystemHandlers[ecsEvent.GetId()].Count, ecsEvent.instanceId);
-            if (!EventBus.TryAdd(ecsEvent.instanceId, ecsEvent))
-                Logger.LogError("error add event to bus");
-            foreach(var system in SystemHandlers[ecsEvent.GetId()])
+            if(!ecsEvent.CheckPacket())
             {
-                foreach(var func in system.Value)
+                Logger.LogError("Was received error packed " + ecsEvent.GetType().ToString());
+                return;
+            }
+
+            if(SystemHandlers.TryGetValue(ecsEvent.GetId(), out var eventHandlers))
+            {
+                ecsEvent.eventWatcher = watcherPool.Get().EventWatcherUpdate(eventHandlers.Count, ecsEvent.instanceId);
+
+                if (eventHandlers.Count > 0)
+                    if (!EventBus.TryAdd(ecsEvent.instanceId, ecsEvent))
+                        Logger.LogError("error add event to bus");
+                ecsEvent.Execute();
+
+                foreach (var system in eventHandlers)
                 {
-                    TaskEx.RunAsync(() =>
+                    foreach (var func in system.Value)
                     {
-                        try
+                        TaskEx.RunAsync(() =>
                         {
-                            func.DynamicInvoke(ecsEvent);
-                        }
-                        catch (Exception ex)
-                        {
-                            Logger.LogError(ex);
+                            try
+                            {
+                                func.DynamicInvoke(ecsEvent);
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.LogError(ex);
 #if DEBUG
-                            throw;
+                                throw;
 #endif
-                        }
-                        finally
-                        {
-                            ecsEvent.eventWatcher.Watchers--;
-                        }
-                    });
+                            }
+                            finally
+                            {
+                                ecsEvent.eventWatcher.Watchers--;
+                            }
+                        });
+                    }
                 }
             }
         }

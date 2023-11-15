@@ -93,11 +93,6 @@ namespace NECS.ECS.ECSCore
             ManagerScope.instance.eventManager.UpdateSystemHandlers(eventId, this.SystemEventHandler[eventId]);
         }
 
-        protected virtual void UpdateEventWatcher(ECSEvent eCSEvent)
-        {
-            eCSEvent.eventWatcher.Watchers--;
-        }
-
         public Type GetTypeFast()
         {
             if (SystemType == null)

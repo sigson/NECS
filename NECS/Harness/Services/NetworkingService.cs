@@ -135,11 +135,17 @@ namespace NECS.Harness.Services
         {
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {
-                //NetSerializer.Serializer.Default.Deserialize()
+                
             }
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
             {
 
+            }
+            using (var memoryStream = new MemoryStream())
+            {
+                memoryStream.Write(buffer, 0, buffer.Length);
+                memoryStream.Position = 0;
+                ManagerScope.instance.eventManager.OnEventAdd((ECSEvent)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream)));
             }
         }
 

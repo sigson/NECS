@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using NECS.Network.NetworkModels;
+using System.Text.Json.Serialization;
 
 namespace NECS.ECS.ECSCore
 {
@@ -20,6 +21,11 @@ namespace NECS.ECS.ECSCore
         public byte[] cachedGameDataEvent = null;
         public abstract void Execute();
 
+        public virtual bool CheckPacket()
+        {
+            return true;
+        }
+
         /// <summary>
         /// example if in chat message has 200+ symbols - it add score to packet
         /// </summary>
@@ -34,7 +40,7 @@ namespace NECS.ECS.ECSCore
             using (MemoryStream writer = new MemoryStream())
             {
                 NetSerializer.Serializer.Default.Serialize(writer, this);
-                cachedGameDataEvent = writer.ToArray();
+                cachedGameDataEvent = NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(writer.ToArray());
             }
         }
 

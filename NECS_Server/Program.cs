@@ -1,4 +1,5 @@
-﻿using NECS.Harness.Model;
+﻿using NECS.ECS.ECSCore;
+using NECS.Harness.Model;
 using NECS.Harness.Services;
 using System.Net;
 using System.Security.Cryptography;
@@ -25,6 +26,7 @@ namespace UTanksServer
             IService.RegisterAllServices();
             GlobalProgramState.instance.ProgramType = GlobalProgramState.ProgramTypeEnum.Server;
             ConstantService.instance.SetupConfigs(GlobalProgramState.instance.TechConfigDir);
+            IService.InitializeService(ManagerScope.instance);
             IService.InitializeAllServices();
             #region ClearScreen
             Func<Task> asyncUpd = async () =>

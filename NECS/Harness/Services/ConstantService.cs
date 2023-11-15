@@ -14,6 +14,7 @@ using NECS.Harness.Model;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using static NECS.Harness.Services.NetworkingService;
+using NECS.ECS.DefaultObjects.Events.LowLevelNetEvent.ConfigEvent;
 
 namespace NECS.Harness.Services
 {
@@ -57,10 +58,10 @@ namespace NECS.Harness.Services
                 if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client && checkedConfigVersion != hashConfig && config_path == "")
                 {
                     Logger.Log("Constant service update config");
-                    if (Directory.Exists(GlobalProgramState.instance.GameDataDir))
-                        Directory.Delete(GlobalProgramState.instance.GameDataDir, true);
-                    Directory.CreateDirectory(GlobalProgramState.instance.GameDataDir);
-                    File.WriteAllBytes(GlobalProgramState.instance.GameDataDir + "zippedconfig.zip", loadedConfigFile.ToArray());
+                    if (Directory.Exists(GlobalProgramState.instance.GameConfigDir))
+                        Directory.Delete(GlobalProgramState.instance.GameConfigDir, true);
+                    Directory.CreateDirectory(GlobalProgramState.instance.GameConfigDir);
+                    File.WriteAllBytes(Path.Combine(GlobalProgramState.instance.GameConfigDir, "zippedconfig.zip"), loadedConfigFile.ToArray());
                     ZipExt.DecompressToDirectory(loadedConfigFile.ToArray(), GlobalProgramState.instance.GameDataDir, (info) => { });
                 }
                 #region initload
@@ -266,11 +267,23 @@ namespace NECS.Harness.Services
         {
             if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
             {
+                hashConfig = 0;
+                byte[] configFile = null;
+
+                if (File.Exists(Path.Combine(GlobalProgramState.instance.GameConfigDir, "zippedconfig.zip")))
+                {
+                    configFile = File.ReadAllBytes(Path.Combine(GlobalProgramState.instance.GameConfigDir, "zippedconfig.zip"));
+                    hashConfig = BitConverter.ToInt64(MD5.Create().ComputeHash(configFile), 0);
+                }
+                
                 CustomSetupInitialized = true;
                 var socketAction = (Network.NetworkModels.SocketAdapter socketAdapter) => {
                     if (!Loaded)
                     {
-                        
+                        ManagerScope.instance.eventManager.OnEventAdd(new ConfigCheckEvent()
+                        {
+                            configHash = hashConfig
+                        });
                     }
                 };
                 NetworkingService.instance.OnConnectExternal += new SocketHandler(socketAction);
