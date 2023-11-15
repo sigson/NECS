@@ -11,11 +11,63 @@ namespace NECS.Harness.Model
 {
     public abstract class IService : SGT
     {
-        public abstract void PostInitializeProcess();
+        public bool ServiceInitialized;
+        public bool ServicePostInitialized;
+        public void ServicePostInitializeProcessAsync(Action initializedCallback)
+        {
+            TaskEx.RunAsync(() =>
+            {
+                ServicePostInitialize(initializedCallback);
+            });
+        }
+        
+        public void ServiceInitializeAsync(Action initializedCallback)
+        {
+            TaskEx.RunAsync(() =>
+            {
+                ServiceInitialize(initializedCallback);
+            });
+        }
+
+        public void ServicePostInitialize(Action initializedCallback)
+        {
+            PostInitializeProcess();
+            ServicePostInitialized = true;
+            initializedCallback?.Invoke();
+        }
+
+        public void ServiceInitialize(Action initializedCallback)
+        {
+            InitializeProcess();
+            ServiceInitialized = true;
+            initializedCallback?.Invoke();
+        }
+
 
         #region static
         private static EngineApiObjectBehaviour ServiceStorage;
         private static List<IService> AllServiceList;
+        private static int servicesInitialized = 0;
+        private static int servicesPostInitialized = 0;
+        public static bool ServicesInitialized
+        {
+            get
+            {
+                if (AllServiceList.Count == 0)
+                    return false;
+                if (servicesInitialized == AllServiceList.Count) return true; else return false;
+            }
+        }
+
+        public static bool ServicesPostInitialized
+        {
+            get
+            {
+                if (AllServiceList.Count == 0)
+                    return false;
+                if (servicesPostInitialized == AllServiceList.Count) return true; else return false;
+            }
+        }
 
         public static void RegisterAllServices()
         {
@@ -25,8 +77,8 @@ namespace NECS.Harness.Model
 
         public static void InitializeAllServices()
         {
-            AllServiceList.ForEach(x => x.InitializeProcess());
-            AllServiceList.ForEach(x => x.PostInitializeProcess());
+            AllServiceList.ForEach(x => x.ServiceInitialize(() => IService.servicesInitialized++));
+            AllServiceList.ForEach(x => x.ServicePostInitialize(() => IService.servicesPostInitialized++));
         }
         #endregion
     }

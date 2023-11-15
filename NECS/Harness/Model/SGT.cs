@@ -90,6 +90,7 @@ namespace NECS.Harness.Model
         }
 
         public abstract void InitializeProcess();
+        public abstract void PostInitializeProcess();
         public abstract void OnDestroyReaction();
 
         public override void OnDestroy()
