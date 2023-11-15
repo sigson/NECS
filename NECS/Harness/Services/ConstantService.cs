@@ -47,6 +47,11 @@ namespace NECS.Harness.Services
                     return;
                 var gameConfDirectory = config_path == "" ? GlobalProgramState.instance.ConfigDir : config_path;
 
+                if(!Directory.Exists(gameConfDirectory))
+                {
+                    Directory.CreateDirectory(gameConfDirectory);
+                }
+
                 if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client && checkedConfigVersion != hashConfig && config_path == "")
                 {
                     Logger.Log("Constant service update config");
@@ -123,7 +128,8 @@ namespace NECS.Harness.Services
 
                     }
                 }
-                ConstantDB[nowObject.Path] = nowObject;
+                if(nowObject.Path != null)
+                    ConstantDB[nowObject.Path] = nowObject;
 
                 #endregion
 

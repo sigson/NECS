@@ -9,7 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NECS_Client", "NECS_Client\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NECS_Server", "NECS_Server\NECS_Server.csproj", "{CF32CD81-C888-40ED-BD75-3C1884509652}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NECS_Test", "NECS_Test\NECS_Test.csproj", "{F8917A68-B456-4322-9934-8DBD7864C103}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NECS_Test", "NECS_Test\NECS_Test.csproj", "{F8917A68-B456-4322-9934-8DBD7864C103}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NECS_WebConsole", "NECS_WebConsole\NECS_WebConsole.csproj", "{632321DF-BE92-42A4-BAAB-D4CA0EF3A515}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{F8917A68-B456-4322-9934-8DBD7864C103}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F8917A68-B456-4322-9934-8DBD7864C103}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F8917A68-B456-4322-9934-8DBD7864C103}.Release|Any CPU.Build.0 = Release|Any CPU
+		{632321DF-BE92-42A4-BAAB-D4CA0EF3A515}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{632321DF-BE92-42A4-BAAB-D4CA0EF3A515}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{632321DF-BE92-42A4-BAAB-D4CA0EF3A515}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{632321DF-BE92-42A4-BAAB-D4CA0EF3A515}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
