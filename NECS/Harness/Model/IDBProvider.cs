@@ -28,12 +28,19 @@ namespace NECS.Harness.Model
 
     public abstract class UserDataRowBase
     {
-        public int Id;
+        //public int id;
         public string Username = "";
         public string Password = "";
         public string Email = "";
         public bool EmailVerified = false;
         public string HardwareId = "";
+        public string RegistrationDate = "";
+        public string UserPrivilegesGroup = "";
+        public string LastIp = "";
+        public bool TermlessChatBan = false;
+        public bool TermlessBan = false;
+        public string UserLocation = "";
+        public int Karma = 0;
         public string GameDataPacked = "";
 
         /// <summary>
@@ -44,10 +51,10 @@ namespace NECS.Harness.Model
         {
             List<string> columns = new List<string>()
             {
-                "Id", "Username", "Password", "Email", "EmailVerified", "HardwareId", "GameDataPacked"
+                "Username", "Password", "Email", "EmailVerified", "HardwareId", "RegistrationDate", "UserPrivilegesGroup", "LastIp", "TermlessChatBan", "TermlessBan", "UserLocation", "Karma", "GameDataPacked"
             };
             List<string> rowValues = new List<string>(){
-                Id.ToString(), Username, Password, Email, EmailVerified.ToString(), HardwareId, GameDataPacked
+                Username, Password, Email, EmailVerified.ToString(), HardwareId, RegistrationDate, UserPrivilegesGroup, LastIp, TermlessChatBan.ToString(), TermlessBan.ToString(), UserLocation, Karma.ToString(), GameDataPacked
             };
             return (columns, rowValues);
         }
@@ -56,13 +63,20 @@ namespace NECS.Harness.Model
         {
             if (dbResult.HasRows)
             {
-                Id = int.Parse(dbResult.GetString("Id"));
+                //Id = int.Parse(dbResult.GetString("Id"));
                 Username = dbResult.GetString("Username");
                 Password = dbResult.GetString("Password");
                 Email = dbResult.GetString("Email");
                 EmailVerified = bool.Parse(dbResult.GetString("EmailVerified"));
-                HardwareId = dbResult.GetString("Username");
-                GameDataPacked = dbResult.GetString("Username");
+                HardwareId = dbResult.GetString("HardwareId");
+                RegistrationDate = dbResult.GetString("RegistrationDate");
+                UserPrivilegesGroup = dbResult.GetString("UserPrivilegesGroup");
+                LastIp = dbResult.GetString("LastIp");
+                TermlessChatBan = bool.Parse(dbResult.GetString("TermlessChatBan"));
+                TermlessBan = bool.Parse(dbResult.GetString("TermlessBan"));
+                UserLocation = dbResult.GetString("UserLocation");
+                Karma = int.Parse(dbResult.GetString("Karma"));
+                GameDataPacked = dbResult.GetString("GameDataPacked");
             }
         }
     }

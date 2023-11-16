@@ -22,7 +22,7 @@ namespace NECS.Harness.Services
             switch (DBType.ToLower())
             {
                 case "sqlite":
-                    DBProvider = new SQLiteDBProvider();
+                    DBProvider = new SQLiteDefaultDBProvider();
                     break;
             }
             DBProvider.Load(DBPath);

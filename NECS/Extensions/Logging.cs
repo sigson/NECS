@@ -27,6 +27,7 @@ namespace NECS.Core.Logging
 
         public static void Log(object content) => Write("INFO", ConsoleColor.Gray, content);
         public static void LogNetwork(object content) => Write("Network", ConsoleColor.Blue, content);
+        public static void LogDB(object content) => Write("Network", ConsoleColor.Yellow, content);
 
         public static void Debug(object content) => DebugWrite("DEBUG", ConsoleColor.DarkGreen, content);
         public static void Trace(object content)
