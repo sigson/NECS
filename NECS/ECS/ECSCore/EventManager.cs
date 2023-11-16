@@ -89,15 +89,16 @@ namespace NECS.ECS.ECSCore
                 return;
             }
 
-            if(SystemHandlers.TryGetValue(ecsEvent.GetId(), out var eventHandlers))
+            ecsEvent.Execute();
+
+            if (SystemHandlers.TryGetValue(ecsEvent.GetId(), out var eventHandlers))
             {
                 ecsEvent.eventWatcher = watcherPool.Get().EventWatcherUpdate(eventHandlers.Count, ecsEvent.instanceId);
 
                 if (eventHandlers.Count > 0)
                     if (!EventBus.TryAdd(ecsEvent.instanceId, ecsEvent))
                         Logger.LogError("error add event to bus");
-                ecsEvent.Execute();
-
+                
                 foreach (var system in eventHandlers)
                 {
                     foreach (var func in system.Value)
