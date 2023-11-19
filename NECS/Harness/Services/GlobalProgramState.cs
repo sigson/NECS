@@ -9,7 +9,16 @@ namespace NECS.Harness.Services
 {
     public class GlobalProgramState : IService
     {
-        public static GlobalProgramState instance => SGT.Get<GlobalProgramState>();
+        private static GlobalProgramState cacheInstance;
+        public static GlobalProgramState instance
+        {
+            get
+            {
+                if (cacheInstance == null)
+                    cacheInstance = SGT.Get<GlobalProgramState>();
+                return cacheInstance;
+            }
+        }
 
         public string GameConfigDir {
             get

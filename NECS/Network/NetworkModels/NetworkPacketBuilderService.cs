@@ -13,7 +13,16 @@ namespace NECS.Network.NetworkModels
 {
     public class NetworkPacketBuilderService : IService
     {
-        public static NetworkPacketBuilderService instance => SGT.Get<NetworkPacketBuilderService>();
+        private static NetworkPacketBuilderService cacheInstance;
+        public static NetworkPacketBuilderService instance
+        {
+            get
+            {
+                if (cacheInstance == null)
+                    cacheInstance = SGT.Get<NetworkPacketBuilderService>();
+                return cacheInstance;
+            }
+        }
 
         public ConcurrentDictionary<long, ConcurrentDictionary<long, byte[]>> SlicedReceivedStorage = new ConcurrentDictionary<long, ConcurrentDictionary<long, byte[]>>();
         public override void InitializeProcess()

@@ -11,7 +11,16 @@ namespace NECS.Harness.Services
 {
     public class NetworkMaliciousEventCounteractionService : IService
     {
-        public static NetworkMaliciousEventCounteractionService instance => SGT.Get<NetworkMaliciousEventCounteractionService>();
+        private static NetworkMaliciousEventCounteractionService cacheInstance;
+        public static NetworkMaliciousEventCounteractionService instance
+        {
+            get
+            {
+                if (cacheInstance == null)
+                    cacheInstance = SGT.Get<NetworkMaliciousEventCounteractionService>();
+                return cacheInstance;
+            }
+        }
         public ConcurrentDictionary<long, ScoreObject> maliciousScoringStorage = new ConcurrentDictionary<long, ScoreObject>();
         public ConcurrentDictionary<string, long> UnwantedSocketInfo = new ConcurrentDictionary<string, long>();
 

@@ -15,7 +15,16 @@ namespace NECS.Harness.Services
 {
     public class EntityGroupManagersStorageService : IService
     {
-        public static EntityGroupManagersStorageService instance => IService.Get<EntityGroupManagersStorageService>();
+        private static EntityGroupManagersStorageService cacheInstance;
+        public static EntityGroupManagersStorageService instance
+        {
+            get
+            {
+                if (cacheInstance == null)
+                    cacheInstance = SGT.Get<EntityGroupManagersStorageService>();
+                return cacheInstance;
+            }
+        }
 
         private ConcurrentDictionary<long, ConcurrentDictionary<Type, IManager>> groupManagersStorage = new ConcurrentDictionary<long, ConcurrentDictionary<Type, IManager>>(); //long is id of connectpoint id(component id, entity id, random id)
 

@@ -9,6 +9,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using YamlDotNet.Core.Tokens;
 
 namespace NECS.DB.SQLite
 {
@@ -89,12 +90,37 @@ CREATE TABLE IF NOT EXISTS ""Friends"" (
 
         public override T CreateUser<T>(T dataRow)
         {
-            throw new NotImplementedException();
+            if (! EmailAvailable(dataRow.Email)) throw new ArgumentException("Email Taken!");
+            var packed = dataRow.PrepareToDBInsert();
+            var columns = "";
+            var values = "";
+            packed.Item1.ForEach(x => columns += x + ", ");
+            packed.Item2.ForEach(x => values += "'" + x + "', ");
+            columns = columns.Substring(columns.Length - 2);
+            values = values.Substring(values.Length - 2);
+            using (SqliteCommand request = new SqliteCommand(
+                $"INSERT INTO Users({columns}) VALUES({values});",
+                this.Connection
+            ))
+            {
+                request.ExecuteNonQuery();
+
+                return GetUserViaCallsign<T>(dataRow.Username);
+            }
         }
 
         public override bool EmailAvailable(string email)
         {
-            throw new NotImplementedException();
+            using (SqliteCommand request = new SqliteCommand(
+                $"SELECT id FROM Users WHERE Email = '{email}';",
+                this.Connection
+            ))
+            {
+                DbDataReader response = request.ExecuteReader(CommandBehavior.SingleRow);
+                bool result = !response.HasRows;
+                response.Close();
+                return result;
+            }
         }
 
         public override List<T> ExecuteQuery<T>(string query)
@@ -125,12 +151,48 @@ CREATE TABLE IF NOT EXISTS ""Friends"" (
 
         public override T GetUserViaCallsign<T>(string username)
         {
-            throw new NotImplementedException();
+            using (SqliteCommand request = new SqliteCommand(
+                $"SELECT * FROM Users WHERE Username = '{username}'",
+                this.Connection
+            ))
+            {
+                using (DbDataReader response = request.ExecuteReader(CommandBehavior.SingleRow))
+                {
+                    if (!response.HasRows)
+                    {
+                        return default(T);
+                    }
+
+                    response.Read();
+
+                    var dataObject = Activator.CreateInstance<T>();
+                    dataObject.DBUnpack(response);
+                    return dataObject;
+                }
+            }
         }
 
         public override T GetUserViaEmail<T>(string email)
         {
-            throw new NotImplementedException();
+            using (SqliteCommand request = new SqliteCommand(
+                $"SELECT * FROM Users WHERE Email = '{email}'",
+                this.Connection
+            ))
+            {
+                using (DbDataReader response = request.ExecuteReader(CommandBehavior.SingleRow))
+                {
+                    if (!response.HasRows)
+                    {
+                        return default(T);
+                    }
+
+                    response.Read();
+
+                    var dataObject = Activator.CreateInstance<T>();
+                    dataObject.DBUnpack(response);
+                    return dataObject;
+                }
+            }
         }
 
         public override void Load(string DBPath)
@@ -145,22 +207,41 @@ CREATE TABLE IF NOT EXISTS ""Friends"" (
 
         public override bool LoginCheck(string username, long hashedPassword)
         {
-            throw new NotImplementedException();
+            using (SqliteCommand request = new SqliteCommand(
+                $"SELECT id FROM Users WHERE Username = '{username}' AND Password = '{hashedPassword}' COLLATE NOCASE;",
+                this.Connection
+            ))
+            {
+                DbDataReader response = request.ExecuteReader(CommandBehavior.SingleRow);
+                bool result = response.HasRows;
+                response.Close();
+                return result;
+            }
         }
 
         public override bool SetEmail(long uid, string email)
         {
-            throw new NotImplementedException();
+            using (SqliteCommand request = new SqliteCommand(
+                $"UPDATE Users SET Email = '{email}', EmailVerified = 0 WHERE id = {uid}",
+                this.Connection
+            )) return request.ExecuteNonQuery() > 0;
         }
 
         public override bool SetEmailVerified(long uid, bool value)
         {
-            throw new NotImplementedException();
+            using (SqliteCommand request = new SqliteCommand(
+                $"UPDATE Users SET EmailVerified = {(value ? 1 : 0)} WHERE id = {uid}",
+                this.Connection
+            )) return request.ExecuteNonQuery() > 0;
         }
 
         public override bool SetHardwareId(long uid, string hardwareId)
         {
-            throw new NotImplementedException();
+            if (hardwareId.Length > 100) throw new ArgumentException("Parameter hardwareId cannot not be over 100 characters");
+            using (SqliteCommand request = new SqliteCommand(
+                $"UPDATE Users SET HardwareId = '{hardwareId}' WHERE id = {uid}",
+                this.Connection
+            )) return request.ExecuteNonQuery() > 0;
         }
 
         public override bool SetHashedPassword(long uid, string hashedPassword)

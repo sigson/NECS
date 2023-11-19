@@ -18,7 +18,16 @@ namespace NECS.ECS.ECSCore
         public ECSComponentManager componentManager;
         public ECSEventManager eventManager;
 
-        public static ManagerScope instance => SGT.Get<ManagerScope>();
+        private static ManagerScope cacheInstance;
+        public static ManagerScope instance
+        {
+            get
+            {
+                if (cacheInstance == null)
+                    cacheInstance = SGT.Get<ManagerScope>();
+                return cacheInstance;
+            }
+        }
 
         public void InitManagerScope()
         {

@@ -20,7 +20,15 @@ namespace NECS.Harness.Services
 {
     public class ConstantService : IService
     {
-        public static ConstantService instance => SGT.Get<ConstantService>();
+        private static ConstantService cacheInstance;
+        public static ConstantService instance {
+            get
+            {
+                if(cacheInstance == null)
+                    cacheInstance = SGT.Get<ConstantService>();
+                return cacheInstance;
+            }
+        }
 
         public ConcurrentDictionaryEx<string, ConfigObj> ConstantDB = new ConcurrentDictionaryEx<string, ConfigObj>();
         public Dictionary<long, List<ConfigObj>> TemplateInterestDB = new Dictionary<long, List<ConfigObj>>(); //TemplateAccessor Id
@@ -322,6 +330,7 @@ namespace NECS.Harness.Services
     {
         public long Id;
         public string Path;
+        public string JSONRepresentation => Deserialized.ToString(Formatting.None);
         public string SerializedData;//for json
         public Lib LibTree;
         public JObject Deserialized = null;

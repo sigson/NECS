@@ -15,7 +15,16 @@ namespace NECS.Harness.Services
 {
     public class NetworkingService : IService
     {
-        public static NetworkingService instance => SGT.Get<NetworkingService>();
+        private static NetworkingService cacheInstance;
+        public static NetworkingService instance
+        {
+            get
+            {
+                if (cacheInstance == null)
+                    cacheInstance = SGT.Get<NetworkingService>();
+                return cacheInstance;
+            }
+        }
         public string HostAddress = "127.0.0.1";
         public int Port = 6667;
         public int BufferSize = 1024;

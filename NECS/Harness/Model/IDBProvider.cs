@@ -79,5 +79,10 @@ namespace NECS.Harness.Model
                 GameDataPacked = dbResult.GetString("GameDataPacked");
             }
         }
+
+        public virtual T SetupNew<T>() where T : UserDataRowBase
+        {
+            return (T)this;
+        }
     }
 }
