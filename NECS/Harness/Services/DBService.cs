@@ -11,6 +11,17 @@ namespace NECS.Harness.Services
 {
     public class DBService : IService
     {
+        private static DBService cacheInstance;
+        public static DBService instance
+        {
+            get
+            {
+                if (cacheInstance == null)
+                    cacheInstance = SGT.Get<DBService>();
+                return cacheInstance;
+            }
+        }
+
         public string DBPath = "";
         public string DBType = "";
         public IDBProvider DBProvider = null;

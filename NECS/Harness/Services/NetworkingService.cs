@@ -154,7 +154,7 @@ namespace NECS.Harness.Services
             {
                 memoryStream.Write(buffer, 0, buffer.Length);
                 memoryStream.Position = 0;
-                ManagerScope.instance.eventManager.OnEventAdd((ECSEvent)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream)));
+                ManagerScope.instance.eventManager.OnEventAdd((ECSEvent)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream)), socketAdapter.Id);
             }
         }
 

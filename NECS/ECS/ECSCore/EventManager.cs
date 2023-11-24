@@ -74,6 +74,12 @@ namespace NECS.ECS.ECSCore
             }
         }
 
+        public void OnEventAdd(ECSEvent ecsEvent, long SocketId)
+        {
+            ecsEvent.SocketSourceId = SocketId;
+            OnEventAdd(ecsEvent);
+        }
+
         public void OnEventAdd(ECSEvent ecsEvent)
         {
             if(ecsEvent.SocketSourceId != 0)

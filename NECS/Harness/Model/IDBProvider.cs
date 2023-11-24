@@ -13,7 +13,7 @@ namespace NECS.Harness.Model
         public abstract void Load(string DBPath);
         public abstract List<T> ExecuteQuery<T>(string query);
         public abstract bool UsernameAvailable(string username);
-        public abstract bool LoginCheck(string username, long hashedPassword);
+        public abstract bool LoginCheck(string username, string hashedPassword);
         public abstract bool EmailAvailable(string email);
         public abstract T CreateUser<T>(T dataRow) where T : UserDataRowBase;
         public abstract T GetUserViaCallsign<T>(string username) where T : UserDataRowBase;
@@ -26,7 +26,7 @@ namespace NECS.Harness.Model
         public abstract bool SetHardwareId(long uid, string hardwareId);
     }
 
-    public abstract class UserDataRowBase
+    public class UserDataRowBase
     {
         //public int id;
         public string Username = "";

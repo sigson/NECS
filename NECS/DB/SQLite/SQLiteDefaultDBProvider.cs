@@ -205,7 +205,7 @@ CREATE TABLE IF NOT EXISTS ""Friends"" (
             SetupDatabase();
         }
 
-        public override bool LoginCheck(string username, long hashedPassword)
+        public override bool LoginCheck(string username, string hashedPassword)
         {
             using (SqliteCommand request = new SqliteCommand(
                 $"SELECT id FROM Users WHERE Username = '{username}' AND Password = '{hashedPassword}' COLLATE NOCASE;",
