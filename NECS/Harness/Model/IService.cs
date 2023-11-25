@@ -97,8 +97,20 @@ namespace NECS.Harness.Model
         public static void InitializeAllServices(List<IService> selectedServices = null)
         {
             var serviceList = selectedServices == null ? AllServiceList : new ConcurrentHashSet<IService>(selectedServices);
-            serviceList.Where(x => !servicesInitialized.Contains(x)).ForEach(x => x.ServiceInitialize(() => IService.servicesInitialized.Add(x)));
-            IService.servicesInitialized.ForEach(x => x.ServicePostInitialize(() => IService.servicesPostInitialized.Add(x)));
+            serviceList.Where(x => !servicesInitialized.Contains(x)).ForEach(x => x.ServiceInitialize(() => {
+                IService.servicesInitialized.Add(x);
+                if (Defines.ServiceSetupLogging)
+                    Logger.LogService($"[{servicesInitialized.Count}/{AllServiceList.Count}]Service {x.GetType().Name} preinitialized.");
+                if(ServicesInitialized)
+                    Logger.LogSuccess($"All services pre-initialized!");
+            }));
+            IService.servicesInitialized.Where(x => !servicesPostInitialized.Contains(x)).ForEach(x => x.ServicePostInitialize(() => {
+                IService.servicesPostInitialized.Add(x);
+                if (Defines.ServiceSetupLogging)
+                    Logger.LogService($"[{servicesPostInitialized.Count}/{AllServiceList.Count}]Service {x.GetType().Name} fully initialized.");
+                if (ServicesPostInitialized)
+                    Logger.LogSuccess($"All services fully initialized!");
+            }));
             TaskEx.RunAsync(() =>
             {
                 int countTries = 0;
@@ -106,7 +118,13 @@ namespace NECS.Harness.Model
                 while (IService.servicesPostInitialized.Count != AllServiceList.Count)
                 {
                     var serviceToPostInitialize = servicesInitialized.Where(x => !servicesPostInitialized.Contains(x)).ToList();
-                    serviceToPostInitialize.ForEach(x => x.ServicePostInitialize(() => IService.servicesPostInitialized.Add(x)));
+                    serviceToPostInitialize.ForEach(x => x.ServicePostInitialize(() => {
+                        IService.servicesPostInitialized.Add(x);
+                        if(Defines.ServiceSetupLogging)
+                            Logger.LogService($"[{servicesPostInitialized.Count}/{AllServiceList.Count}]Service {x.GetType().Name} fully initialized.");
+                        if (ServicesPostInitialized)
+                            Logger.LogSuccess($"All services fully initialized!");
+                    }));
                     countTries++;
                     if (countTries > 100)
                     {

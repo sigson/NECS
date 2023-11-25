@@ -45,7 +45,6 @@ namespace NECS.ECS.ECSCore
                 systemManager.RunSystems();
                 Task.Delay(5).Wait();
             });
-            Logger.Log("ECS managers initialized");
         }
 
         public override void InitializeProcess()

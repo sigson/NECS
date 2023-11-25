@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS ""Friends"" (
         public void SetupDatabase()
         {
             using (SqliteCommand request = new SqliteCommand(
-                SQLiteDefaultDBProvider.CreateUsersTableQuery + SQLiteDefaultDBProvider.CreateNews + SQLiteDefaultDBProvider.CreateLogs + SQLiteDefaultDBProvider.CreateInvites + SQLiteDefaultDBProvider.CreateFriends))
+                SQLiteDefaultDBProvider.CreateUsersTableQuery + SQLiteDefaultDBProvider.CreateNews + SQLiteDefaultDBProvider.CreateLogs + SQLiteDefaultDBProvider.CreateInvites + SQLiteDefaultDBProvider.CreateFriends, Connection))
                 request.ExecuteNonQuery();
         }
 

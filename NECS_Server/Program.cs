@@ -22,6 +22,8 @@ namespace UTanksServer
                                                                     
 ");
             Console.ResetColor();
+            Defines.ServiceSetupLogging = true;
+
 
             IService.RegisterAllServices();
             GlobalProgramState.instance.ProgramType = GlobalProgramState.ProgramTypeEnum.Server;
