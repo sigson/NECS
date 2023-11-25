@@ -1,5 +1,6 @@
 ﻿using NECS.Core.Logging;
 using NECS.ECS.DefaultObjects.ECSComponents;
+using NECS.ECS.DefaultObjects.Events.ECSEvents;
 using NECS.ECS.DefaultObjects.Events.LowLevelNetEvent.Auth;
 using NECS.ECS.ECSCore;
 using NECS.Harness.Model;
@@ -72,18 +73,27 @@ namespace NECS.Harness.Services
 
         private void AuthorizationProcess(UserDataRowBase userData, SocketAdapter socketAdapter)
         {
-            
             var entity = SocketToEntity.Values.Where(x => x.GetComponent<UsernameComponent>().Username == userData.Username).FirstOrDefault();
+            var userLogged = new UserLoggedEvent();
             if(entity == null)
             {
                 entity = AuthorizationRealization(userData);
                 entity.AddComponentSilent(new SocketComponent() { socketAdapter = socketAdapter  });
+                SocketToEntity[socketAdapter] = entity;
+                EntityToSocket[entity] = socketAdapter;
                 ManagerScope.instance.entityManager.OnAddNewEntity(entity);
+                userLogged.userRelogin = false;
             }
             else
             {
+                var oldsocket = entity.GetComponent<SocketComponent>().socketAdapter;
+                SocketToEntity[socketAdapter] = entity;
+                EntityToSocket[entity] = socketAdapter;
+                SocketToEntity.Remove(oldsocket, out _);
                 entity.GetComponent<SocketComponent>().socketAdapter = socketAdapter;
+                userLogged.userRelogin = true;
             }
+            userLogged.userEntity = entity;
         }
 
         public override void InitializeProcess()
