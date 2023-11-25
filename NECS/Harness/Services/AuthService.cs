@@ -1,4 +1,5 @@
 ﻿using NECS.Core.Logging;
+using NECS.ECS.DefaultObjects.ECSComponents;
 using NECS.ECS.DefaultObjects.Events.LowLevelNetEvent.Auth;
 using NECS.ECS.ECSCore;
 using NECS.Harness.Model;
@@ -14,7 +15,7 @@ namespace NECS.Harness.Services
 {
     public class AuthService : IService
     {
-        public Action<UserDataRowBase> AuthorizationRealization = null;
+        public Func<UserDataRowBase, ECSEntity> AuthorizationRealization = null;
         public Func<ClientRegistrationEvent, UserDataRowBase> SetupAuthorizationRealization = null;
         private static AuthService cacheInstance;
         public static AuthService instance
@@ -36,7 +37,7 @@ namespace NECS.Harness.Services
                 var userdata = DBService.instance.DBProvider.GetUserViaCallsign<UserDataRowBase>(clientAuthEvent.Username);
                 if(AuthorizationRealization != null)
                 {
-                    AuthorizationRealization(userdata);
+                    AuthorizationProcess(userdata, NetworkingService.instance.SocketAdapters[clientAuthEvent.SocketSourceId]);
                 }
                 else
                 {
@@ -55,7 +56,7 @@ namespace NECS.Harness.Services
                     var userdata = DBService.instance.DBProvider.CreateUser<UserDataRowBase>(SetupAuthorizationRealization(clientAuthEvent));
                     if (AuthorizationRealization != null)
                     {
-                        AuthorizationRealization(userdata);
+                        AuthorizationProcess(userdata, NetworkingService.instance.SocketAdapters[clientAuthEvent.SocketSourceId]);
                     }
                     else
                     {
@@ -66,6 +67,22 @@ namespace NECS.Harness.Services
                 {
                     Logger.Error("Not initialized AuthService.instance.SetupAuthorizationRealization method");
                 }
+            }
+        }
+
+        private void AuthorizationProcess(UserDataRowBase userData, SocketAdapter socketAdapter)
+        {
+            
+            var entity = SocketToEntity.Values.Where(x => x.GetComponent<UsernameComponent>().Username == userData.Username).FirstOrDefault();
+            if(entity == null)
+            {
+                entity = AuthorizationRealization(userData);
+                entity.AddComponentSilent(new SocketComponent() { socketAdapter = socketAdapter  });
+                ManagerScope.instance.entityManager.OnAddNewEntity(entity);
+            }
+            else
+            {
+                entity.GetComponent<SocketComponent>().socketAdapter = socketAdapter;
             }
         }
 
