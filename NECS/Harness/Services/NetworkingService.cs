@@ -58,10 +58,10 @@ namespace NECS.Harness.Services
 
         public override void InitializeProcess()
         {
-            HostAddress = ConstantService.instance.GetByConfigPath("socket").GetObject<string>("Networking/HostAddress");
-            Port = ConstantService.instance.GetByConfigPath("socket").GetObject<int>("Networking/Port");
-            BufferSize = ConstantService.instance.GetByConfigPath("socket").GetObject<int>("Networking/BufferSize");
-            Protocol = ConstantService.instance.GetByConfigPath("socket").GetObject<string>("Networking/Protocol");
+            HostAddress = ConstantService.instance.GetByConfigPath("baseconfig").GetObject<string>("Networking/HostAddress");
+            Port = ConstantService.instance.GetByConfigPath("baseconfig").GetObject<int>("Networking/Port");
+            BufferSize = ConstantService.instance.GetByConfigPath("baseconfig").GetObject<int>("Networking/BufferSize");
+            Protocol = ConstantService.instance.GetByConfigPath("baseconfig").GetObject<string>("Networking/Protocol");
 
             switch (Protocol.ToLower())
             {

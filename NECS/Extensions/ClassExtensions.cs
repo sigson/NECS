@@ -2,6 +2,7 @@
 using NECS.ECS.Types.AtomicType;
 using NECS.GameEngineAPI;
 using NECS.Harness.Model;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -92,6 +93,21 @@ namespace NECS
             angles.z = (float)Math.Atan2(siny_cosp, cosy_cosp);
 
             return angles;
+        }
+    }
+
+    public static class JsonUtil
+    {
+        public static string JsonPrettify(string json)
+        {
+            using (var stringReader = new StringReader(json))
+            using (var stringWriter = new StringWriter())
+            {
+                var jsonReader = new JsonTextReader(stringReader);
+                var jsonWriter = new JsonTextWriter(stringWriter) { Formatting = Formatting.Indented };
+                jsonWriter.WriteToken(jsonReader);
+                return stringWriter.ToString();
+            }
         }
     }
 

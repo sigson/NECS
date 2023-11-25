@@ -72,12 +72,19 @@ namespace NECS.Harness.Services
                     File.WriteAllBytes(Path.Combine(GlobalProgramState.instance.GameConfigDir, "zippedconfig.zip"), loadedConfigFile.ToArray());
                     ZipExt.DecompressToDirectory(loadedConfigFile.ToArray(), GlobalProgramState.instance.GameDataDir, (info) => { });
                 }
+                if(config_path != "")
+                {
+                    if(!File.Exists(Path.Combine(gameConfDirectory, "baseconfig.json")))
+                    {
+                        File.WriteAllText(Path.Combine(gameConfDirectory, "baseconfig.json"), JsonUtil.JsonPrettify(GlobalProgramState.instance.BaseConfigDefault));
+                    }
+                }
                 #region initload
                 var nowLib = "";
                 ConfigObj nowObject = new ConfigObj();
                 foreach (var file in GetRecursFiles(gameConfDirectory))
                 {
-                    if (file.Contains(".yml") || file.Contains(".json"))
+                    if (file.Contains(".yml") || file.Contains(".json") || file.Contains(".yaml"))
                     {
                         if (nowLib == "")
                         {
@@ -96,7 +103,7 @@ namespace NECS.Harness.Services
                         var yaml = new YamlDotNet.Serialization.Deserializer();
                         string jsonText = "";
 
-                        if (file.Contains(".yml"))
+                        if (file.Contains(".yml") || file.Contains(".yaml"))
                         {
                             var yamlObject = yaml.Deserialize<ExpandoObject>(input);
                             Newtonsoft.Json.JsonSerializer js = new Newtonsoft.Json.JsonSerializer();
@@ -106,7 +113,7 @@ namespace NECS.Harness.Services
                         }
                         if (file.Contains(".json"))
                         {
-                            jsonText = input.ToString();
+                            jsonText = input.ReadToEnd();
                         }
                         
                         System.IO.MemoryStream mStream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonText));
@@ -160,6 +167,10 @@ namespace NECS.Harness.Services
                             Directory.Delete(ziptempfolder, true);
                         FileEx.CopyFilesRecursively(new DirectoryInfo(GlobalProgramState.instance.GameConfigDir), new DirectoryInfo(ziptempgamedir));
                         #endregion
+                        if (!Directory.Exists(ziptempfolder))
+                        {
+                            Directory.CreateDirectory(ziptempfolder);
+                        }
                         ZipExt.CompressDirectory(ziptempfolder, Path.Combine(GlobalProgramState.instance.GameDataDir, "zippedconfig.zip"), (prog) => { });
                     }
                     Byte[] bytes = File.ReadAllBytes(Path.Combine(GlobalProgramState.instance.GameDataDir, "zippedconfig.zip"));

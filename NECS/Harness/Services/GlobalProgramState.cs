@@ -58,6 +58,8 @@ namespace NECS.Harness.Services
             }
         }
 
+        public string BaseConfigDefault = "{\"DataBase\":{\"DBPath\":\"Config/Users.db\",\"DBType\":\"sqlite\"},\"Networking\":{\"HostAddress\":\"127.0.0.1\",\"Port\":\"6666\",\"BufferSize\":\"1024\",\"Protocol\":\"tcp\"},\"NetworkMaliciousEventCounteraction\":{\"MaliciousScoreDecreaseIntervalInSec\":\"10\",\"MaliciousScoreDecreaseValue\":\"100\",\"MaxNetworkMaliciousScore\":\"1000\",\"MaliciousIPTimeoutInSeconds\":\"300\"},\"ECS\":{\"TickTimeMS\":\"5\"}}";
+
         public string PathSystemSeparator
         {
             get

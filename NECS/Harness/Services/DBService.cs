@@ -28,15 +28,18 @@ namespace NECS.Harness.Services
 
         public override void InitializeProcess()
         {
-            DBPath = ConstantService.instance.GetByConfigPath("socket").GetObject<string>("DataBase/DBPath");
-            DBType = ConstantService.instance.GetByConfigPath("socket").GetObject<string>("Networking/DBType");
-            switch (DBType.ToLower())
+            DBPath = ConstantService.instance.GetByConfigPath("baseconfig").GetObject<string>("DataBase/DBPath");
+            DBType = ConstantService.instance.GetByConfigPath("baseconfig").GetObject<string>("DataBase/DBType");
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {
-                case "sqlite":
-                    DBProvider = new SQLiteDefaultDBProvider();
-                    break;
+                switch (DBType.ToLower())
+                {
+                    case "sqlite":
+                        DBProvider = new SQLiteDefaultDBProvider();
+                        break;
+                }
+                DBProvider.Load(DBPath);
             }
-            DBProvider.Load(DBPath);
         }
 
         public override void OnDestroyReaction()

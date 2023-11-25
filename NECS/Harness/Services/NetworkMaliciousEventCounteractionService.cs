@@ -43,10 +43,15 @@ namespace NECS.Harness.Services
         public ConcurrentDictionary<string, int> SocketInfoDB = new ConcurrentDictionary<string, int>();
         public override void InitializeProcess()
         {
+            MaliciousScoreDecreaseIntervalInSec = ConstantService.instance.GetByConfigPath("baseconfig").GetObject<int>("NetworkMaliciousEventCounteraction/MaliciousScoreDecreaseIntervalInSec");
+            MaliciousScoreDecreaseValue = ConstantService.instance.GetByConfigPath("baseconfig").GetObject<int>("NetworkMaliciousEventCounteraction/MaliciousScoreDecreaseValue");
+            MaxNetworkMaliciousScore = ConstantService.instance.GetByConfigPath("baseconfig").GetObject<int>("NetworkMaliciousEventCounteraction/MaxNetworkMaliciousScore");
+            MaliciousIPTimeoutInSeconds = ConstantService.instance.GetByConfigPath("baseconfig").GetObject<int>("NetworkMaliciousEventCounteraction/MaliciousIPTimeoutInSeconds");
+
             maliciousTimerInstance = new TimerEx()
             {
                 AutoReset = true,
-                Interval = 10*1000
+                Interval = MaliciousScoreDecreaseIntervalInSec * 1000
             };
             maliciousTimerInstance.Elapsed += async (sender, e) => await Task.Run(() => MaliciousScoreDecrease());
             maliciousTimerInstance.Start();
