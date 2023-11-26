@@ -5,6 +5,10 @@ namespace NECS.ECS.ECSCore
 {
     [Serializable]
     [TypeUid(3)]
+    /// <summary>
+    /// ATTENTION! Use lock(this.SerialLocker) when you edit component fields if you want to edit fields value for prevent serialization error!
+    /// </summary>
+    /// <param name="entity"></param>
     public class ECSComponent : IECSObject, ICloneable
     {
         static new public long Id { get; set; } = 0;
@@ -89,17 +93,28 @@ namespace NECS.ECS.ECSCore
             return ObjectType;
         }
 
-        /// overridable functional for damage transformer, after adding component of damage effect - in this method we send transformer action to damage transformers agregator
+        // overridable functional for damage transformer, after adding component of damage effect - in this method we send transformer action to damage transformers agregator
+        /// <summary>
+        /// ATTENTION! Use lock(this.SerialLocker) if you want to edit fields value for prevent serialization error!
+        /// </summary>
+        /// <param name="entity"></param>
         public virtual void OnAdded(ECSEntity entity)
         {
             this.MarkAsChanged();
         }
 
+        /// <summary>
+        /// ATTENTION! Use lock(this.SerialLocker) if you want to edit fields value for prevent serialization error!
+        /// </summary>
+        /// <param name="entity"></param>
         public virtual void OnChange(ECSEntity entity)
         {
 
         }
-
+        /// <summary>
+        /// ATTENTION! Use lock(this.SerialLocker) if you want to edit fields value for prevent serialization error!
+        /// </summary>
+        /// <param name="entity"></param>
         public virtual void OnRemoving(ECSEntity entity)
         {
 
