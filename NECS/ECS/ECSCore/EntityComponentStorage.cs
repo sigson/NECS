@@ -414,15 +414,16 @@ namespace NECS.ECS.ECSCore
         public void ChangeComponent(ECSComponent component, bool silent = false, ECSEntity restoringOwner = null)
         {
             Type componentClass = component.GetTypeFast();
-            lock (this.operationLocker)
+            lock (this.serializationLocker)
             {
-                if (restoringOwner != null)
-                    component.ownerEntity = restoringOwner;
-                component.Unregistered = false;//for afterserialize changing
-                this.components[componentClass] = component;
+                lock (this.operationLocker)
+                {
+                    if (restoringOwner != null)
+                        component.ownerEntity = restoringOwner;
+                    component.Unregistered = false;//for afterserialize changing
+                    this.components[componentClass] = component;
+                }
             }
-            
-
             this.MarkComponentChanged(component, silent);
         }
 
@@ -476,18 +477,21 @@ namespace NECS.ECS.ECSCore
 
         public void OnEntityDelete()
         {
-            lock (this.operationLocker)
+            lock (this.serializationLocker)
             {
-                foreach (var component in this.components.Values)
+                lock (this.operationLocker)
                 {
-                    component.OnRemove();
+                    foreach (var component in this.components.Values)
+                    {
+                        component.OnRemove();
+                    }
+                    this.components.Clear();
+                    this.SerializationContainer.Clear();
+                    this.IdToTypeComponent.Clear();
+                    this.changedComponents.Clear();
+                    this.RemovedComponents.Clear();
+                    this.IdToTypeComponent.Clear();
                 }
-                this.components.Clear();
-                this.SerializationContainer.Clear();
-                this.IdToTypeComponent.Clear();
-                this.changedComponents.Clear();
-                this.RemovedComponents.Clear();
-                this.IdToTypeComponent.Clear();
             }
         }
 

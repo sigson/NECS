@@ -33,7 +33,7 @@ namespace NECS.ECS.ECSCore
         
         public Dictionary<long, int> fastEntityComponentsId;//todo: concurrent replace to normal
         [NonSerialized]
-        public List<GroupDataAccessPolicy> dataAccessPolicies;
+        public SynchronizedList<GroupDataAccessPolicy> dataAccessPolicies;
         [NonSerialized]
         public string Name;
         [NonSerialized]
@@ -50,7 +50,7 @@ namespace NECS.ECS.ECSCore
         public ECSEntity() {
             entityComponents = new EntityComponentStorage(this);
             fastEntityComponentsId = new Dictionary<long, int>();
-            dataAccessPolicies = new List<GroupDataAccessPolicy>();
+            dataAccessPolicies = new SynchronizedList<GroupDataAccessPolicy>();
             entityGroups = new ConcurrentDictionary<long, ECSEntityGroup>();
         }
 
@@ -58,7 +58,7 @@ namespace NECS.ECS.ECSCore
         {
             entityComponents = new EntityComponentStorage(this);
             fastEntityComponentsId = new Dictionary<long, int>();
-            dataAccessPolicies = new List<GroupDataAccessPolicy>();
+            dataAccessPolicies = new SynchronizedList<GroupDataAccessPolicy>();
             entityGroups = new ConcurrentDictionary<long, ECSEntityGroup>();
             this.instanceId = instanceid;
         }
@@ -67,7 +67,7 @@ namespace NECS.ECS.ECSCore
         {
             entityComponents = new EntityComponentStorage(this);
             fastEntityComponentsId = new Dictionary<long, int>();
-            dataAccessPolicies = new List<GroupDataAccessPolicy>();
+            dataAccessPolicies = new SynchronizedList<GroupDataAccessPolicy>();
             entityGroups = new ConcurrentDictionary<long, ECSEntityGroup>();
             foreach (var component in eCSComponents)
             {
