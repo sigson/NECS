@@ -32,7 +32,7 @@ namespace NECS.ECS.ECSCore
         ///         }
         ///     });
         /// </summary>
-        public ConcurrentDictionary<long, List<Func<ECSEvent, object>>> SystemEventHandler = new ConcurrentDictionary<long, List<Func<ECSEvent, object>>>();//id of event and func
+        public IDictionary<long, List<Func<ECSEvent, object>>> SystemEventHandler = new ConcurrentDictionary<long, List<Func<ECSEvent, object>>>();//id of event and func
         /// <summary>
         /// Need to setup in initalize method. Setting up look like is:
         /// ComponentsOnChangeCallbacks.Add(GameComponent.Id, new List<Action<ECSEntity, ECSComponent>>() {
@@ -41,7 +41,7 @@ namespace NECS.ECS.ECSCore
         ///         }
         ///     });
         /// </summary>
-        public ConcurrentDictionary<long, List<Action<ECSEntity, ECSComponent>>> ComponentsOnChangeCallbacks = new ConcurrentDictionary<long, List<Action<ECSEntity, ECSComponent>>>();//id of component and func
+        public IDictionary<long, List<Action<ECSEntity, ECSComponent>>> ComponentsOnChangeCallbacks = new ConcurrentDictionary<long, List<Action<ECSEntity, ECSComponent>>>();//id of component and func
 
         /// <summary>
         /// Methor running before ECS system initialliation
@@ -73,12 +73,12 @@ namespace NECS.ECS.ECSCore
         /// Return system interested components dictionary <StaticIDComponent, randomint>
         /// </summary>
         /// <returns></returns>
-        public abstract ConcurrentDictionary<long, int> GetInterestedComponentsList();
+        public abstract IDictionary<long, int> GetInterestedComponentsList();
         /// <summary>
         /// Return system events components dictionary <StaticIDEvent, randomint>
         /// </summary>
         /// <returns></returns>
-        public virtual ConcurrentDictionary<long, int> GetInterestedEventsList()
+        public virtual IDictionary<long, int> GetInterestedEventsList()
         {
             var result = new ConcurrentDictionary<long, int>();
             foreach (var eventid in SystemEventHandler)
