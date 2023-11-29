@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
@@ -78,6 +80,18 @@ namespace NECS.Harness.Model
                 Karma = int.Parse(dbResult.GetString("Karma"));
                 GameDataPacked = dbResult.GetString("GameDataPacked");
             }
+        }
+
+        public virtual string PackJsonGameData<T>(T gameDataObject) where T : class
+        {
+            return System.Text.Json.JsonSerializer.Serialize<T>(gameDataObject);
+        }
+
+        public virtual T UnpackJsonGameData<T>() where T : class
+        {
+            System.IO.MemoryStream mStream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(GameDataPacked));
+            var reader = new JsonTextReader(new StreamReader(mStream));
+            return JObject.Load(reader).ToObject<T>();
         }
 
         public virtual T SetupNew<T>() where T : UserDataRowBase

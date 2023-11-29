@@ -78,7 +78,7 @@ namespace NECS.Harness.Services
             if(entity == null)
             {
                 entity = AuthorizationRealization(userData);
-                entity.AddComponentSilent(new SocketComponent() { socketAdapter = socketAdapter  });
+                entity.AddComponentSilent(new SocketComponent() { Socket = socketAdapter  });
                 SocketToEntity[socketAdapter] = entity;
                 EntityToSocket[entity] = socketAdapter;
                 ManagerScope.instance.entityManager.OnAddNewEntity(entity);
@@ -86,11 +86,11 @@ namespace NECS.Harness.Services
             }
             else
             {
-                var oldsocket = entity.GetComponent<SocketComponent>().socketAdapter;
+                var oldsocket = entity.GetComponent<SocketComponent>().Socket;
                 SocketToEntity[socketAdapter] = entity;
                 EntityToSocket[entity] = socketAdapter;
                 SocketToEntity.Remove(oldsocket, out _);
-                entity.GetComponent<SocketComponent>().socketAdapter = socketAdapter;
+                entity.GetComponent<SocketComponent>().Socket = socketAdapter;
                 userLogged.userRelogin = true;
             }
             userLogged.userEntity = entity;
