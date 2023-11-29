@@ -30,7 +30,7 @@ namespace NECS.ECS.ECSCore
                 }
                 else
                 {
-                    Logger.Error("You trie add already added element! If you need it - use [] indexer" + key.ToString());
+                    NLogger.Error("You trie add already added element! If you need it - use [] indexer" + key.ToString());
                     return;
                 }
             }
@@ -70,7 +70,7 @@ namespace NECS.ECS.ECSCore
                 }
                 else
                 {
-                    Logger.Error("You trie remove non presented component " + key.ToString());
+                    NLogger.Error("You trie remove non presented component " + key.ToString());
                     return false;
                 }
             }
@@ -91,7 +91,7 @@ namespace NECS.ECS.ECSCore
                 }
                 else
                 {
-                    Logger.Error("You trie remove non presented component " + item.Key.ToString());
+                    NLogger.Error("You trie remove non presented component " + item.Key.ToString());
                     return false;
                 }
             }
@@ -158,7 +158,7 @@ namespace NECS.ECS.ECSCore
             }
             catch
             {
-                Logger.Warn("Error get from GroupComponentManager " + this.GetType().ToString());
+                NLogger.Warn("Error get from GroupComponentManager " + this.GetType().ToString());
                 value = null;
                 return false;
             }

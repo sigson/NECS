@@ -118,7 +118,7 @@ namespace NECS.Network.NetworkModels
                 }
                 if (TCPGameSessionSocket != null)
                 {
-                    Logger.LogError("Try IsConnecting from session socket");
+                    NLogger.LogError("Try IsConnecting from session socket");
                 }
                 return false;
             }
@@ -181,7 +181,7 @@ namespace NECS.Network.NetworkModels
             }
             if (TCPGameSessionSocket != null)
             {
-                Logger.LogError("Try Connect from session socket");
+                NLogger.LogError("Try Connect from session socket");
             }
         }
         /// <summary>
@@ -224,7 +224,7 @@ namespace NECS.Network.NetworkModels
             }
             if (TCPGameSessionSocket != null)
             {
-                Logger.LogError("Try Reconnect from session socket");
+                NLogger.LogError("Try Reconnect from session socket");
             }
         }
         /// <summary>
@@ -239,7 +239,7 @@ namespace NECS.Network.NetworkModels
             }
             if (TCPGameSessionSocket != null)
             {
-                Logger.LogError("Try ConnectAsync from session socket");
+                NLogger.LogError("Try ConnectAsync from session socket");
             }
         }
         /// <summary>
@@ -269,7 +269,7 @@ namespace NECS.Network.NetworkModels
             }
             if (TCPGameSessionSocket != null)
             {
-                Logger.LogError("Try ReconnectAsync from session socket");
+                NLogger.LogError("Try ReconnectAsync from session socket");
             }
             return false;
         }

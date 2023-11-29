@@ -32,7 +32,7 @@ namespace NECS.Harness.Model
                 }
                 else
                 {
-                    Logger.LogError("You trie add already added element! If you need it - use [] indexer");
+                    NLogger.LogError("You trie add already added element! If you need it - use [] indexer");
                 }
                 EntityGroupManagersStorageService.instance.AddEntityCache(this, value.instanceId);
             }
@@ -152,7 +152,7 @@ namespace NECS.Harness.Model
             }
             catch
             {
-                Logger.Warn("Error get from GroupEntityManager " + this.GetType().ToString());
+                NLogger.Warn("Error get from GroupEntityManager " + this.GetType().ToString());
                 value = null;
                 return false;
             }

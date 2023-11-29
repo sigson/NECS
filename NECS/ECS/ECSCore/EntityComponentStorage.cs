@@ -79,7 +79,7 @@ namespace NECS.ECS.ECSCore
                         changedComponents.Clear();
                         errorList.ForEach((errorType) => changedComponents.Add(errorType, 0));
                         if (errorList.Count > 0)
-                            Logger.LogError("serialization error");
+                            NLogger.LogError("serialization error");
                     }
 
                     return slicedComponents;
@@ -216,7 +216,7 @@ namespace NECS.ECS.ECSCore
                             changedComponents.Clear();
                             errorList.ForEach((errorType) => changedComponents.Add(errorType, 0));
                             if (errorList.Count > 0)
-                                Logger.LogError("serialization error");
+                                NLogger.LogError("serialization error");
                         }
 
                         return slicedComponents;
@@ -348,7 +348,7 @@ namespace NECS.ECS.ECSCore
                         if (this.entity != null)
                             this.entity.fastEntityComponentsId.AddI(component.instanceId, 0, this.entity.SerialLocker);
                         else
-                            Logger.LogError("null owner entity");
+                            NLogger.LogError("null owner entity");
                         if (restoringMode)
                             this.SerializationContainer.TryAdd(component.GetId(), component);
                         else
@@ -359,7 +359,7 @@ namespace NECS.ECS.ECSCore
             }
             if(exception)
             {
-                Logger.Error("try add presented component");
+                NLogger.Error("try add presented component");
                 throw new Exception("try add presented component");
             }
             else
@@ -437,7 +437,7 @@ namespace NECS.ECS.ECSCore
             catch (Exception ex)
             {
                 if (ex is KeyNotFoundException)
-                    Logger.Error(ex.Message + "  \n" + ex.StackTrace);
+                    NLogger.Error(ex.Message + "  \n" + ex.StackTrace);
             }
             return component;
         }
@@ -452,7 +452,7 @@ namespace NECS.ECS.ECSCore
             catch (Exception ex)
             {
                 if (ex is KeyNotFoundException)
-                    Logger.Error(ex.Message + "  \n" + ex.StackTrace);
+                    NLogger.Error(ex.Message + "  \n" + ex.StackTrace);
             }
             return component;
         }
@@ -538,7 +538,7 @@ namespace NECS.ECS.ECSCore
             }
             if(exception)
             {
-                Logger.Error("try to remove non present component in group removing");
+                NLogger.Error("try to remove non present component in group removing");
             }
             toRemoveComponent.ForEach((removedComponent) =>
             {
@@ -628,7 +628,7 @@ namespace NECS.ECS.ECSCore
             }
             if(exception)
             {
-                Logger.LogError("try to remove non present component");
+                NLogger.LogError("try to remove non present component");
                 throw new Exception("try to remove non present component");
             }
             else

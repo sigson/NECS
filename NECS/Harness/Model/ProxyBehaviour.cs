@@ -44,11 +44,11 @@ namespace NECS.Harness.Model
                         {
                             if (ErrorLog == "")
                             {
-                                Logger.Error("Error execution: \n" + ex.Message + "\n" + action.Method.ToString() + "\n" + ex.StackTrace);
+                                NLogger.Error("Error execution: \n" + ex.Message + "\n" + action.Method.ToString() + "\n" + ex.StackTrace);
                             }
                             else
                             {
-                                Logger.Error(ErrorLog + ": \n" + ex.Message + "\n" + action.Method.ToString() + "\n" + ex.StackTrace);
+                                NLogger.Error(ErrorLog + ": \n" + ex.Message + "\n" + action.Method.ToString() + "\n" + ex.StackTrace);
                             }
                             if (exceptionCallback != null)
                             {
@@ -58,7 +58,7 @@ namespace NECS.Harness.Model
                                 }
                                 catch (Exception exw)
                                 {
-                                    Logger.Error(ErrorLog + ": " + exw.Message + "\n" + exw.StackTrace);
+                                    NLogger.Error(ErrorLog + ": " + exw.Message + "\n" + exw.StackTrace);
                                 }
                             }
                         }
@@ -89,11 +89,11 @@ namespace NECS.Harness.Model
                         {
                             if (ErrorLog == "")
                             {
-                                Logger.Error("Error execution: \n" + ex.Message + "\n" + action.Method.ToString() + "\n" + ex.StackTrace);
+                                NLogger.Error("Error execution: \n" + ex.Message + "\n" + action.Method.ToString() + "\n" + ex.StackTrace);
                             }
                             else
                             {
-                                Logger.Error(ErrorLog + ": \n" + ex.Message + "\n" + action.Method.ToString() + "\n" + ex.StackTrace);
+                                NLogger.Error(ErrorLog + ": \n" + ex.Message + "\n" + action.Method.ToString() + "\n" + ex.StackTrace);
                             }
                             if (exceptionCallback != null)
                             {
@@ -103,7 +103,7 @@ namespace NECS.Harness.Model
                                 }
                                 catch (Exception exw)
                                 {
-                                    Logger.Error(ErrorLog + ": " + exw.Message + "\n" + exw.StackTrace);
+                                    NLogger.Error(ErrorLog + ": " + exw.Message + "\n" + exw.StackTrace);
                                 }
                             }
                         }
@@ -135,7 +135,7 @@ namespace NECS.Harness.Model
                         }
                         catch (Exception ex)
                         {
-                            Logger.Error(ErrorLog + ": " + ex.Message + "\n" + ex.StackTrace);
+                            NLogger.Error(ErrorLog + ": " + ex.Message + "\n" + ex.StackTrace);
                             if (exceptionCallback != null)
                             {
                                 try
@@ -144,7 +144,7 @@ namespace NECS.Harness.Model
                                 }
                                 catch (Exception exw)
                                 {
-                                    Logger.Error(ErrorLog + ": " + exw.Message + "\n" + exw.StackTrace);
+                                    NLogger.Error(ErrorLog + ": " + exw.Message + "\n" + exw.StackTrace);
                                 }
                             }
                         }

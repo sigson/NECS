@@ -51,7 +51,7 @@ namespace NECS.Harness.Model
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error("Escape from lock: " + ex.Message + " _________ " + ex.StackTrace);
+                    NLogger.Error("Escape from lock: " + ex.Message + " _________ " + ex.StackTrace);
                 }
             }
             if(!packetInitialize)
@@ -72,7 +72,7 @@ namespace NECS.Harness.Model
             }
             catch (Exception ex)
             {
-                Logger.Log(ex.Message + "\n" + ex.StackTrace);
+                NLogger.Log(ex.Message + "\n" + ex.StackTrace);
             }
             return null;
         }
@@ -108,7 +108,7 @@ namespace NECS.Harness.Model
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error("Escape from lock: " + ex.Message + " _________ " + ex.StackTrace);
+                    NLogger.Error("Escape from lock: " + ex.Message + " _________ " + ex.StackTrace);
                 }
             }
             OnDestroyReaction();
@@ -137,7 +137,7 @@ namespace NECS.Harness.Model
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error("Escape from lock: " + ex.Message + " _________ " + ex.StackTrace);
+                    NLogger.Error("Escape from lock: " + ex.Message + " _________ " + ex.StackTrace);
                 }
             }
         }

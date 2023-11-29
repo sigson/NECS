@@ -65,7 +65,7 @@ namespace NECS.Harness.Services
 
                 if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client && checkedConfigVersion != hashConfig && config_path == "")
                 {
-                    Logger.Log("Constant service update config");
+                    NLogger.Log("Constant service update config");
                     if (Directory.Exists(GlobalProgramState.instance.GameConfigDir))
                         Directory.Delete(GlobalProgramState.instance.GameConfigDir, true);
                     Directory.CreateDirectory(GlobalProgramState.instance.GameConfigDir);

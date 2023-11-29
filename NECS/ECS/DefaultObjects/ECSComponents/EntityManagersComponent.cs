@@ -38,7 +38,7 @@ namespace NECS.ECS.DefaultsDB.ECSComponents
                 }
                 else
                 {
-                    Logger.Error("You trie add already added element! If you need it - use [] indexer" + key.ToString());
+                    NLogger.Error("You trie add already added element! If you need it - use [] indexer" + key.ToString());
                     return;
                 }
             }
@@ -78,7 +78,7 @@ namespace NECS.ECS.DefaultsDB.ECSComponents
                 }
                 else
                 {
-                    Logger.Error("You trie remove non presented component " + key.ToString());
+                    NLogger.Error("You trie remove non presented component " + key.ToString());
                     return false;
                 }
             }
@@ -99,7 +99,7 @@ namespace NECS.ECS.DefaultsDB.ECSComponents
                 }
                 else
                 {
-                    Logger.Error("You trie remove non presented component " + item.Key.ToString());
+                    NLogger.Error("You trie remove non presented component " + item.Key.ToString());
                     return false;
                 }
             }
@@ -166,7 +166,7 @@ namespace NECS.ECS.DefaultsDB.ECSComponents
             }
             catch
             {
-                Logger.Warn("Error get from GroupEntityManager " + this.GetType().ToString());
+                NLogger.Warn("Error get from GroupEntityManager " + this.GetType().ToString());
                 value = null;
                 return false;
             }

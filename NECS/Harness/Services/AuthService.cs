@@ -42,7 +42,7 @@ namespace NECS.Harness.Services
                 }
                 else
                 {
-                    Logger.Error("Not initialized AuthService.instance.AuthorizationRealization method");
+                    NLogger.Error("Not initialized AuthService.instance.AuthorizationRealization method");
                 }
             }
         }
@@ -61,12 +61,12 @@ namespace NECS.Harness.Services
                     }
                     else
                     {
-                        Logger.Error("Not initialized AuthService.instance.AuthorizationRealization method");
+                        NLogger.Error("Not initialized AuthService.instance.AuthorizationRealization method");
                     }
                 }
                 else
                 {
-                    Logger.Error("Not initialized AuthService.instance.SetupAuthorizationRealization method");
+                    NLogger.Error("Not initialized AuthService.instance.SetupAuthorizationRealization method");
                 }
             }
         }

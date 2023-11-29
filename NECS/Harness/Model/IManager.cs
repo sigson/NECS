@@ -285,7 +285,7 @@ namespace NECS.Harness.Model
             }
             catch (Exception ex)
             {
-                Logger.Error("Error destroy " + this.GetType() + "  " + ex.Message + " ____ " + ex.StackTrace);
+                NLogger.Error("Error destroy " + this.GetType() + "  " + ex.Message + " ____ " + ex.StackTrace);
             }
         }
     }

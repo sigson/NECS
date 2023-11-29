@@ -91,7 +91,7 @@ namespace NECS.Harness.Services
             {
                 if(Defines.LowLevelNetworkEventsLogging)
                 {
-                    Logger.LogNetwork($"Connection start from {socketAdapter.Address}:{socketAdapter.Port}");
+                    NLogger.LogNetwork($"Connection start from {socketAdapter.Address}:{socketAdapter.Port}");
                 }
                 NetworkMaliciousEventCounteractionService.instance.maliciousScoringStorage[socketAdapter.Id] = new ScoreObject() { SocketId = socketAdapter.Id };
             }
@@ -99,7 +99,7 @@ namespace NECS.Harness.Services
             {
                 if (Defines.LowLevelNetworkEventsLogging)
                 {
-                    Logger.LogNetwork($"Connected to server on {socketAdapter.Address}:{socketAdapter.Port}");
+                    NLogger.LogNetwork($"Connected to server on {socketAdapter.Address}:{socketAdapter.Port}");
                 }
                 ServiceInitialized = true;
                 initializedCallbackCache();
@@ -117,7 +117,7 @@ namespace NECS.Harness.Services
                 });
                 if (Defines.LowLevelNetworkEventsLogging)
                 {
-                    Logger.LogNetwork($"Client {socketAdapter.Address}:{socketAdapter.Port} disconnected from server");
+                    NLogger.LogNetwork($"Client {socketAdapter.Address}:{socketAdapter.Port} disconnected from server");
                 }
             }
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
@@ -130,7 +130,7 @@ namespace NECS.Harness.Services
                         Task.Delay(1000).Wait();
                         if (Defines.LowLevelNetworkEventsLogging)
                         {
-                            Logger.LogNetwork($"Disconnected from server {socketAdapter.Address}:{socketAdapter.Port} try to connect");
+                            NLogger.LogNetwork($"Disconnected from server {socketAdapter.Address}:{socketAdapter.Port} try to connect");
                         }
                         // Try to connect again
                         socketAdapter.Connect();

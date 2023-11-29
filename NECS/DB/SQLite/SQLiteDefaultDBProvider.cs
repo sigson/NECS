@@ -199,7 +199,7 @@ CREATE TABLE IF NOT EXISTS ""Friends"" (
         {
             string connectionString = "Data Source=" + Path.Combine(GlobalProgramState.instance.GameDataDir, DBPath) + ";Cache=Shared;Mode=ReadWriteCreate;";
             if(Defines.DBEventsLogging)
-                Logger.LogDB($"Using DB on path => '{connectionString}'");
+                NLogger.LogDB($"Using DB on path => '{connectionString}'");
             Connection = new SqliteConnection(connectionString);
             SQLitePCL.raw.SetProvider(new SQLitePCL.SQLite3Provider_e_sqlite3());
             Connection.Open();

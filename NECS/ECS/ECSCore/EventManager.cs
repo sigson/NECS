@@ -91,7 +91,7 @@ namespace NECS.ECS.ECSCore
             }
             if(!ecsEvent.CheckPacket())
             {
-                Logger.LogError("Was received error packed " + ecsEvent.GetType().ToString());
+                NLogger.LogError("Was received error packed " + ecsEvent.GetType().ToString());
                 return;
             }
 
@@ -103,7 +103,7 @@ namespace NECS.ECS.ECSCore
 
                 if (eventHandlers.Count > 0)
                     if (!EventBus.TryAdd(ecsEvent.instanceId, ecsEvent))
-                        Logger.LogError("error add event to bus");
+                        NLogger.LogError("error add event to bus");
                 
                 foreach (var system in eventHandlers)
                 {
@@ -117,7 +117,7 @@ namespace NECS.ECS.ECSCore
                             }
                             catch (Exception ex)
                             {
-                                Logger.LogError(ex);
+                                NLogger.LogError(ex);
 #if DEBUG
                                 throw;
 #endif
@@ -137,7 +137,7 @@ namespace NECS.ECS.ECSCore
             ECSEvent removed;
             if(!EventBus.TryRemove(ecsEventId, out removed))
             {
-                Logger.LogError("core event error");
+                NLogger.LogError("core event error");
             }
             watcherPool.Return(removed.eventWatcher);
         }

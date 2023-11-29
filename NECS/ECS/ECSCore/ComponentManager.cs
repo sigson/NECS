@@ -25,7 +25,7 @@ namespace NECS.ECS.ECSCore
             foreach(var comp in AllDirtyComponents)
             {
                 if (AllComponents.ContainsKey(comp.GetId()))
-                    Logger.Error(comp.GetTypeFast().Name + " id is presened");
+                    NLogger.Error(comp.GetTypeFast().Name + " id is presened");
                 AllComponents[comp.GetId()] = comp;
             }
             ECSEntity entity = new ECSEntity();
@@ -38,7 +38,7 @@ namespace NECS.ECS.ECSCore
                     if (customAttrib != null && field != null)
                         field.SetValue(null, customAttrib.Id);
                     else
-                        Logger.LogError($"WARNING! Type{comp.GetType().ToString()} no have static id field or ID attribute");
+                        NLogger.LogError($"WARNING! Type{comp.GetType().ToString()} no have static id field or ID attribute");
                     entity.AddComponentSilent((ECSComponent)comp.Clone());
                 }
                 catch(Exception ex)

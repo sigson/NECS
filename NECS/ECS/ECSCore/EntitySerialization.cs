@@ -268,7 +268,7 @@ namespace NECS.ECS.ECSCore
 
                 if (!ManagerScope.instance.entityManager.EntityStorage.TryGetValue(bufEntity.desEntity.instanceId, out entity))
                 {
-                    Logger.Log(bufEntity.desEntity.instanceId.ToString() + " new entity");
+                    NLogger.Log(bufEntity.desEntity.instanceId.ToString() + " new entity");
                     entity = bufEntity.desEntity;
                     storage = bufEntity.desEntity.entityComponents;
                     storage.DeserializeStorage(bufEntity.Components);
@@ -462,7 +462,7 @@ namespace NECS.ECS.ECSCore
                     
                     if (!ManagerScope.instance.entityManager.EntityStorage.TryGetValue(bufEntity.entity.instanceId, out entity))
                     {
-                        Logger.Log(bufEntity.entity.instanceId.ToString() + " new entity");
+                        NLogger.Log(bufEntity.entity.instanceId.ToString() + " new entity");
                         entity = bufEntity.entity;
                         bufEntity.ReworkDictionary();
                         storage = new EntityComponentStorage(entity);

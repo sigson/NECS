@@ -243,7 +243,7 @@ namespace NECS
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogError(ex);
+                        NLogger.LogError(ex);
                     }
                 }).ConfigureAwait(false);
             };

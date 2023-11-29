@@ -79,7 +79,7 @@ namespace NECS.ECS.ECSCore
                     }
                     catch
                     {
-                        Logger.Error("error GDAP filtering");
+                        NLogger.Error("error GDAP filtering");
                     }
                     
                 }
@@ -102,7 +102,7 @@ namespace NECS.ECS.ECSCore
                 }
                 catch
                 {
-                    Logger.Error(this.GetType().ToString() + "Could not find Id field");
+                    NLogger.Error(this.GetType().ToString() + "Could not find Id field");
                     return 0;
                 }
             else

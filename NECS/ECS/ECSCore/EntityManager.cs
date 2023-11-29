@@ -19,7 +19,7 @@ namespace NECS.ECS.ECSCore
         {
             Entity.manager = this;
             if (!EntityStorage.TryAdd(Entity.instanceId, Entity))
-                Logger.Error("error add entity to storage");
+                NLogger.Error("error add entity to storage");
             TaskEx.RunAsync(() =>
             {
                 Entity.entityComponents.RegisterAllComponents();

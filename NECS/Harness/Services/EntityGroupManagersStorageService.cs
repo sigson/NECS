@@ -95,7 +95,7 @@ namespace NECS.Harness.Services
                 }
                 if (idGroup.TryGetValue(managerType, out manager))
                 {
-                    Logger.Error("error adding group manager - manager already added");
+                    NLogger.Error("error adding group manager - manager already added");
                     return (T)manager;
                 }
                 else
@@ -186,13 +186,13 @@ namespace NECS.Harness.Services
                 ConcurrentDictionary<Type, IManager> idGroup = null;
                 if (!groupManagersStorage.TryGetValue(id, out idGroup))
                 {
-                    Logger.Error("error removing group manager - id is not presented");
+                    NLogger.Error("error removing group manager - id is not presented");
                     return default(T);
                 }
 
                 if (!idGroup.TryGetValue(managerType, out var _manager))
                 {
-                    Logger.Error("error removing group manager - type element is not presented");
+                    NLogger.Error("error removing group manager - type element is not presented");
                     return default(T);
                 }
                 else

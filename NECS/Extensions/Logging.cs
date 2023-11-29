@@ -2,7 +2,7 @@
 
 namespace NECS.Core.Logging
 {
-    internal static class Logger
+    public static class NLogger
     {
         private static readonly object _lock = new object();
 

@@ -119,7 +119,7 @@ namespace NECS.ECS.ECSCore
             }
             if(!cleared)
             {
-                Logger.LogError("core system error");
+                NLogger.LogError("core system error");
             }
         }
 

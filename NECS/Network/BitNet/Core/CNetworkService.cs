@@ -219,7 +219,7 @@ namespace BitNet
                 }
                 catch (Exception)
                 {
-                    Logger.LogError("Error in receive process (client was interrupt connection)");
+                    NLogger.LogError("Error in receive process (client was interrupt connection)");
                 }
             }
             else
@@ -231,7 +231,7 @@ namespace BitNet
                 }
                 catch (Exception)
                 {
-                    Logger.LogError("Already closed this socket.");
+                    NLogger.LogError("Already closed this socket.");
                 }
             }
 		}

@@ -176,7 +176,7 @@ namespace NECS.ECS.ECSCore
                 {
                     if (!ComponentOwners.TryGetValue(componentId, out owner))
                     {
-                        Logger.LogError("error get component from db");
+                        NLogger.LogError("error get component from db");
                         return (null, ComponentState.Null);
                     }
                 }
@@ -189,7 +189,7 @@ namespace NECS.ECS.ECSCore
                     return comp;
                 else
                 {
-                    Logger.LogError("error get component from db");
+                    NLogger.LogError("error get component from db");
                     return (null, ComponentState.Null);
                 }
             }
@@ -228,7 +228,7 @@ namespace NECS.ECS.ECSCore
         {
             if(!ComponentOwners.ContainsKey(component.instanceId))
             {
-                Logger.LogError("error change component from db");
+                NLogger.LogError("error change component from db");
                 return;
             }
             lock (ownerEntity.entityComponents.serializationLocker)
@@ -240,7 +240,7 @@ namespace NECS.ECS.ECSCore
                     {
                         if (!ComponentOwners.TryGetValue(component.instanceId, out owner))
                         {
-                            Logger.LogError("error change component from db");
+                            NLogger.LogError("error change component from db");
                         }
                     }
                     else
@@ -259,7 +259,7 @@ namespace NECS.ECS.ECSCore
         {
             if (!ComponentOwners.ContainsKey(componentId))
             {
-                Logger.LogError("error remove component from db");
+                NLogger.LogError("error remove component from db");
                 return;
             }
             ECSComponent removedComponent = null;
@@ -272,7 +272,7 @@ namespace NECS.ECS.ECSCore
                     {
                         if (!ComponentOwners.TryGetValue(componentId, out owner))
                         {
-                            Logger.LogError("error remove component from db");
+                            NLogger.LogError("error remove component from db");
                         }
                     }
                     else
@@ -286,7 +286,7 @@ namespace NECS.ECS.ECSCore
                     }
                     else
                     {
-                        Logger.LogError("error remove component from db");
+                        NLogger.LogError("error remove component from db");
                     }
                 }
             }
@@ -487,7 +487,7 @@ namespace NECS.ECS.ECSCore
                     }
                     else
                     {
-                        Logger.Error("error unserialize: no entity");
+                        NLogger.Error("error unserialize: no entity");
                     }
                 }
                 AfterDeserialize();

@@ -153,7 +153,7 @@ namespace BitNet
                 catch (Exception)
                 {
                     close();
-                    Logger.LogError("error data parsing, close");
+                    NLogger.LogError("error data parsing, close");
                 }
             }
 

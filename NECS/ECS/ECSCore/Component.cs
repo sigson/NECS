@@ -48,8 +48,8 @@ namespace NECS.ECS.ECSCore
             }
             catch
             {
-                Logger.Log(ObjectType);
-                Logger.Log("Type not has callbacks");
+                NLogger.Log(ObjectType);
+                NLogger.Log("Type not has callbacks");
                 return null;
             }
             
