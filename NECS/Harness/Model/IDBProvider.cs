@@ -82,9 +82,9 @@ namespace NECS.Harness.Model
             }
         }
 
-        public virtual string PackJsonGameData<T>(T gameDataObject) where T : class
+        public virtual void PackJsonGameData<T>(T gameDataObject) where T : class
         {
-            return System.Text.Json.JsonSerializer.Serialize<T>(gameDataObject);
+            GameDataPacked = System.Text.Json.JsonSerializer.Serialize<T>(gameDataObject);
         }
 
         public virtual T UnpackJsonGameData<T>() where T : class
