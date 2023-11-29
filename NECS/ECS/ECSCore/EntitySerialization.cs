@@ -7,6 +7,7 @@ using NECS.Core.Logging;
 using NECS.ECS.DefaultsDB.ECSComponents;
 using NECS.Extensions;
 using System.Data;
+using System.IO;
 
 namespace NECS.ECS.ECSCore
 {
@@ -168,11 +169,7 @@ namespace NECS.ECS.ECSCore
             var resultObject = new SerializedEntity();
             if (data.Item1 == "" && data.Item2.Count() == 0 && !ignoreNullData)
             {
-                using (var memoryStream = new MemoryStream())
-                {
-                    NetSerializer.Serializer.Default.Serialize(memoryStream, resultObject);
-                    return memoryStream.ToArray();
-                }
+                return new byte[0];
             }
             resultObject.Entity = fromEntity.binSerializedEntity;
             if (!(data.Item1 == "#INCLUDEREMOVED#" || ignoreNullData))
@@ -198,11 +195,7 @@ namespace NECS.ECS.ECSCore
             var resultObject = new SerializedEntity();
             if (componentData.Count == 0)
             {
-                using (var memoryStream = new MemoryStream())
-                {
-                    NetSerializer.Serializer.Default.Serialize(memoryStream, resultObject);
-                    return memoryStream.ToArray();
-                }
+                return new byte[0];
             }
             var serializedData = SlicedSerialize(fromEntity);
             foreach (var comp in componentData)
