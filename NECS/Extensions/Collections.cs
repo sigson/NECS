@@ -191,6 +191,35 @@ namespace NECS.Extensions
         #endregion
     }
 
+    public class TupleList<T1, T2> : List<Tuple<T1, T2>> where T1 : IComparable
+    {
+        public void Add(T1 item, T2 item2)
+        {
+            Add(new Tuple<T1, T2>(item, item2));
+        }
+
+        public new void Sort()
+        {
+            Comparison<Tuple<T1, T2>> c = (a, b) => a.Item1.CompareTo(b.Item1);
+            base.Sort(c);
+        }
+        public void ReverseSort()
+        {
+            Comparison<Tuple<T1, T2>> c = (a, b) => b.Item1.CompareTo(a.Item1);
+            base.Sort(c);
+        }
+
+    }
+    public class DescComparer<T> : IComparer<T>
+    {
+        public int Compare(T x, T y)
+        {
+            if (x == null) return -1;
+            if (y == null) return 1;
+            return Comparer<T>.Default.Compare(y, x);
+        }
+    }
+
     public class Collections
     {
         public static readonly object[] EmptyArray = new object[0];
