@@ -145,6 +145,43 @@ namespace NECS
         //}
     }
 
+#if UNITY_5_3_OR_NEWER
+    public static class Lambda
+    {
+        public static UnityEvent<T> AddListener<T>(this UnityEvent<T> unityEvent, System.Action<T> action)
+        {
+            UnityAction<T> uaction = (T arg) => action(arg);
+            unityEvent.AddListener(uaction);
+            return unityEvent;
+        }
+
+        public static UnityEvent AddListener(this UnityEvent unityEvent, System.Action action)
+        {
+            UnityAction uaction = () => action();
+            unityEvent.AddListener(uaction);
+            return unityEvent;
+        }
+
+        public static bool TryExecute(Action act)
+        {
+            try
+            {
+                act();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+
+        public static T LineFunction<T>(this T obj, Action<T> action)
+        {
+            action(obj);
+            return obj;
+        }
+    }
+#else
     public static class Lambda
     {
         public static Action<T> AddListener<T>(this Action<T> unityEvent, System.Action<T> action)
@@ -186,6 +223,24 @@ namespace NECS
         }
     }
 
+#endif
+
+#if UNITY_5_3_OR_NEWER
+    public static class TaskExts
+    {
+        public static Task LogExceptionIfFaulted(this Task task)
+        {
+            task.ContinueWith(t =>
+            {
+                if (t.IsFaulted || t.Exception != null)
+                {
+                    ClientInitService.instance.ExecuteInstruction(() => Debug.LogException(t.Exception.Flatten().InnerException));
+                }
+            });//, TaskScheduler.FromCurrentSynchronizationContext());
+            return task;
+        }
+    }
+#endif
     public class TaskEx : Task
     {
         public TaskEx(Action action) : base(action)
@@ -222,17 +277,15 @@ namespace NECS
 
         public static void RunAsync(Action action)
         {
-            /////UNITY VERSION FOR CATCHING ERRORS
-            //Func<Task> asyncUpd = async () =>
-            //{
-            //    await Task.Run(() => {
-            //        action();
-            //    }).LogExceptionIfFaulted().ConfigureAwait(false);
-            //};
-            //asyncUpd();
-            ////////////////////
-            ///
-
+#if UNITY_5_3_OR_NEWER
+            Func<Task> asyncUpd = async () =>
+            {
+                await Task.Run(() => {
+                    action();
+                }).LogExceptionIfFaulted().ConfigureAwait(false);
+            };
+            asyncUpd();
+#else
             Func<Task> asyncUpd = async () =>
             {
                 await Task.Run(() =>
@@ -248,6 +301,7 @@ namespace NECS
                 }).ConfigureAwait(false);
             };
             asyncUpd();
+#endif
         }
     }
 
@@ -364,6 +418,103 @@ namespace NECS
         }
     }
 
+#if UNITY_5_3_OR_NEWER
+
+    public static class ManagerSpace
+    {
+        #region Instantiate
+        public static UnityEngine.Object InstantiatedProcess(UnityEngine.Object instantiated, IEntityManager entityManagerOwner = null)
+        {
+            if (entityManagerOwner != null)
+            {
+                if (instantiated is GameObject)
+                {
+                    (instantiated as GameObject).GetComponentsInChildren<IManagable>().ForEach(x => (x as IManagable).ownerManagerSpace = entityManagerOwner);
+                }
+            }
+            return instantiated;
+        }
+
+        public static T Instantiate<T>(T original, Transform parent, IEntityManager entityManagerOwner = null) where T : UnityEngine.Object
+        {
+            var instantiated = UnityEngine.Object.Instantiate<T>(original, parent);
+            return (T)InstantiatedProcess(instantiated, entityManagerOwner);
+        }
+        public static UnityEngine.Object Instantiate(UnityEngine.Object original, Vector3 position, Quaternion rotation, IEntityManager entityManagerOwner = null)
+        {
+            var instantiated = UnityEngine.Object.Instantiate(original, position, rotation);
+            return InstantiatedProcess(instantiated, entityManagerOwner);
+        }
+
+        public static T Instantiate<T>(T original, Transform parent, bool worldPositionStays, IEntityManager entityManagerOwner = null) where T : UnityEngine.Object
+        {
+            var instantiated = UnityEngine.Object.Instantiate<T>(original, parent, worldPositionStays);
+            return (T)InstantiatedProcess(instantiated, entityManagerOwner);
+        }
+
+        public static UnityEngine.Object Instantiate(UnityEngine.Object original, IEntityManager entityManagerOwner = null)
+        {
+            var instantiated = UnityEngine.Object.Instantiate(original);
+            return InstantiatedProcess(instantiated, entityManagerOwner);
+        }
+
+        public static UnityEngine.Object Instantiate(UnityEngine.Object original, Vector3 position, Quaternion rotation, Transform parent, IEntityManager entityManagerOwner = null)
+        {
+            var instantiated = UnityEngine.Object.Instantiate(original, position, rotation, parent);
+            return InstantiatedProcess(instantiated, entityManagerOwner);
+        }
+
+        public static UnityEngine.Object Instantiate(UnityEngine.Object original, Transform parent, bool instantiateInWorldSpace, IEntityManager entityManagerOwner = null)
+        {
+            var instantiated = UnityEngine.Object.Instantiate(original, parent, instantiateInWorldSpace);
+            return InstantiatedProcess(instantiated, entityManagerOwner);
+        }
+
+        public static T Instantiate<T>(T original, IEntityManager entityManagerOwner = null) where T : UnityEngine.Object
+        {
+            var instantiated = UnityEngine.Object.Instantiate<T>(original);
+            return (T)InstantiatedProcess(instantiated, entityManagerOwner);
+        }
+
+        public static T Instantiate<T>(T original, Vector3 position, Quaternion rotation, IEntityManager entityManagerOwner = null) where T : UnityEngine.Object
+        {
+            var instantiated = UnityEngine.Object.Instantiate<T>(original, position, rotation);
+            return (T)InstantiatedProcess(instantiated, entityManagerOwner);
+        }
+
+        public static T Instantiate<T>(T original, Vector3 position, Quaternion rotation, Transform parent, IEntityManager entityManagerOwner = null) where T : UnityEngine.Object
+        {
+            var instantiated = UnityEngine.Object.Instantiate<T>(original, position, rotation, parent);
+            return (T)InstantiatedProcess(instantiated, entityManagerOwner);
+        }
+
+        public static UnityEngine.Object Instantiate(UnityEngine.Object original, Transform parent, IEntityManager entityManagerOwner = null)
+        {
+            var instantiated = UnityEngine.Object.Instantiate(original, parent);
+            return InstantiatedProcess(instantiated, entityManagerOwner);
+        }
+        #endregion
+        #region Component
+
+        private static Component ComponentProcess(Component component, IEntityManager entityManagerOwner)
+        {
+            if (component is IManagable && entityManagerOwner != null)
+                (component as IManagable).ownerManagerSpace = entityManagerOwner;
+            return component;
+        }
+
+        public static UnityEngine.Component AddComponent<T>(this UnityEngine.GameObject gameObject, IEntityManager entityManagerOwner) where T : Component
+        {
+            return (T)ComponentProcess(gameObject.AddComponent<T>(), entityManagerOwner);
+        }
+        public static UnityEngine.Component AddComponent(this UnityEngine.GameObject gameObject, Type typeComponent, IEntityManager entityManagerOwner)
+        {
+            return ComponentProcess(gameObject.AddComponent(typeComponent), entityManagerOwner);
+        }
+        #endregion
+    }
+    
+#else
     public static class ManagerSpace
     {
         #region Instantiate
@@ -380,7 +531,7 @@ namespace NECS
         }
         #endregion
     }
-
+#endif
     public static class HashExtension
     {
         // Some random MD5 stuff

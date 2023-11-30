@@ -10,11 +10,22 @@ namespace NECS.Core.Logging
         {
             lock (_lock)
             {
+#if UNITY_5_3_OR_NEWER
+                Console.ForegroundColor = color;
+                if(ConsoleColor.Red.Equals(color))
+                    UnityEngine.Debug.LogError($"[{DateTime.UtcNow}, {type}] {content}");
+                else if(ConsoleColor.DarkYellow.Equals(color))
+                    UnityEngine.Debug.LogWarning($"[{DateTime.UtcNow}, {type}] {content}");
+                else
+                    UnityEngine.Debug.Log($"[{DateTime.UtcNow}, {type}] {content}");
+
+#else
                 Console.ForegroundColor = color;
                 if(content is Exception)
                     Console.WriteLine($"[{DateTime.UtcNow}, {type}] {(content as Exception).Message}\n {(content as Exception).StackTrace}");
                 else
                     Console.WriteLine($"[{DateTime.UtcNow}, {type}] {content}");
+#endif
             }
         }
 
