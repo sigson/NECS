@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace UTanksServer.Network.Simple.Net
+namespace NECS.Network
 {
 	public enum PROTOCOL : short
 	{

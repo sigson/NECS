@@ -9,7 +9,6 @@ using System.Net.Sockets;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using UTanksServer.Network.Simple.Net;
 
 namespace NECS.Network.NetworkModels.TCP
 {
