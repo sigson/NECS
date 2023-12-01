@@ -308,6 +308,9 @@ namespace NECS.GameEngineAPI
     }
 
     public class StaticEngineApiObjectBehaviour
+#if UNITY_5_3_OR_NEWER
+        : UnityEngine.MonoBehaviour
+#endif
     {
         public static void Destroy(object obj)
         {
