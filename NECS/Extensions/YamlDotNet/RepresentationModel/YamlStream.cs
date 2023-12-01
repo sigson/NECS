@@ -30,7 +30,7 @@ namespace YamlDotNet.RepresentationModel
     /// <summary>
     /// Represents an YAML stream.
     /// </summary>
-    [Serializable]
+    [System.Serializable]
     public class YamlStream : IEnumerable<YamlDocument>
     {
         private readonly IList<YamlDocument> documents = new List<YamlDocument>();

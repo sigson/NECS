@@ -1,9 +1,13 @@
 ﻿using NECS.Harness.Model;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+#if UNITY_5_3_OR_NEWER
+using UnityEngine;
+#endif
 
 namespace NECS.Harness.Services
 {
@@ -23,7 +27,7 @@ namespace NECS.Harness.Services
         public string GameConfigDir {
             get
             {
-#if UNITY
+#if UNITY_5_3_OR_NEWER
                 return Path.Combine(Path.Combine(Application.persistentDataPath, "GameData"), "GameConfig");
 #endif
 #if NET
@@ -36,8 +40,8 @@ namespace NECS.Harness.Services
         {
             get
             {
-#if UNITY
-                return Path.Combine(Application.persistentDataPath, "GameData");
+#if UNITY_5_3_OR_NEWER
+                return Path.Combine(Application.streamingAssetsPath, "GameData");
 #endif
 #if NET
                 return Path.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "GameData");
@@ -49,8 +53,8 @@ namespace NECS.Harness.Services
         {
             get
             {
-#if UNITY
-                return Path.Combine(Path.Combine(Application.persistentDataPath, "GameData"), "Config");
+#if UNITY_5_3_OR_NEWER
+                return Path.Combine(Path.Combine(Application.streamingAssetsPath, "GameData"), "Config");
 #endif
 #if NET
                 return Path.Combine(Path.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "GameData"), "Config");

@@ -26,7 +26,7 @@ namespace YamlDotNet.Core
     /// <summary>
     /// Specifies the version of the YAML language.
     /// </summary>
-    [Serializable]
+    [System.Serializable]
     public class Version
     {
         /// <summary>

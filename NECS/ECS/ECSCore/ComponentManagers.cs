@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace NECS.ECS.ECSCore
 {
-    [Serializable]
+    [System.Serializable]
     public class ComponentManagers : IDictionary<Type, IComponentManager>
     {
         static public new long Id { get; set; }

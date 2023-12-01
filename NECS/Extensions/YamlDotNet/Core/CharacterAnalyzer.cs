@@ -25,7 +25,7 @@ using System.Linq;
 
 namespace YamlDotNet.Core
 {
-    [Serializable]
+    [System.Serializable]
     internal class CharacterAnalyzer<TBuffer> where TBuffer : ILookAheadBuffer
     {
         private readonly TBuffer buffer;

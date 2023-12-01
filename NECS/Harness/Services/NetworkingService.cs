@@ -31,8 +31,8 @@ namespace NECS.Harness.Services
         public string Protocol = "tcp";
         public ConcurrentDictionary<long, SocketAdapter> SocketAdapters = new ConcurrentDictionary<long, SocketAdapter>();
         #region client
-        [NonSerialized] public bool AuthError;
-        [NonSerialized] public string AuthErrorReason;
+        [System.NonSerialized] public bool AuthError;
+        [System.NonSerialized] public string AuthErrorReason;
         public string Username;
         public long PlayerEntityId = 0;
         public bool LoggedInGame;

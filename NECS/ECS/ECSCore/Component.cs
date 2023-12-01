@@ -3,7 +3,7 @@ using NECS.Extensions;
 
 namespace NECS.ECS.ECSCore
 {
-    [Serializable]
+    [System.Serializable]
     [TypeUid(3)]
     /// <summary>
     /// ATTENTION! Use lock(this.SerialLocker) when you edit component fields if you want to edit fields value for prevent serialization error!
@@ -13,22 +13,22 @@ namespace NECS.ECS.ECSCore
     {
         static new public long Id { get; set; } = 0;
 
-        [NonSerialized]
+        [System.NonSerialized]
         public ECSEntity ownerEntity;
-        [NonSerialized]
+        [System.NonSerialized]
         public ReaderWriterLockSlim locker = new ReaderWriterLockSlim();
 
-        [NonSerialized]
+        [System.NonSerialized]
         public List<string> ConfigPath = new List<string>();
 
         public Dictionary<long, ECSComponentGroup> ComponentGroups = new Dictionary<long, ECSComponentGroup>();//todo: concurrent replace to normal
-        [NonSerialized]
+        [System.NonSerialized]
         static public List<Action> StaticOnChangeHandlers = new List<Action>();
-        [NonSerialized]
+        [System.NonSerialized]
         public List<Action<ECSEntity, ECSComponent>> OnChangeHandlers = new List<Action<ECSEntity, ECSComponent>>();
-        [NonSerialized]
+        [System.NonSerialized]
         public bool Unregistered = true;
-        [NonSerialized]
+        [System.NonSerialized]
         public ComponentManagers componentManagers;
 
         public List<Action<ECSEntity, ECSComponent>> GetOnChangeComponentCallback()

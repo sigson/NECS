@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace NECS.ECS.Types.AtomicType
 {
-    [Serializable]
+    [System.Serializable]
     [TypeUid(103)]
     public class WorldPoint : BaseCustomType
     {

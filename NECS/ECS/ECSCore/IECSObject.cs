@@ -10,19 +10,19 @@ using System.Threading.Tasks;
 
 namespace NECS.ECS.ECSCore
 {
-    [Serializable]
+    [System.Serializable]
     [TypeUid(1)]
     public class IECSObject
     {
         static public long Id { get; set; } = 0;
         public long instanceId = Guid.NewGuid().GuidToLongR();
-        [NonSerialized]
+        [System.NonSerialized]
         public List<IManager> connectPoints = new List<IManager>();
-        [NonSerialized]
+        [System.NonSerialized]
         public Type ObjectType;
-        [NonSerialized]
+        [System.NonSerialized]
         protected long ReflectionId = 0;
-        [NonSerialized]
+        [System.NonSerialized]
         public object SerialLocker = new object();
 
         /// <summary>

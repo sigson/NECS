@@ -27,7 +27,7 @@ namespace YamlDotNet.Core.Tokens
     /// <summary>
     /// Represents a block sequence start token.
     /// </summary>
-    [Serializable]
+    [System.Serializable]
     public class BlockSequenceStart : Token
     {
         /// <summary>

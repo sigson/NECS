@@ -12,7 +12,7 @@ namespace NECS.ECS.ECSCore
     public abstract class ECSSystem
     {
         public long Id { get; set; }
-        [NonSerialized]
+        [System.NonSerialized]
         public Type SystemType;
 
         public bool Enabled { get; set; }

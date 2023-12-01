@@ -6,7 +6,7 @@ using NECS.Core.Logging;
 
 namespace NECS.ECS.ECSCore
 {
-    [Serializable]
+    [System.Serializable]
     public class EntityComponentStorage
     {
         private ECSEntity entity;

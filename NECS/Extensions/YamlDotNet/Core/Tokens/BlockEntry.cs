@@ -27,7 +27,7 @@ namespace YamlDotNet.Core.Tokens
     /// <summary>
     /// Represents a block entry event.
     /// </summary>
-    [Serializable]
+    [System.Serializable]
     public class BlockEntry : Token
     {
         /// <summary>

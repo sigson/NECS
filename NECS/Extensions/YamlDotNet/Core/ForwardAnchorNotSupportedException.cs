@@ -27,7 +27,7 @@ namespace YamlDotNet.Core
     /// The exception that is thrown when an alias references an anchor
     /// that has not yet been defined in a context that does not support forward references.
     /// </summary>
-    [Serializable]
+    [System.Serializable]
     public class ForwardAnchorNotSupportedException : YamlException
     {
         /// <summary>

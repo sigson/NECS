@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace NECS.ECS.Types.AtomicType
 {
-    [Serializable]
+    [System.Serializable]
     [TypeUid(100)]
     public class Vector2S : BaseCustomType
     {

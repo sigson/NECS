@@ -8,14 +8,14 @@ using System.Timers;
 
 namespace NECS.ECS.ECSCore
 {
-    [Serializable]
+    [System.Serializable]
     [TypeUid(10)]
     public class TimerComponent : ECSComponent
     {
         static public new long Id { get; set; }
         static public new System.Collections.Generic.List<System.Action> StaticOnChangeHandlers { get; set; }
-        [NonSerialized]
-        [JsonIgnore]
+        [System.NonSerialized]
+        [Newtonsoft.Json.JsonIgnore]
         TimerEx componentTimer = new TimerEx();
         public double timerAwait = 0;
 
@@ -35,11 +35,11 @@ namespace NECS.ECS.ECSCore
                 }
             }
         }
-        [NonSerialized]
-        [JsonIgnore]
+        [System.NonSerialized]
+        [Newtonsoft.Json.JsonIgnore]
         public Action<ECSEntity, ECSComponent> onStart;
-        [NonSerialized]
-        [JsonIgnore]
+        [System.NonSerialized]
+        [Newtonsoft.Json.JsonIgnore]
         public Action<ECSEntity, ECSComponent> onEnd;
 
         public virtual ECSComponent TimerStart(double newUpdatedTime, ECSEntity entity, bool inSeconds = false, bool loop = false)

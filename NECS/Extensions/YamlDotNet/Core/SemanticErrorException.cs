@@ -26,7 +26,7 @@ namespace YamlDotNet.Core
     /// <summary>
     /// Exception that is thrown when a semantic error is detected on a YAML stream.
     /// </summary>
-    [Serializable]
+    [System.Serializable]
     public class SemanticErrorException : YamlException
     {
         /// <summary>

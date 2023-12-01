@@ -27,13 +27,13 @@ namespace NECS.ECS.ECSCore
 
             NetSerializer.Serializer.Default = new NetSerializer.Serializer(ecsObjects);
         }
-        [Serializable]
+        [System.Serializable]
         public class SerializedEntity
         {
             public byte[] Entity;
-            [NonSerialized]
+            [System.NonSerialized]
             public ECSEntity desEntity = null;
-            [NonSerialized]
+            [System.NonSerialized]
             public ConcurrentDictionary<long, ECSComponent> SerializationContainer = new ConcurrentDictionary<long, ECSComponent>();
             public Dictionary<long, byte[]> Components = new Dictionary<long, byte[]>();
 

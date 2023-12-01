@@ -10,7 +10,7 @@ using static NECS.ECS.ECSCore.ComponentsDBComponent;
 
 namespace NECS.ECS.ECSCore
 {
-    [Serializable]
+    [System.Serializable]
     [TypeUid(11)]
     public class DBComponent : ECSComponent
     {
@@ -38,17 +38,17 @@ namespace NECS.ECS.ECSCore
         { }
     }
 
-    [Serializable]
+    [System.Serializable]
     public class dbRow
     {
-        [NonSerialized]
+        [System.NonSerialized]
         public long componentInstanceId;
         public long componentId;
         public object component;
         public ComponentState componentState;
     }
 
-    [Serializable]
+    [System.Serializable]
     [TypeUid(12)]
     public class ComponentsDBComponent : DBComponent
     {
@@ -63,11 +63,11 @@ namespace NECS.ECS.ECSCore
             Null
         }
 
-        [NonSerialized]
+        [System.NonSerialized]
         public Dictionary<long, Dictionary<long, (ECSComponent, ComponentState)>> DB = new Dictionary<long, Dictionary<long, (ECSComponent, ComponentState)>>();
-        [NonSerialized]
+        [System.NonSerialized]
         public Dictionary<long, long> ComponentOwners = new Dictionary<long, long>();
-        [NonSerialized]
+        [System.NonSerialized]
         public Dictionary<long, int> ChangedComponents = new Dictionary<long, int>();
 
         #region add methods

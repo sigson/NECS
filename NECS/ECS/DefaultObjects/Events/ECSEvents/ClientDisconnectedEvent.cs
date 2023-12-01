@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace NECS.ECS.DefaultObjects.Events.ECSEvents
 {
     [NetworkScore(0)]
-    [Serializable]
+    [System.Serializable]
     [TypeUid(17)]
     public class ClientDisconnectedEvent : ECSEvent
     {

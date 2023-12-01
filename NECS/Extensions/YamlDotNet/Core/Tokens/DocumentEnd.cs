@@ -27,7 +27,7 @@ namespace YamlDotNet.Core.Tokens
     /// <summary>
     /// Represents a document end token.
     /// </summary>
-    [Serializable]
+    [System.Serializable]
     public class DocumentEnd : Token
     {
         /// <summary>

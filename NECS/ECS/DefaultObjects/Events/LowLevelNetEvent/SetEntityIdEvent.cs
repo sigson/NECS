@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace NECS.ECS.DefaultObjects.Events.LowLevelNetEvent
 {
     [NetworkScore(0)]
-    [Serializable]
+    [System.Serializable]
     [TypeUid(18)]
     public class SetEntityIdEvent : ECSEvent
     {

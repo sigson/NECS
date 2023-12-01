@@ -26,7 +26,7 @@ namespace YamlDotNet.Core.Tokens
     /// <summary>
     /// Represents a tag token.
     /// </summary>
-    [Serializable]
+    [System.Serializable]
     public class Tag : Token
     {
         private readonly string handle;

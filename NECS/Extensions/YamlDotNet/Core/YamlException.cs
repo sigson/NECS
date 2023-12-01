@@ -26,7 +26,7 @@ namespace YamlDotNet.Core
     /// <summary>
     /// Base exception that is thrown when the a problem occurs in the YamlDotNet library.
     /// </summary>
-    [Serializable]
+    [System.Serializable]
     public class YamlException : Exception
     {
         /// <summary>

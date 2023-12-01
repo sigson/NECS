@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace NECS.ECS.DefaultObjects.Events.LowLevelNetEvent.Auth
 {
     [NetworkScore(40)]
-    [Serializable]
+    [System.Serializable]
     [TypeUid(21)]
     public class ClientAuthEvent : ECSEvent
     {

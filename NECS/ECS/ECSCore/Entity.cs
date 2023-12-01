@@ -11,40 +11,40 @@ using System.Threading.Tasks;
 
 namespace NECS.ECS.ECSCore
 {
-    [Serializable]
+    [System.Serializable]
     [TypeUid(2)]//base type of entity
     public class ECSEntity : IECSObject, ICloneable
     {
         static new public long Id { get; set; } = 2;
-        [NonSerialized]
+        [System.NonSerialized]
         public List<Type> TemplateAccessor = new List<Type>();
 
-        [NonSerialized]
+        [System.NonSerialized]
         public ECSEntityManager manager;
-        [NonSerialized]
+        [System.NonSerialized]
         public ReaderWriterLockSlim locker = new ReaderWriterLockSlim();
-        [NonSerialized]
+        [System.NonSerialized]
         public object contextSwitchLocker = new object();
         [ServerOnlyData]
-        [NonSerialized]
+        [System.NonSerialized]
         public ConcurrentDictionary<long, ECSEntityGroup> entityGroups;
-        [NonSerialized]
+        [System.NonSerialized]
         public EntityComponentStorage entityComponents;
         
         public Dictionary<long, int> fastEntityComponentsId;//todo: concurrent replace to normal
-        [NonSerialized]
+        [System.NonSerialized]
         public SynchronizedList<GroupDataAccessPolicy> dataAccessPolicies;
-        [NonSerialized]
+        [System.NonSerialized]
         public string Name;
-        [NonSerialized]
+        [System.NonSerialized]
         public string serializedEntity;
-        [NonSerialized]
+        [System.NonSerialized]
         public byte[] binSerializedEntity;
-        [NonSerialized]
+        [System.NonSerialized]
         public bool emptySerialized = true;
-        [JsonIgnore]
+        [Newtonsoft.Json.JsonIgnore]
         public List<string> ConfigPath { get; }
-        [NonSerialized]
+        [System.NonSerialized]
         public bool Alive;
 
         public ECSEntity() {

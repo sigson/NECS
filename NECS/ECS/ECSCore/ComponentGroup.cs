@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace NECS.ECS.ECSCore
 {
-    [Serializable]
+    [System.Serializable]
     [TypeUid(6)]
     public class ECSComponentGroup : ECSComponent
     {

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace NECS.ECS.ECSCore
 {
-    [Serializable]
+    [System.Serializable]
     public abstract class ECSEntityGroup
     {
         public long InstanceId = Guid.NewGuid().GuidToLongR();

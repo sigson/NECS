@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace NECS.ECS.DefaultObjects.Events.LowLevelNetEvent.ConfigEvent
 {
     [NetworkScore(0)]
-    [Serializable]
+    [System.Serializable]
     [TypeUid(20)]
     public class ConfigCheckResultEvent : ECSEvent
     {

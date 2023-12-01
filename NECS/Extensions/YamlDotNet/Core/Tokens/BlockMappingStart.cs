@@ -27,7 +27,7 @@ namespace YamlDotNet.Core.Tokens
     /// <summary>
     /// Represents a block mapping start token.
     /// </summary>
-    [Serializable]
+    [System.Serializable]
     public class BlockMappingStart : Token
     {
         /// <summary>

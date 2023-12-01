@@ -3,7 +3,7 @@ using NECS.Core.Logging;
 
 namespace NECS.ECS.ECSCore
 {
-    [Serializable]
+    [System.Serializable]
     public class GroupDataAccessPolicy
     {
         public static long Id;

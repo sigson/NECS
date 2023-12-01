@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace NECS.ECS.ECSCore
 {
-    [Serializable]
+    [System.Serializable]
     [TypeUid(16)]
     public class BaseCustomType : IECSObject
     {

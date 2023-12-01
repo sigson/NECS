@@ -9,15 +9,15 @@ using System.Threading.Tasks;
 namespace NECS.ECS.DefaultObjects.Events.ECSEvents
 {
     [NetworkScore(0)]
-    [Serializable]
+    [System.Serializable]
     [TypeUid(25)]
     public class UserLoggedEvent : ECSEvent
     {
         static public new long Id { get; set; } = 25;
         public ECSEntity userEntity;
         public bool userRelogin = false;
-        [NonSerialized]
-        [JsonIgnore]
+        [System.NonSerialized]
+        [Newtonsoft.Json.JsonIgnore]
         public Action<ECSEntity> actionAfterLoggin = (entity) => { };
         public override void Execute()
         {

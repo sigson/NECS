@@ -4,20 +4,20 @@ using System.Text.Json.Serialization;
 namespace NECS.ECS.ECSCore
 {
     [NetworkScore(0)]
-    [Serializable]
+    [System.Serializable]
     [TypeUid(4)]
     public abstract class ECSEvent : IECSObject
     {
         static new public long Id { get; set; } = 4;
         public long EntityOwnerId;
-        [NonSerialized]
-        [JsonIgnore]
+        [System.NonSerialized]
+        [Newtonsoft.Json.JsonIgnore]
         public long SocketSourceId = 0;
-        [NonSerialized]
-        [JsonIgnore]
+        [System.NonSerialized]
+        [Newtonsoft.Json.JsonIgnore]
         public EventWatcher eventWatcher;
-        [NonSerialized]
-        [JsonIgnore]
+        [System.NonSerialized]
+        [Newtonsoft.Json.JsonIgnore]
         public byte[] cachedGameDataEvent = null;
         public abstract void Execute();
 

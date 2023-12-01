@@ -2,7 +2,7 @@
 
 namespace NECS.ECS.Events.ECSEvents
 {
-    [Serializable]
+    [System.Serializable]
     [TypeUid(15)]
     public class UpdateEntitiesEvent : ECSEvent
     {

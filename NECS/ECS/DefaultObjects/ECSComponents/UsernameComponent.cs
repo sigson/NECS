@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace NECS.ECS.DefaultObjects.ECSComponents
 {
-    [Serializable]
+    [System.Serializable]
     [TypeUid(24)]
     public class UsernameComponent : ECSComponent
     {

@@ -30,7 +30,7 @@ namespace YamlDotNet.RepresentationModel
     /// <summary>
     /// Represents a single node in the YAML document.
     /// </summary>
-    [Serializable]
+    [System.Serializable]
     public abstract class YamlNode
     {
         private const int MaximumRecursionLevel = 1000;

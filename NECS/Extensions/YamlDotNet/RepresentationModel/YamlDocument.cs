@@ -31,7 +31,7 @@ namespace YamlDotNet.RepresentationModel
     /// <summary>
     /// Represents an YAML document.
     /// </summary>
-    [Serializable]
+    [System.Serializable]
     public class YamlDocument
     {
         /// <summary>
