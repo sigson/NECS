@@ -1,4 +1,6 @@
-﻿using NECS.DB.SQLite;
+﻿#if NET
+using NECS.DB.SQLite;
+#endif
 using NECS.Harness.Model;
 
 namespace NECS.Harness.Services
@@ -26,6 +28,7 @@ namespace NECS.Harness.Services
             DBType = ConstantService.instance.GetByConfigPath("baseconfig").GetObject<string>("DataBase/DBType");
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {
+#if NET
                 switch (DBType.ToLower())
                 {
                     case "sqlite":
@@ -33,6 +36,7 @@ namespace NECS.Harness.Services
                         break;
                 }
                 DBProvider.Load(DBPath);
+#endif
             }
         }
 

@@ -1,4 +1,5 @@
 ﻿using NECS.ECS.ECSCore;
+using System.Collections.Generic;
 
 namespace NECS.ECS.Events.ECSEvents
 {

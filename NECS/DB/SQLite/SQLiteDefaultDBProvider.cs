@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.Sqlite;
+﻿#if NET
+using Microsoft.Data.Sqlite;
 using NECS.Core.Logging;
 using NECS.Harness.Model;
 using NECS.Harness.Services;
@@ -278,3 +279,4 @@ CREATE TABLE IF NOT EXISTS ""Friends"" (
         }
     }
 }
+#endif

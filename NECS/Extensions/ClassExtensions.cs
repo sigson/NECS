@@ -12,7 +12,6 @@ using System.Numerics;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
@@ -148,16 +147,16 @@ namespace NECS
 #if UNITY_5_3_OR_NEWER
     public static class Lambda
     {
-        public static UnityEvent<T> AddListener<T>(this UnityEvent<T> unityEvent, System.Action<T> action)
+        public static UnityEngine.Events.UnityEvent<T> AddListener<T>(this UnityEngine.Events.UnityEvent<T> unityEvent, System.Action<T> action)
         {
-            UnityAction<T> uaction = (T arg) => action(arg);
+            UnityEngine.Events.UnityAction<T> uaction = (T arg) => action(arg);
             unityEvent.AddListener(uaction);
             return unityEvent;
         }
 
-        public static UnityEvent AddListener(this UnityEvent unityEvent, System.Action action)
+        public static UnityEngine.Events.UnityEvent AddListener(this UnityEngine.Events.UnityEvent unityEvent, System.Action action)
         {
-            UnityAction uaction = () => action();
+            UnityEngine.Events.UnityAction uaction = () => action();
             unityEvent.AddListener(uaction);
             return unityEvent;
         }
@@ -234,7 +233,7 @@ namespace NECS
             {
                 if (t.IsFaulted || t.Exception != null)
                 {
-                    ClientInitService.instance.ExecuteInstruction(() => Debug.LogException(t.Exception.Flatten().InnerException));
+                    ClientInitService.instance.ExecuteInstruction(() => UnityEngine.Debug.LogException(t.Exception.Flatten().InnerException));
                 }
             });//, TaskScheduler.FromCurrentSynchronizationContext());
             return task;
@@ -427,26 +426,26 @@ namespace NECS
         {
             if (entityManagerOwner != null)
             {
-                if (instantiated is GameObject)
+                if (instantiated is UnityEngine.GameObject)
                 {
-                    (instantiated as GameObject).GetComponentsInChildren<IManagable>().ForEach(x => (x as IManagable).ownerManagerSpace = entityManagerOwner);
+                    (instantiated as UnityEngine.GameObject).GetComponentsInChildren<IManagable>().ForEach(x => (x as IManagable).ownerManagerSpace = entityManagerOwner);
                 }
             }
             return instantiated;
         }
 
-        public static T Instantiate<T>(T original, Transform parent, IEntityManager entityManagerOwner = null) where T : UnityEngine.Object
+        public static T Instantiate<T>(T original, UnityEngine.Transform parent, IEntityManager entityManagerOwner = null) where T : UnityEngine.Object
         {
             var instantiated = UnityEngine.Object.Instantiate<T>(original, parent);
             return (T)InstantiatedProcess(instantiated, entityManagerOwner);
         }
-        public static UnityEngine.Object Instantiate(UnityEngine.Object original, Vector3 position, Quaternion rotation, IEntityManager entityManagerOwner = null)
+        public static UnityEngine.Object Instantiate(UnityEngine.Object original, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, IEntityManager entityManagerOwner = null)
         {
             var instantiated = UnityEngine.Object.Instantiate(original, position, rotation);
             return InstantiatedProcess(instantiated, entityManagerOwner);
         }
 
-        public static T Instantiate<T>(T original, Transform parent, bool worldPositionStays, IEntityManager entityManagerOwner = null) where T : UnityEngine.Object
+        public static T Instantiate<T>(T original, UnityEngine.Transform parent, bool worldPositionStays, IEntityManager entityManagerOwner = null) where T : UnityEngine.Object
         {
             var instantiated = UnityEngine.Object.Instantiate<T>(original, parent, worldPositionStays);
             return (T)InstantiatedProcess(instantiated, entityManagerOwner);
@@ -458,13 +457,13 @@ namespace NECS
             return InstantiatedProcess(instantiated, entityManagerOwner);
         }
 
-        public static UnityEngine.Object Instantiate(UnityEngine.Object original, Vector3 position, Quaternion rotation, Transform parent, IEntityManager entityManagerOwner = null)
+        public static UnityEngine.Object Instantiate(UnityEngine.Object original, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, UnityEngine.Transform parent, IEntityManager entityManagerOwner = null)
         {
             var instantiated = UnityEngine.Object.Instantiate(original, position, rotation, parent);
             return InstantiatedProcess(instantiated, entityManagerOwner);
         }
 
-        public static UnityEngine.Object Instantiate(UnityEngine.Object original, Transform parent, bool instantiateInWorldSpace, IEntityManager entityManagerOwner = null)
+        public static UnityEngine.Object Instantiate(UnityEngine.Object original, UnityEngine.Transform parent, bool instantiateInWorldSpace, IEntityManager entityManagerOwner = null)
         {
             var instantiated = UnityEngine.Object.Instantiate(original, parent, instantiateInWorldSpace);
             return InstantiatedProcess(instantiated, entityManagerOwner);
@@ -476,19 +475,19 @@ namespace NECS
             return (T)InstantiatedProcess(instantiated, entityManagerOwner);
         }
 
-        public static T Instantiate<T>(T original, Vector3 position, Quaternion rotation, IEntityManager entityManagerOwner = null) where T : UnityEngine.Object
+        public static T Instantiate<T>(T original, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, IEntityManager entityManagerOwner = null) where T : UnityEngine.Object
         {
             var instantiated = UnityEngine.Object.Instantiate<T>(original, position, rotation);
             return (T)InstantiatedProcess(instantiated, entityManagerOwner);
         }
 
-        public static T Instantiate<T>(T original, Vector3 position, Quaternion rotation, Transform parent, IEntityManager entityManagerOwner = null) where T : UnityEngine.Object
+        public static T Instantiate<T>(T original, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, UnityEngine.Transform parent, IEntityManager entityManagerOwner = null) where T : UnityEngine.Object
         {
             var instantiated = UnityEngine.Object.Instantiate<T>(original, position, rotation, parent);
             return (T)InstantiatedProcess(instantiated, entityManagerOwner);
         }
 
-        public static UnityEngine.Object Instantiate(UnityEngine.Object original, Transform parent, IEntityManager entityManagerOwner = null)
+        public static UnityEngine.Object Instantiate(UnityEngine.Object original, UnityEngine.Transform parent, IEntityManager entityManagerOwner = null)
         {
             var instantiated = UnityEngine.Object.Instantiate(original, parent);
             return InstantiatedProcess(instantiated, entityManagerOwner);
@@ -496,14 +495,14 @@ namespace NECS
         #endregion
         #region Component
 
-        private static Component ComponentProcess(Component component, IEntityManager entityManagerOwner)
+        private static UnityEngine.Component ComponentProcess(UnityEngine.Component component, IEntityManager entityManagerOwner)
         {
             if (component is IManagable && entityManagerOwner != null)
                 (component as IManagable).ownerManagerSpace = entityManagerOwner;
             return component;
         }
 
-        public static UnityEngine.Component AddComponent<T>(this UnityEngine.GameObject gameObject, IEntityManager entityManagerOwner) where T : Component
+        public static UnityEngine.Component AddComponent<T>(this UnityEngine.GameObject gameObject, IEntityManager entityManagerOwner) where T : UnityEngine.Component
         {
             return (T)ComponentProcess(gameObject.AddComponent<T>(), entityManagerOwner);
         }
