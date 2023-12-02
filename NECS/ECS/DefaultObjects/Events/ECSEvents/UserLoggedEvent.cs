@@ -14,14 +14,17 @@ namespace NECS.ECS.DefaultObjects.Events.ECSEvents
     public class UserLoggedEvent : ECSEvent
     {
         static public new long Id { get; set; } = 25;
+        [System.NonSerialized]
+        [Newtonsoft.Json.JsonIgnore]
         public ECSEntity userEntity;
+        public long userEntityId;
         public bool userRelogin = false;
         [System.NonSerialized]
         [Newtonsoft.Json.JsonIgnore]
-        public Action<ECSEntity> actionAfterLoggin = (entity) => { };
+        public static Action<UserLoggedEvent> actionAfterLoggin = (loggedEvent) => { };
         public override void Execute()
         {
-
+            actionAfterLoggin(this);
         }
     }
 }

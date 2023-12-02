@@ -1,5 +1,4 @@
 ﻿using NECS.Harness.Model;
-using NECS.Harness.Services;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -8,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using YamlDotNet.Core;
 
-namespace NECS.Network.NetworkModels
+namespace NECS.Harness.Services
 {
     public class NetworkPacketBuilderService : IService
     {
@@ -18,7 +17,7 @@ namespace NECS.Network.NetworkModels
             get
             {
                 if (cacheInstance == null)
-                    cacheInstance = SGT.Get<NetworkPacketBuilderService>();
+                    cacheInstance = Get<NetworkPacketBuilderService>();
                 return cacheInstance;
             }
         }
@@ -55,14 +54,14 @@ namespace NECS.Network.NetworkModels
                     if (getResult && packetSize - bufPackets.Count * networkBufferSize <= networkBufferSize)
                     {
                         bufPackets.TryAdd(packetNumber, packetBuffer);
-                        
+
                         for (int i = 0; i < bufPackets.Count; i++)
                         {
                             //if (i == 0)
                             //    resultBuffer.AddRange(bufPackets[i]);
                             //else
                             //{
-                                
+
                             //}
                             resultBuffer.AddRange(bufPackets[i].SubArray(headerSize, bufPackets[i].Length - headerSize));
                         }
@@ -93,7 +92,7 @@ namespace NECS.Network.NetworkModels
             {
                 resultBuffer.AddRange(packetBuffer.SubArray(headerSize, packetBuffer.Length - headerSize));
             }
-            if(resultBuffer.Count == 0)
+            if (resultBuffer.Count == 0)
             {
                 return (resultBuffer.ToArray(), false);
             }
@@ -115,7 +114,7 @@ namespace NECS.Network.NetworkModels
             {
                 //result.AddRange(BitConverter.GetBytes(hashCode));
                 result.AddRange(BitConverter.GetBytes(Guid.NewGuid().GuidToLong()));
-                result.AddRange(BitConverter.GetBytes((long)buffer.Count + headerSize));
+                result.AddRange(BitConverter.GetBytes(buffer.Count + headerSize));
                 result.AddRange(BitConverter.GetBytes((long)0));
                 result.AddRange(buffer);
             }
@@ -134,11 +133,11 @@ namespace NECS.Network.NetworkModels
                 }
                 if (bufferSize > 0)
                     countOfHeaders += headerSize;
-                while (networkBufferSize < (newBuffer.Count + countOfHeaders) - (position + packetPosition * headerSize))
+                while (networkBufferSize < newBuffer.Count + countOfHeaders - (position + packetPosition * headerSize))
                 {
                     //result.AddRange(BitConverter.GetBytes(hashCode));
                     result.AddRange(BitConverter.GetBytes(guid));
-                    result.AddRange(BitConverter.GetBytes((long)buffer.Count + countOfHeaders));
+                    result.AddRange(BitConverter.GetBytes(buffer.Count + countOfHeaders));
                     result.AddRange(BitConverter.GetBytes((long)packetPosition));
                     result.AddRange(buffer.GetRange(position, networkBufferSize - (int)headerSize));
                     position += networkBufferSize - (int)headerSize;
@@ -146,7 +145,7 @@ namespace NECS.Network.NetworkModels
                 }
                 //result.AddRange(BitConverter.GetBytes(hashCode));
                 result.AddRange(BitConverter.GetBytes(guid));
-                result.AddRange(BitConverter.GetBytes((long)buffer.Count + countOfHeaders));
+                result.AddRange(BitConverter.GetBytes(buffer.Count + countOfHeaders));
                 result.AddRange(BitConverter.GetBytes((long)packetPosition));
                 result.AddRange(buffer.GetRange(position, newBuffer.Count - position));
                 //position += networkBufferSize - (int)headerSize;
@@ -158,12 +157,12 @@ namespace NECS.Network.NetworkModels
 
         public override void OnDestroyReaction()
         {
-            
+
         }
 
         public override void PostInitializeProcess()
         {
-            
+
         }
     }
 }

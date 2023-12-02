@@ -1,6 +1,5 @@
 ﻿using NECS;
 using NECS.Harness.Services;
-using NECS.Network.NetworkModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace NECS_Test.Network
 {
-    
+
     [TestClass]
     public class PacketSizeTest
     {

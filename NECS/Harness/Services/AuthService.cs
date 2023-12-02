@@ -94,6 +94,7 @@ namespace NECS.Harness.Services
                 userLogged.userRelogin = true;
             }
             userLogged.userEntity = entity;
+            userLogged.userEntityId = entity.instanceId;
         }
 
         public override void InitializeProcess()

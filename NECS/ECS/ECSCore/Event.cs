@@ -1,5 +1,4 @@
-﻿using NECS.Network.NetworkModels;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System.Collections.Concurrent;
 using NECS.Extensions;
 using NECS.Core.Logging;
@@ -7,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using NECS.Harness.Services;
+using NECS.Network.NetworkModels;
 
 
 namespace NECS.ECS.ECSCore
@@ -21,6 +22,8 @@ namespace NECS.ECS.ECSCore
         [System.NonSerialized]
         [Newtonsoft.Json.JsonIgnore]
         public long SocketSourceId = 0;
+        [Newtonsoft.Json.JsonIgnore]
+        public SocketAdapter SocketSource => NetworkingService.instance.SocketAdapters[this.SocketSourceId];
         [System.NonSerialized]
         [Newtonsoft.Json.JsonIgnore]
         public EventWatcher eventWatcher;
