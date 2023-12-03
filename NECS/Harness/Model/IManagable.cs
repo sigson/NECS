@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NECS.GameEngineAPI;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,9 +12,9 @@ namespace NECS.Harness.Model
         public IEntityManager ownerManagerSpace = null;
         public long instanceId = Guid.NewGuid().GuidToLongR();
 #if UNITY_5_3_OR_NEWER
-        public List<UnityEngine.GameObject> ChildTemp = new List<UnityEngine.GameObject>();
+        public List<UnityEngine.Object> ChildTemp = new List<UnityEngine.Object>();
 #else
-        public List<IEngineApiObjectBehaviour> ChildTemp = new List<IEngineApiObjectBehaviour>();
+        public List<EngineApiObjectBehaviour> ChildTemp = new List<EngineApiObjectBehaviour>();
         #endif
 
         protected virtual void AwakeImpl()

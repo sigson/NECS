@@ -1,4 +1,5 @@
 ﻿using NECS.Core.Logging;
+using NECS.ECS.ECSCore;
 using NECS.Network.NetworkModels.TCP;
 using System;
 using System.Collections.Generic;
@@ -286,6 +287,11 @@ namespace NECS.Network.NetworkModels
             {
                 TCPGameSessionSocket.Send(buffer);
             }
+        }
+
+        public virtual void Send(ECSEvent ecsEvent)
+        {
+            this.Send(ecsEvent.GetNetworkPacket());
         }
 
         public virtual void SendAsync(byte[] buffer)

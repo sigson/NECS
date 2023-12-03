@@ -29,7 +29,7 @@ namespace NECS.Harness.Services
         private ConcurrentDictionary<long, ConcurrentDictionary<Type, IManager>> groupManagersStorage = new ConcurrentDictionary<long, ConcurrentDictionary<Type, IManager>>(); //long is id of connectpoint id(component id, entity id, random id)
 
         private ConcurrentDictionary<Type, ConcurrentDictionary<long, ConcurrentHashSet<IManager>>> cachedManagersEntities = new ConcurrentDictionary<Type, ConcurrentDictionary<long, ConcurrentHashSet<IManager>>>(); //type manager, long id entity, hashset managers
-        private IEngineApiObjectBehaviour ManagersStorageObject = null;
+        private EngineApiObjectBehaviour ManagersStorageObject = null;
         private object lockObject = new object();
 
         public void AddEntityCache(IManager manager, long entityId)// where T : IGroupManager<T1> where T1 : IECSObject
@@ -102,7 +102,7 @@ namespace NECS.Harness.Services
                 {
                     if (ManagersStorageObject != null)
                     {
-                        var cleanManager = this.ExecuteFunction<IEngineApiObjectBehaviour>(() => {
+                        var cleanManager = this.ExecuteFunction<EngineApiObjectBehaviour>(() => {
                             var newManager = ManagersStorageObject.AddComponent(managerType);
                             (newManager as IManager).isNoSetupChild = true;
                             (newManager as IManager).ConnectPoint = id;
@@ -211,7 +211,11 @@ namespace NECS.Harness.Services
 
         public override void InitializeProcess()
         {
+#if UNITY_5_3_OR_NEWER
+            ManagersStorageObject = new UnityEngine.GameObject("EntityGroupManagersStorage").AddComponent<EngineApiObjectBehaviour>();
+#else
             ManagersStorageObject = new EngineApiObjectBehaviour("EntityGroupManagersStorage");
+            #endif
             DontDestroyOnLoad(ManagersStorageObject);
         }
 

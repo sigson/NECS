@@ -79,7 +79,11 @@ namespace NECS.Harness.Model
 
         #region mockFunctions
 
-        public override void Awake()
+        public
+#if NET
+            override
+#endif
+            void Awake()
         {
             if (!isPrefabScript)
             {
@@ -87,7 +91,11 @@ namespace NECS.Harness.Model
             }
         }
 
-        public override void OnEnable()
+        public
+#if NET
+            override
+#endif
+             void OnEnable()
         {
             if (!isPrefabScript)
             {
@@ -95,7 +103,11 @@ namespace NECS.Harness.Model
             }
         }
 
-        public override void Start()
+        public
+#if NET
+            override
+#endif
+             void Start()
         {
             if (!isPrefabScript)
             {
@@ -110,7 +122,11 @@ namespace NECS.Harness.Model
             }
         }
 
-        public override void Reset()
+        public
+#if NET
+            override
+#endif
+             void Reset()
         {
             if (!isPrefabScript)
                 ResetManager();
@@ -121,7 +137,11 @@ namespace NECS.Harness.Model
 
         }
 
-        public override void FixedUpdate()
+        public
+#if NET
+            override
+#endif
+             void FixedUpdate()
         {
             if (!isPrefabScript)
             {
@@ -134,7 +154,11 @@ namespace NECS.Harness.Model
 
         }
 
-        public override void Update()
+        public
+#if NET
+            override
+#endif
+             void Update()
         {
             if (!isPrefabScript)
             {
@@ -149,7 +173,17 @@ namespace NECS.Harness.Model
 
 
 
-        public override void OnCollisionEnter(EngineApiCollision3D collision)
+        public
+#if NET
+            override
+#endif
+             void OnCollisionEnter(
+#if UNITY_5_3_OR_NEWER
+            UnityEngine.Collision
+#else
+            EngineApiCollision3D
+#endif
+              collision)
         {
             if (!isPrefabScript)
             {
@@ -157,12 +191,28 @@ namespace NECS.Harness.Model
             }
         }
 
-        protected virtual void OnCollisionEnterManager(EngineApiCollision3D collision)
+        protected virtual void OnCollisionEnterManager(
+#if UNITY_5_3_OR_NEWER
+            UnityEngine.Collision
+#else
+            EngineApiCollision3D
+#endif
+              collision)
         {
 
         }
 
-        public override void OnCollisionExit(EngineApiCollision3D collisionInfo)
+        public
+#if NET
+            override
+#endif
+             void OnCollisionExit(
+#if UNITY_5_3_OR_NEWER
+            UnityEngine.Collision
+#else
+            EngineApiCollision3D
+#endif
+              collisionInfo)
         {
             if (!isPrefabScript)
             {
@@ -170,12 +220,28 @@ namespace NECS.Harness.Model
             }
         }
 
-        protected virtual void OnCollisionExitManager(EngineApiCollision3D collisionInfo)
+        protected virtual void OnCollisionExitManager(
+#if UNITY_5_3_OR_NEWER
+            UnityEngine.Collision
+#else
+            EngineApiCollision3D
+#endif
+              collisionInfo)
         {
 
         }
 
-        public override void OnCollisionStay(EngineApiCollision3D collisionInfo)
+        public
+#if NET
+            override
+#endif
+             void OnCollisionStay(
+#if UNITY_5_3_OR_NEWER
+            UnityEngine.Collision
+#else
+            EngineApiCollision3D
+#endif
+              collisionInfo)
         {
             if (!isPrefabScript)
             {
@@ -183,12 +249,28 @@ namespace NECS.Harness.Model
             }
         }
 
-        protected virtual void OnCollisionStayManager(EngineApiCollision3D collisionInfo)
+        protected virtual void OnCollisionStayManager(
+#if UNITY_5_3_OR_NEWER
+            UnityEngine.Collision
+#else
+            EngineApiCollision3D
+#endif
+             collisionInfo)
         {
 
         }
 
-        public override void OnTriggerEnter(EngineApiCollider3D other)
+        public
+#if NET
+            override
+#endif
+             void OnTriggerEnter(
+#if UNITY_5_3_OR_NEWER
+            UnityEngine.Collider
+#else
+            EngineApiCollider3D
+#endif
+             other)
         {
             if (!isPrefabScript)
             {
@@ -196,12 +278,28 @@ namespace NECS.Harness.Model
             }
         }
 
-        protected virtual void OnTriggerEnterManager(EngineApiCollider3D other)
+        protected virtual void OnTriggerEnterManager(
+#if UNITY_5_3_OR_NEWER
+            UnityEngine.Collider
+#else
+            EngineApiCollider3D
+#endif
+             other)
         {
 
         }
 
-        public override void OnTriggerExit(EngineApiCollider3D other)
+        public
+#if NET
+            override
+#endif
+             void OnTriggerExit(
+#if UNITY_5_3_OR_NEWER
+            UnityEngine.Collider
+#else
+            EngineApiCollider3D
+#endif
+             other)
         {
             if (!isPrefabScript)
             {
@@ -209,12 +307,28 @@ namespace NECS.Harness.Model
             }
         }
 
-        protected virtual void OnTriggerExitManager(EngineApiCollider3D other)
+        protected virtual void OnTriggerExitManager(
+#if UNITY_5_3_OR_NEWER
+            UnityEngine.Collider
+#else
+            EngineApiCollider3D
+#endif
+             other)
         {
 
         }
 
-        public override void OnTriggerStay(EngineApiCollider3D other)
+        public
+#if NET
+            override
+#endif
+             void OnTriggerStay(
+#if UNITY_5_3_OR_NEWER
+            UnityEngine.Collider
+#else
+            EngineApiCollider3D
+#endif
+             other)
         {
             if (!isPrefabScript)
             {
@@ -222,7 +336,13 @@ namespace NECS.Harness.Model
             }
         }
 
-        protected virtual void OnTriggerStayManager(EngineApiCollider3D other)
+        protected virtual void OnTriggerStayManager(
+#if UNITY_5_3_OR_NEWER
+            UnityEngine.Collider
+#else
+            EngineApiCollider3D
+#endif
+            other)
         {
 
         }
@@ -240,13 +360,21 @@ namespace NECS.Harness.Model
 
         }
 
-        public override void OnDisable()
+        public
+#if NET
+            override
+#endif
+             void OnDisable()
         {
             if (!isPrefabScript)
                 OnDeactivateManager();
         }
 
-        public override void OnDestroy()
+        public
+#if NET
+            override
+#endif
+             void OnDestroy()
         {
             if (!isPrefabScript)
             {
@@ -258,7 +386,7 @@ namespace NECS.Harness.Model
             }
         }
 
-        #endregion
+#endregion
 
         public abstract void AddManager();
         protected abstract void OnStartManager();

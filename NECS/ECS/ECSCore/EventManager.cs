@@ -173,7 +173,7 @@ namespace NECS.ECS.ECSCore
             }
             set
             {
-                Interlocked.Exchange(ref watchers, value);
+                System.Threading.Interlocked.Exchange(ref watchers, value);
                 //watchers = value;
                 if (watchers == 0)
                 {

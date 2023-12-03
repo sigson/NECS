@@ -29,5 +29,30 @@ public static class EnumerableExtension
             fillAction(fillObject, fillObj);
         return fillObject;
     }
+
+    public static bool Remove<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, out TValue value)
+    {
+        if(dictionary.TryGetValue(key, out value))
+            return dictionary.Remove(key);
+        return false;
+    }
+
+    public static bool TryAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue value)
+    {
+        if (dictionary.TryGetValue(key, out _))
+            return false;
+        else
+        {
+            try
+            {
+                dictionary.Add(key, value);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
 }
 //}

@@ -530,13 +530,13 @@ namespace NECS
     public static class ManagerSpace
     {
         #region Instantiate
-        public static IEngineApiObjectBehaviour InstantiatedProcess(IEngineApiObjectBehaviour instantiated, IEntityManager entityManagerOwner = null)
+        public static EngineApiObjectBehaviour InstantiatedProcess(EngineApiObjectBehaviour instantiated, IEntityManager entityManagerOwner = null)
         {
             if (entityManagerOwner != null)
             {
-                if (instantiated is IEngineApiObjectBehaviour)
+                if (instantiated is EngineApiObjectBehaviour)
                 {
-                    (instantiated as IEngineApiObjectBehaviour).GetComponentsInChildren<IManagable>().ForEach(x => (x as IManagable).ownerManagerSpace = entityManagerOwner);
+                    (instantiated as EngineApiObjectBehaviour).GetComponentsInChildren<IManagable>().ForEach(x => (x as IManagable).ownerManagerSpace = entityManagerOwner);
                 }
             }
             return instantiated;

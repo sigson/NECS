@@ -1,5 +1,6 @@
 ﻿using NECS.GameEngineAPI;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -21,6 +22,7 @@ namespace NECS
 
         EngineApiObjectBehaviour GetComponent(string type);
         T GetComponent<T>() where T : class;
+        T GetOrAddComponent<T>() where T : class;
         EngineApiCompoent GetComponent(Type type);
         EngineApiCompoent GetComponentInChildren(Type type, bool includeInactive);
         T GetComponentInChildren<T>()where T : class;
@@ -47,5 +49,17 @@ namespace NECS
         void Destroy(Object obj);
         void DestroyImmediate(Object obj);
         bool activeInHierarchy { get; set; }
+
+#if UNITY_5_3_OR_NEWER
+        UnityEngine.Coroutine StartCoroutine(string methodName);
+        UnityEngine.Coroutine StartCoroutine(IEnumerator routine);
+
+        UnityEngine.Coroutine StartCoroutine_Auto(IEnumerator routine);
+
+        public void StopAllCoroutines();
+        public void StopCoroutine(IEnumerator routine);
+        public void StopCoroutine(UnityEngine.Coroutine routine);
+        public void StopCoroutine(string methodName);
+#endif
     }
 }

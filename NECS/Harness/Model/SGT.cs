@@ -13,12 +13,12 @@ namespace NECS.Harness.Model
     {
         private static Dictionary<Type, SGT> instances = new Dictionary<Type, SGT>();
 
-        public static T InitalizeSingleton<T>(IEngineApiObjectBehaviour behaviour = null, bool packetInitialize = false) where T : SGT
+        public static T InitalizeSingleton<T>(EngineApiObjectBehaviour behaviour = null, bool packetInitialize = false) where T : SGT
         {
             return (T)InitalizeSingleton(typeof(T), behaviour, packetInitialize);
         }
 
-        public static SGT InitalizeSingleton(Type singletonType, IEngineApiObjectBehaviour behaviour = null, bool packetInitialize = false)
+        public static SGT InitalizeSingleton(Type singletonType, EngineApiObjectBehaviour behaviour = null, bool packetInitialize = false)
         {
             SGT instance = null;
             lock (instances)
@@ -59,12 +59,12 @@ namespace NECS.Harness.Model
             return instance;
         }
 
-        public static T Get<T>(IEngineApiObjectBehaviour behaviour = null) where T : SGT
+        public static T Get<T>(EngineApiObjectBehaviour behaviour = null) where T : SGT
         {
             return (T)getInstance<T>(behaviour);
         }
 
-        public static T tryGetInstance<T>(IEngineApiObjectBehaviour behaviour = null) where T : SGT
+        public static T tryGetInstance<T>(EngineApiObjectBehaviour behaviour = null) where T : SGT
         {
             try
             {
@@ -77,7 +77,7 @@ namespace NECS.Harness.Model
             return null;
         }
 
-        public static T getInstance<T>(IEngineApiObjectBehaviour behaviour = null) where T : SGT
+        public static T getInstance<T>(EngineApiObjectBehaviour behaviour = null) where T : SGT
         {
             SGT instance = null;
             instances.TryGetValue(typeof(T), out instance);
@@ -93,7 +93,11 @@ namespace NECS.Harness.Model
         public abstract void PostInitializeProcess();
         public abstract void OnDestroyReaction();
 
-        public override void OnDestroy()
+        public
+#if NET
+            override
+#endif
+              void OnDestroy()
         {
             lock (instances)
             {
@@ -129,7 +133,11 @@ namespace NECS.Harness.Model
                     {
                         try
                         {
+#if UNITY_EDITOR
+                            UnityEngine.GameObject.Destroy(sgt);
+#else
                             sgt.Destroy(sgt);
+#endif
                         }
                         catch { }
                         instances.Remove(type);

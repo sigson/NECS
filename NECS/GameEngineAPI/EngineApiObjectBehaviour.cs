@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +7,23 @@ using System.Threading.Tasks;
 
 namespace NECS.GameEngineAPI
 {
-    public partial class EngineApiObjectBehaviour : StaticEngineApiObjectBehaviour, IEngineApiObjectBehaviour, IEngineApiCallableMethods //: ENGINEGAMEOBJECT, IEngineApiObjectBehaviour, IEngineApiCallableMethods
+    public partial class EngineApiObjectBehaviour
+#if UNITY_5_3_OR_NEWER
+: UnityEngine.MonoBehaviour
+    {
+        public UnityEngine.Component AddComponent(Type componentType)
+        {
+            return this.gameObject.AddComponent(componentType);
+        }
+
+        public T AddComponent<T>() where T : UnityEngine.Component
+        {
+            return this.gameObject.AddComponent<T>();
+        }
+    }
+#endif
+#if NET
+        : StaticEngineApiObjectBehaviour, IEngineApiObjectBehaviour, IEngineApiCallableMethods //: ENGINEGAMEOBJECT, IEngineApiObjectBehaviour, IEngineApiCallableMethods
     {
         public EngineApiObjectBehaviour()
         {
@@ -169,6 +186,11 @@ namespace NECS.GameEngineAPI
             throw new NotImplementedException();
         }
 
+        public T GetOrAddComponent<T>() where T : class
+        {
+            throw new NotImplementedException();
+        }
+
         public virtual void LateUpdate(double delta)
         {
             throw new NotImplementedException();
@@ -289,6 +311,44 @@ namespace NECS.GameEngineAPI
             throw new NotImplementedException();
         }
 
+#if UNITY_5_3_OR_NEWER
+
+        public UnityEngine.Coroutine StartCoroutine(string methodName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public UnityEngine.Coroutine StartCoroutine(IEnumerator routine)
+        {
+            throw new NotImplementedException();
+        }
+
+        public UnityEngine.Coroutine StartCoroutine_Auto(IEnumerator routine)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void StopAllCoroutines()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void StopCoroutine(IEnumerator routine)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void StopCoroutine(UnityEngine.Coroutine routine)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void StopCoroutine(string methodName)
+        {
+            throw new NotImplementedException();
+        }
+#endif
+
         public virtual bool TryGetComponent(Type type, out EngineApiCompoent component)
         {
             throw new NotImplementedException();
@@ -311,7 +371,7 @@ namespace NECS.GameEngineAPI
 
         
     }
-
+#endif
     public class StaticEngineApiObjectBehaviour : EngineApiCompoent
     {
         public static void Destroy(object obj)
