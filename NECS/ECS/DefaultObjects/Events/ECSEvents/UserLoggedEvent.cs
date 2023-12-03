@@ -18,6 +18,7 @@ namespace NECS.ECS.DefaultObjects.Events.ECSEvents
         [Newtonsoft.Json.JsonIgnore]
         public ECSEntity userEntity;
         public long userEntityId;
+        public string Username;
         public bool userRelogin = false;
         [System.NonSerialized]
         [Newtonsoft.Json.JsonIgnore]

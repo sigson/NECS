@@ -17,6 +17,7 @@ namespace NECS.ECS.DefaultObjects.Events.LowLevelNetEvent.Auth
         public string Password = "";
         public string Email = "";
         public string HardwareId = "";
+        public string CaptchaResultHash = "";
         static public new long Id { get; set; } = 22;
         public override void Execute()
         {

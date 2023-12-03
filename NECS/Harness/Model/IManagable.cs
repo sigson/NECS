@@ -10,7 +10,11 @@ namespace NECS.Harness.Model
     {
         public IEntityManager ownerManagerSpace = null;
         public long instanceId = Guid.NewGuid().GuidToLongR();
+#if UNITY_5_3_OR_NEWER
+        public List<UnityEngine.GameObject> ChildTemp = new List<UnityEngine.GameObject>();
+#else
         public List<IEngineApiObjectBehaviour> ChildTemp = new List<IEngineApiObjectBehaviour>();
+        #endif
 
         protected virtual void AwakeImpl()
         {

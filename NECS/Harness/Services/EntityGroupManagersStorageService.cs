@@ -106,7 +106,7 @@ namespace NECS.Harness.Services
                             var newManager = ManagersStorageObject.AddComponent(managerType);
                             (newManager as IManager).isNoSetupChild = true;
                             (newManager as IManager).ConnectPoint = id;
-                            return newManager;
+                            return (EngineApiObjectBehaviour)newManager;
                         });
                         manager = (T)cleanManager;
                         //manager.ConnectPoint = id;

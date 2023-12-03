@@ -179,6 +179,19 @@ namespace NECS
             action(obj);
             return obj;
         }
+
+        public static T LineFunction<T>(Func<T> action)
+        {
+            try
+            {
+                return action();
+            }
+            catch(Exception ex)
+            {
+                NLogger.LogError(ex);
+            }
+            return default(T);
+        }
     }
 #else
     public static class Lambda

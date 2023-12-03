@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,5 +14,43 @@ namespace NECS.ECS.Types.AtomicType
     {
         public float x;
         public float y;
+
+        public Vector2S() { }
+
+        public Vector2S(float x, float y)
+        {
+            this.x = x; this.y = y;
+        }
+
+#if UNITY_5_3_OR_NEWER
+        public Vector2S(UnityEngine.Vector2 vector)
+        {
+            this.x = vector.x; this.y = vector.y;
+        }
+#endif
+        public Vector2S(Vector2 vector)
+        {
+            this.x = vector.X; this.y = vector.Y;
+        }
+
+#if UNITY_5_3_OR_NEWER
+        public UnityEngine.Vector2 GetNum()
+        {
+            return new UnityEngine.Vector2()
+            {
+                x = this.x,
+                y = this.y
+            };
+        }
+#endif
+
+        public Vector2 NGetNum()
+        {
+            return new Vector2()
+            {
+                X = this.x,
+                Y = this.y
+            };
+        }
     }
 }

@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using NECS.Harness.Model;
 using System.Security.Cryptography;
 using System.Security.Principal;
+using System.IO;
 using static NECS.Harness.Services.NetworkingService;
 using NECS.ECS.DefaultObjects.Events.LowLevelNetEvent.ConfigEvent;
 
@@ -161,7 +162,7 @@ namespace NECS.Harness.Services
                         #region prepareZipTemp
 
                         var ziptempfolder = Path.Combine(GlobalProgramState.instance.GameDataDir, "ZipTemp");
-                        var ziptempgamedir = Path.Combine(ziptempfolder, GlobalProgramState.instance.GameConfigDir.Split(GlobalProgramState.instance.PathSystemSeparator).Last());
+                        var ziptempgamedir = Path.Combine(ziptempfolder, GlobalProgramState.instance.GameConfigDir.Split(GlobalProgramState.instance.PathSystemSeparator[0]).Last());
 
                         if (Directory.Exists(ziptempfolder))
                             Directory.Delete(ziptempfolder, true);
@@ -296,7 +297,7 @@ namespace NECS.Harness.Services
                 }
                 
                 CustomSetupInitialized = true;
-                var socketAction = (Network.NetworkModels.SocketAdapter socketAdapter) => {
+                Action<Network.NetworkModels.SocketAdapter> socketAction = (Network.NetworkModels.SocketAdapter socketAdapter) => {
                     if (!Loaded)
                     {
                         ManagerScope.instance.eventManager.OnEventAdd(new ConfigCheckEvent()
@@ -353,7 +354,7 @@ namespace NECS.Harness.Services
 
         protected T GetObjectImpl<T>(JObject storage, string path)
         {
-            var pathSplit = path.Split(GlobalProgramState.instance.PathSeparator);
+            var pathSplit = path.Split(GlobalProgramState.instance.PathSeparator[0]);
             var nowStorage = storage[pathSplit[0]];
             for (int i = 1; i < pathSplit.Length; i++)
             {

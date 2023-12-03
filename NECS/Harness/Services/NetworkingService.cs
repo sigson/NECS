@@ -9,6 +9,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace NECS.Harness.Services
@@ -41,7 +42,7 @@ namespace NECS.Harness.Services
         public delegate void SocketHandler(SocketAdapter socketAdapter);
         public event SocketHandler? OnConnectExternal;
         public event SocketHandler? OnDisconnectExternal;
-        public static long ClientEntityId = 0;
+        public long ClientEntityId = 0;
         private SocketAdapter cachedClientSocket;
         public SocketAdapter ClientSocket
         {

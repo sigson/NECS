@@ -2,6 +2,7 @@
 using System.Reflection;
 using System.ArrayExtensions;
 using Newtonsoft.Json.Linq;
+using System.Linq;
 
 namespace System
 {

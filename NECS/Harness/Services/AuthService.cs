@@ -19,6 +19,10 @@ namespace NECS.Harness.Services
         public Func<UserDataRowBase, ECSEntity> AuthorizationRealization = null;
         public Func<ClientRegistrationEvent, UserDataRowBase> SetupAuthorizationRealization = null;
         private static AuthService cacheInstance;
+        #region client
+        public string LastSendedUsername;
+        public string LastSendedPassword;
+        #endregion
         public static AuthService instance
         {
             get
@@ -93,6 +97,7 @@ namespace NECS.Harness.Services
                 entity.GetComponent<SocketComponent>().Socket = socketAdapter;
                 userLogged.userRelogin = true;
             }
+            userLogged.Username = userData.Username;
             userLogged.userEntity = entity;
             userLogged.userEntityId = entity.instanceId;
         }

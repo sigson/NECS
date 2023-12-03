@@ -63,6 +63,7 @@ namespace NECS.Harness.Model
 
         public virtual void DBUnpack(DbDataReader dbResult)
         {
+#if NET
             if (dbResult.HasRows)
             {
                 //Id = int.Parse(dbResult.GetString("Id"));
@@ -80,18 +81,25 @@ namespace NECS.Harness.Model
                 Karma = int.Parse(dbResult.GetString("Karma"));
                 GameDataPacked = dbResult.GetString("GameDataPacked");
             }
+#endif
         }
 
         public virtual void PackJsonGameData<T>(T gameDataObject) where T : class
         {
+            #if NET
             GameDataPacked = System.Text.Json.JsonSerializer.Serialize<T>(gameDataObject);
+            #endif
         }
 
         public virtual T UnpackJsonGameData<T>() where T : class
         {
+#if NET
             System.IO.MemoryStream mStream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(GameDataPacked));
             var reader = new JsonTextReader(new StreamReader(mStream));
             return JObject.Load(reader).ToObject<T>();
+#else
+            return default(T);
+#endif
         }
 
         public virtual T SetupNew<T>() where T : UserDataRowBase

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using YamlDotNet.Core;
+using System.IO;
 
 namespace NECS.Harness.Services
 {
