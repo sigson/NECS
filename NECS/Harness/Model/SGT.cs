@@ -133,7 +133,7 @@ namespace NECS.Harness.Model
                     {
                         try
                         {
-#if UNITY_EDITOR
+#if UNITY_5_3_OR_NEWER
                             UnityEngine.GameObject.Destroy(sgt);
 #else
                             sgt.Destroy(sgt);

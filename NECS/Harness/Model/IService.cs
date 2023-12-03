@@ -85,7 +85,9 @@ namespace NECS.Harness.Model
 
         public static void RegisterAllServices()
         {
-            //FindObjectsOfType<IService>();
+            #if UNITY_5_3_OR_NEWER
+            ServiceStorage = new UnityEngine.GameObject("ServiceStorage").AddComponent<EngineApiObjectBehaviour>();
+            #endif
             AllServiceList = new ConcurrentHashSet<IService>(ECSAssemblyExtensions.GetAllSubclassOf(typeof(IService)).Where(x => !x.IsAbstract).Select(x => IService.InitalizeSingleton(x, ServiceStorage, true)).Cast<IService>().ToList());
         }
 
@@ -137,6 +139,6 @@ namespace NECS.Harness.Model
                 }
             });
         }
-        #endregion
+#endregion
     }
 }

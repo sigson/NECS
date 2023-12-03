@@ -59,7 +59,9 @@ namespace NECS.Harness.Services
                     return;
                 var gameConfDirectory = config_path == "" ? GlobalProgramState.instance.GameConfigDir : config_path;
 
-                if(!Directory.Exists(gameConfDirectory))
+                gameConfDirectory = gameConfDirectory.Replace("\\", GlobalProgramState.instance.PathSystemSeparator).Replace("/", GlobalProgramState.instance.PathSystemSeparator);
+
+                if (!Directory.Exists(gameConfDirectory))
                 {
                     Directory.CreateDirectory(gameConfDirectory);
                 }
@@ -82,24 +84,40 @@ namespace NECS.Harness.Services
                 }
                 #region initload
                 var nowLib = "";
-                ConfigObj nowObject = new ConfigObj();
+                Dictionary<string, List<string>> Libs = new Dictionary<string, List<string>>();
+                List<string> LibFiles = new List<string>();
                 foreach (var file in GetRecursFiles(gameConfDirectory))
                 {
-                    if (file.Contains(".yml") || file.Contains(".json") || file.Contains(".yaml"))
+                    var fileextension = Path.GetExtension(file);
+                    if (fileextension.Contains(".yml") || fileextension.Contains(".json") || fileextension.Contains(".yaml"))
                     {
                         if (nowLib == "")
                         {
                             nowLib = Path.GetDirectoryName(file);
-                            nowObject = new ConfigObj();
                         }
-                        else if (nowLib != Path.GetDirectoryName(file))
+                        if (nowLib != Path.GetDirectoryName(file))
                         {
-
-                            ConstantDB[nowObject.Path] = nowObject;
+                            Libs.Add(nowLib, LibFiles);
+                            LibFiles = new List<string>();
                             nowLib = Path.GetDirectoryName(file);
-                            nowObject = new ConfigObj();
                         }
-
+                        if (nowLib == Path.GetDirectoryName(file))
+                        {
+                            LibFiles.Add(file.Replace("\\", GlobalProgramState.instance.PathSystemSeparator).Replace("/", GlobalProgramState.instance.PathSystemSeparator));
+                        }
+                    }
+                }
+                if(LibFiles.Count > 0)
+                {
+                    Libs.Add(nowLib, LibFiles);
+                    LibFiles = new List<string>();
+                }
+                foreach (var libfiles in Libs)
+                {
+                    nowLib = libfiles.Key;
+                    foreach (var file in libfiles.Value)
+                    {
+                        ConfigObj nowObject = new ConfigObj();
                         var input = new StreamReader(file);
                         var yaml = new YamlDotNet.Serialization.Deserializer();
                         string jsonText = "";
@@ -116,39 +134,40 @@ namespace NECS.Harness.Services
                         {
                             jsonText = input.ReadToEnd();
                         }
-                        
+
                         System.IO.MemoryStream mStream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonText));
                         var reader = new JsonTextReader(new StreamReader(mStream));
                         var jObject = JObject.Load(reader);
-
                         switch (Path.GetFileNameWithoutExtension(file))
                         {
-                            case "id":
-                                nowObject.Id = jObject.GetValue("id").Value<long>();
-                                break;
                             default:
                                 nowObject.Deserialized = jObject;
                                 break;
                         }
+
                         var libname = nowLib.Replace(Directory.GetParent(nowLib).FullName, "").Replace(GlobalProgramState.instance.PathSystemSeparator, "");
-                        if (nowObject.Deserialized == null)
+
+                        if (libfiles.Value.Count() == 1)
                         {
-                            nowObject.Path = file.Replace(gameConfDirectory, "").Replace(GlobalProgramState.instance.PathSystemSeparator + Path.GetFileName(file), "") + GlobalProgramState.instance.PathSeparator + Path.GetFileNameWithoutExtension(file);
-                            nowObject.Path = nowObject.Path.Substring(1).Replace(GlobalProgramState.instance.PathSystemSeparator, GlobalProgramState.instance.PathSeparator);
+                            nowObject.Path = nowLib.Replace(gameConfDirectory, "").Substring(1).Replace(GlobalProgramState.instance.PathSystemSeparator, GlobalProgramState.instance.PathSeparator);
+
+                            #region wtf
+                            //if (nowObject.Deserialized == null)
+                            //{
+                            //    nowObject.Path = file.Replace(gameConfDirectory, "").Replace(GlobalProgramState.instance.PathSystemSeparator + Path.GetFileName(file), "") + GlobalProgramState.instance.PathSeparator + Path.GetFileNameWithoutExtension(file);
+                            //    nowObject.Path = nowObject.Path.Substring(1).Replace(GlobalProgramState.instance.PathSystemSeparator, GlobalProgramState.instance.PathSeparator);
+                            //}
+                            #endregion
                         }
-                        else
+                        if(libfiles.Value.Count() > 1)
                         {
                             nowObject.Path = file.Replace(gameConfDirectory, "").Replace(Path.GetFileName(file), "").Substring(1).Replace(GlobalProgramState.instance.PathSystemSeparator, GlobalProgramState.instance.PathSeparator) + Path.GetFileNameWithoutExtension(file);
                         }
                         nowObject.LibTree = new Lib() { LibName = libname, Path = nowObject.Path };
-                    }
-                    else
-                    {
-
+                        if (nowObject.Path != null)
+                            ConstantDB[nowObject.Path] = nowObject;
                     }
                 }
-                if(nowObject.Path != null)
-                    ConstantDB[nowObject.Path] = nowObject;
 
                 #endregion
 
