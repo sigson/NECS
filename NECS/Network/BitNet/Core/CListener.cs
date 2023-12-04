@@ -49,10 +49,8 @@ namespace BitNet
 				this.accept_args = new SocketAsyncEventArgs();
 				this.accept_args.Completed += new EventHandler<SocketAsyncEventArgs>(on_accept_completed);
 
-				Thread listen_thread = new Thread(do_listen);
-				//Task listen_thread = new Task(do_listen);
-				listen_thread.Start();
-				//Thread saveInfoThread = null;
+                Thread listen_thread = new Thread(do_listen);
+                listen_thread.Start();
 			}
 			catch (Exception e)
 			{

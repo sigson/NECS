@@ -57,6 +57,10 @@ namespace NECS.ECS.ECSCore
 
         public virtual byte[] GetNetworkPacket()
         {
+            if(Defines.ECSNetworkTypeLogging)
+            {
+                NLogger.Log($"Prepared to send {this.GetType().Name}");
+            }
             if (cachedGameDataEvent == null)
                 SerializeEvent();
             return cachedGameDataEvent;

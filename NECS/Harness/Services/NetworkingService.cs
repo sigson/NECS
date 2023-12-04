@@ -162,7 +162,17 @@ namespace NECS.Harness.Services
             {
                 memoryStream.Write(buffer, 0, buffer.Length);
                 memoryStream.Position = 0;
-                ManagerScope.instance.eventManager.OnEventAdd((ECSEvent)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream)), socketAdapter.Id);
+
+                var deserializedEvent = (ECSEvent)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
+
+                if (Defines.ECSNetworkTypeLogging)
+                {
+                    NLogger.Log($"Received {deserializedEvent.GetType().Name}");
+                }
+                TaskEx.RunAsync(() =>
+                {
+                    ManagerScope.instance.eventManager.OnEventAdd(deserializedEvent, socketAdapter.Id);
+                });
             }
         }
 

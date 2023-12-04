@@ -13,7 +13,8 @@ namespace NECS.ECS.DefaultObjects.Events.LowLevelNetEvent.ConfigEvent
     [TypeUid(20)]
     public class ConfigCheckResultEvent : ECSEvent
     {
-        public byte[] NewConfig = new byte[0];
+        public byte[] NewConfig = null;
+        public long configHash;
         static public new long Id { get; set; } = 20;
         public override void Execute()
         {
@@ -23,7 +24,9 @@ namespace NECS.ECS.DefaultObjects.Events.LowLevelNetEvent.ConfigEvent
             }
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
             {
-
+                ConstantService.instance.loadedConfigFile = this.NewConfig.ToList();
+                ConstantService.instance.checkedConfigVersion = this.configHash;
+                ConstantService.instance.SetupConfigs();
             }
         }
     }

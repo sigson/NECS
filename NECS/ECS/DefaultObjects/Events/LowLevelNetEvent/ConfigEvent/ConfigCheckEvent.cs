@@ -19,7 +19,16 @@ namespace NECS.ECS.DefaultObjects.Events.LowLevelNetEvent.ConfigEvent
         {
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {
-
+                byte[] newconfig = null;
+                if(configHash != ConstantService.instance.hashConfigFilesZip)
+                {
+                    newconfig = ConstantService.instance.ConfigFilesZip.ToArray();
+                }
+                NetworkingService.instance.Send(this.SocketSource, new ConfigCheckResultEvent()
+                {
+                    NewConfig = newconfig,
+                    configHash = ConstantService.instance.hashConfigFilesZip
+                }.GetNetworkPacket());
             }
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
             {

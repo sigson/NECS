@@ -69,11 +69,20 @@ namespace NECS.Harness.Services
                 if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client && checkedConfigVersion != hashConfig && config_path == "")
                 {
                     NLogger.Log("Constant service update config");
+
+                    var gamedatapath = Directory.GetParent(GlobalProgramState.instance.GameConfigDir).FullName;
+
                     if (Directory.Exists(GlobalProgramState.instance.GameConfigDir))
                         Directory.Delete(GlobalProgramState.instance.GameConfigDir, true);
-                    Directory.CreateDirectory(GlobalProgramState.instance.GameConfigDir);
-                    File.WriteAllBytes(Path.Combine(GlobalProgramState.instance.GameConfigDir, "zippedconfig.zip"), loadedConfigFile.ToArray());
-                    ZipExt.DecompressToDirectory(loadedConfigFile.ToArray(), GlobalProgramState.instance.GameDataDir, (info) => { });
+                    File.WriteAllBytes(Path.Combine(gamedatapath, "zippedconfig.zip"), loadedConfigFile.ToArray());
+
+                    var unzipFolder = Path.Combine(gamedatapath, "Unzipped");
+                    if (Directory.Exists(unzipFolder))
+                        Directory.Delete(unzipFolder, true);
+                    Directory.CreateDirectory(unzipFolder);
+                    ZipExt.DecompressToDirectory(loadedConfigFile.ToArray(), unzipFolder, (info) => { });
+                    var movingDir = Directory.EnumerateDirectories(unzipFolder).OrderBy(x => x.Length).First();
+                    Directory.Move(movingDir, GlobalProgramState.instance.GameConfigDir);
                 }
                 if(config_path != "")
                 {
@@ -217,6 +226,15 @@ namespace NECS.Harness.Services
                     }
                     hashConfigFilesZip = BitConverter.ToInt64(MD5.Create().ComputeHash(bytes), 0);
                     ConfigFilesZip = new List<byte>(bytes);
+                    Loaded = true;
+                }
+                #endregion
+
+                #region client
+                if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client && config_path == "")
+                {
+                    TemplateSetup();
+                    Loaded = true;
                 }
                 #endregion
             }
@@ -322,9 +340,9 @@ namespace NECS.Harness.Services
                 hashConfig = 0;
                 byte[] configFile = null;
 
-                if (File.Exists(Path.Combine(GlobalProgramState.instance.GameConfigDir, "zippedconfig.zip")))
+                if (File.Exists(Path.Combine(Directory.GetParent(GlobalProgramState.instance.GameConfigDir).FullName, "zippedconfig.zip")))
                 {
-                    configFile = File.ReadAllBytes(Path.Combine(GlobalProgramState.instance.GameConfigDir, "zippedconfig.zip"));
+                    configFile = File.ReadAllBytes(Path.Combine(Directory.GetParent(GlobalProgramState.instance.GameConfigDir).FullName, "zippedconfig.zip"));
                     hashConfig = BitConverter.ToInt64(MD5.Create().ComputeHash(configFile), 0);
                 }
                 
@@ -338,7 +356,12 @@ namespace NECS.Harness.Services
                         });
                     }
                 };
-                NetworkingService.instance.OnConnectExternal += new SocketHandler(socketAction);
+                if (NetworkingService.instance.SocketAdapters.Count() == 0)
+                    NetworkingService.instance.OnConnectExternal += new SocketHandler(socketAction);
+                else
+                {
+                    socketAction(NetworkingService.instance.ClientSocket);
+                }
             }
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
                 SetupConfigs();
@@ -354,19 +377,7 @@ namespace NECS.Harness.Services
         /// </summary>
         public override void PostInitializeProcess()
         {
-            TaskEx.RunAsync(() => {
-                if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
-                {
-                    while(hashConfig == 0)
-                    {
-                        Task.Delay(100).Wait();
-                    }
-                }
-                SetupConfigs();
-                TemplateSetup();
-                Loaded = true;
-            });
-            
+
         }
     }
 

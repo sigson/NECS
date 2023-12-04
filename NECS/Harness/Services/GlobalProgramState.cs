@@ -24,11 +24,14 @@ namespace NECS.Harness.Services
             }
         }
 
+        public string persistentDataPath;
+        public string streamingAssetsPath;
+
         public string GameConfigDir {
             get
             {
 #if UNITY_5_3_OR_NEWER
-                return Path.Combine(Path.Combine(Application.persistentDataPath, "GameData"), "GameConfig");
+                return Path.Combine(Path.Combine(persistentDataPath, "GameData"), "GameConfig");
 #endif
 #if NET
                 return Path.Combine(Path.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "GameData"), "GameConfig");
@@ -41,7 +44,7 @@ namespace NECS.Harness.Services
             get
             {
 #if UNITY_5_3_OR_NEWER
-                return Path.Combine(Application.streamingAssetsPath, "GameData");
+                return Path.Combine(streamingAssetsPath, "GameData");
 #endif
 #if NET
                 return Path.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "GameData");
@@ -54,7 +57,7 @@ namespace NECS.Harness.Services
             get
             {
 #if UNITY_5_3_OR_NEWER
-                return Path.Combine(Path.Combine(Application.streamingAssetsPath, "GameData"), "Config");
+                return Path.Combine(Path.Combine(streamingAssetsPath, "GameData"), "Config");
 #endif
 #if NET
                 return Path.Combine(Path.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "GameData"), "Config");
@@ -62,7 +65,7 @@ namespace NECS.Harness.Services
             }
         }
 
-        public string BaseConfigDefault = "{\"DataBase\":{\"DBPath\":\"Config/Users.db\",\"DBType\":\"sqlite\"},\"Networking\":{\"HostAddress\":\"127.0.0.1\",\"Port\":\"6666\",\"BufferSize\":\"1024\",\"Protocol\":\"tcp\"},\"NetworkMaliciousEventCounteraction\":{\"MaliciousScoreDecreaseIntervalInSec\":\"10\",\"MaliciousScoreDecreaseValue\":\"100\",\"MaxNetworkMaliciousScore\":\"1000\",\"MaliciousIPTimeoutInSeconds\":\"300\"},\"ECS\":{\"TickTimeMS\":\"5\"}}";
+        public string BaseConfigDefault = "{\"DataBase\":{\"DBPath\":\"Config/Users.db\",\"DBType\":\"sqlite\"},\"Networking\":{\"HostAddress\":\"127.0.0.1\",\"Port\":\"6666\",\"BufferSize\":\"950\",\"Protocol\":\"tcp\"},\"NetworkMaliciousEventCounteraction\":{\"MaliciousScoreDecreaseIntervalInSec\":\"10\",\"MaliciousScoreDecreaseValue\":\"100\",\"MaxNetworkMaliciousScore\":\"1000\",\"MaliciousIPTimeoutInSeconds\":\"300\"},\"ECS\":{\"TickTimeMS\":\"5\"}}";
 
         public string BaseLoginConfig = "{\"LoginData\":{\"login\":\"\",\"password\":\"\"}}";
 

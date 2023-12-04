@@ -83,7 +83,11 @@ namespace NECS.Harness.Model
             instances.TryGetValue(typeof(T), out instance);
             if (instance == null)
             {
+#if UNITY_5_3_OR_NEWER
+                NLogger.Log($"Singleton {typeof(T)} not initialized");
+#else
                 throw new Exception($"Singleton {typeof(T)} not initialized");
+#endif
                 //return null;
             }
             return (T)instance;
