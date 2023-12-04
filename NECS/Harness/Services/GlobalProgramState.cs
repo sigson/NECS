@@ -64,6 +64,8 @@ namespace NECS.Harness.Services
 
         public string BaseConfigDefault = "{\"DataBase\":{\"DBPath\":\"Config/Users.db\",\"DBType\":\"sqlite\"},\"Networking\":{\"HostAddress\":\"127.0.0.1\",\"Port\":\"6666\",\"BufferSize\":\"1024\",\"Protocol\":\"tcp\"},\"NetworkMaliciousEventCounteraction\":{\"MaliciousScoreDecreaseIntervalInSec\":\"10\",\"MaliciousScoreDecreaseValue\":\"100\",\"MaxNetworkMaliciousScore\":\"1000\",\"MaliciousIPTimeoutInSeconds\":\"300\"},\"ECS\":{\"TickTimeMS\":\"5\"}}";
 
+        public string BaseLoginConfig = "{\"LoginData\":{\"login\":\"\",\"password\":\"\"}}";
+
         public string PathSystemSeparator
         {
             get
@@ -71,8 +73,8 @@ namespace NECS.Harness.Services
                 return Path.DirectorySeparatorChar.ToString();
             }
         }
-        public string PathSeparator = "/";
-        public string PathAltSeparator = "\\";
+        public string PathSeparator = "\\";
+        public string PathAltSeparator = "/";
 
         public ProgramTypeEnum ProgramType;
         public enum ProgramTypeEnum

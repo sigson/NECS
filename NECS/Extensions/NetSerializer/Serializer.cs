@@ -13,6 +13,8 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Diagnostics;
+using System.Text;
+using System.Collections.Concurrent;
 
 namespace NetSerializer
 {
@@ -57,7 +59,7 @@ namespace NetSerializer
 			lock (m_modifyLock)
 			{
 				m_runtimeTypeMap = new TypeDictionary();
-				m_runtimeTypeIDList = new TypeIDList();
+				m_runtimeTypeIDList = new ConcurrentDictionary<uint, TypeData>();
 
 				AddTypesInternal(new Dictionary<Type, uint>()
 				{
@@ -95,7 +97,7 @@ namespace NetSerializer
 			lock (m_modifyLock)
 			{
 				m_runtimeTypeMap = new TypeDictionary();
-				m_runtimeTypeIDList = new TypeIDList();
+				m_runtimeTypeIDList = new ConcurrentDictionary<uint, TypeData>();
 
 				AddTypesInternal(new Dictionary<Type, uint>()
 				{
@@ -129,12 +131,15 @@ namespace NetSerializer
 				if (type.ContainsGenericParameters)
 					throw new NotSupportedException(String.Format("Type {0} contains generic parameters", type.FullName));
 
-				while (m_runtimeTypeIDList.ContainsTypeID(m_nextAvailableTypeID))
+				while (m_runtimeTypeIDList.ContainsKey(m_nextAvailableTypeID))
 					m_nextAvailableTypeID++;
+				var crc = new NECS.Crc32();
 
-				uint typeID = m_nextAvailableTypeID++;
+                //uint typeID = m_nextAvailableTypeID++;
 
-				ITypeSerializer serializer = GetTypeSerializer(type);
+				uint typeID = crc.ComputeChecksum(Encoding.UTF8.GetBytes(type.Name));
+
+                ITypeSerializer serializer = GetTypeSerializer(type);
 
 				var data = new TypeData(type, typeID, serializer);
 				m_runtimeTypeMap[type] = data;
@@ -175,7 +180,7 @@ namespace NetSerializer
 					continue;
 				}
 
-				if (m_runtimeTypeIDList.ContainsTypeID(typeID))
+				if (m_runtimeTypeIDList.ContainsKey(typeID))
 					throw new ArgumentException(String.Format("Type with typeID {0} already added", typeID));
 
 				if (type.IsAbstract || type.IsInterface)
@@ -235,7 +240,9 @@ namespace NetSerializer
 			{
 				lock (m_modifyLock)
 				{
-					foreach (var item in m_runtimeTypeIDList.ToSortedList())
+					var sortedList = new SortedList<uint, Type>();
+                    m_runtimeTypeIDList.ForEach(x => sortedList.Add(x.Key, x.Value.Type));
+                    foreach (var item in sortedList)
 					{
 						writer.Write(item.Key);
 						writer.Write(item.Value.FullName);
@@ -253,7 +260,7 @@ namespace NetSerializer
 		}
 
 		readonly TypeDictionary m_runtimeTypeMap;
-		readonly TypeIDList m_runtimeTypeIDList;
+		readonly ConcurrentDictionary<uint, TypeData> m_runtimeTypeIDList;
 
 		readonly object m_modifyLock = new object();
 

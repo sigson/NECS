@@ -81,6 +81,13 @@ namespace NECS.Harness.Services
                     {
                         File.WriteAllText(Path.Combine(gameConfDirectory, "baseconfig.json"), JsonUtil.JsonPrettify(GlobalProgramState.instance.BaseConfigDefault));
                     }
+                    if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+                    {
+                        if (!File.Exists(Path.Combine(gameConfDirectory, "loginconfig.json")))
+                        {
+                            File.WriteAllText(Path.Combine(gameConfDirectory, "loginconfig.json"), JsonUtil.JsonPrettify(GlobalProgramState.instance.BaseLoginConfig));
+                        }
+                    }
                 }
                 #region initload
                 var nowLib = "";
@@ -149,7 +156,12 @@ namespace NECS.Harness.Services
 
                         if (libfiles.Value.Count() == 1)
                         {
-                            nowObject.Path = nowLib.Replace(gameConfDirectory, "").Substring(1).Replace(GlobalProgramState.instance.PathSystemSeparator, GlobalProgramState.instance.PathSeparator);
+                            if(nowLib == gameConfDirectory)
+                            {
+                                nowObject.Path = file.Replace(gameConfDirectory, "").Replace(Path.GetFileName(file), "").Substring(1).Replace(GlobalProgramState.instance.PathSystemSeparator, GlobalProgramState.instance.PathSeparator) + Path.GetFileNameWithoutExtension(file);
+                            }
+                            else
+                                nowObject.Path = nowLib.Replace(gameConfDirectory, "").Substring(1).Replace(GlobalProgramState.instance.PathSystemSeparator, GlobalProgramState.instance.PathSeparator);
 
                             #region wtf
                             //if (nowObject.Deserialized == null)
@@ -164,6 +176,7 @@ namespace NECS.Harness.Services
                             nowObject.Path = file.Replace(gameConfDirectory, "").Replace(Path.GetFileName(file), "").Substring(1).Replace(GlobalProgramState.instance.PathSystemSeparator, GlobalProgramState.instance.PathSeparator) + Path.GetFileNameWithoutExtension(file);
                         }
                         nowObject.LibTree = new Lib() { LibName = libname, Path = nowObject.Path };
+                        nowObject.RealPath = file;
                         if (nowObject.Path != null)
                             ConstantDB[nowObject.Path] = nowObject;
                     }
@@ -361,27 +374,30 @@ namespace NECS.Harness.Services
     {
         public long Id;
         public string Path;
+        public string RealPath;
         public string JSONRepresentation => Deserialized.ToString(Formatting.None);
         public string SerializedData;//for json
         public Lib LibTree;
         public JObject Deserialized = null;
 
-        public T GetObject<T>(string path)
+        public void UpdateOnDisk()
         {
-            return GetObjectImpl<T>(this.Deserialized, path.Replace(GlobalProgramState.instance.PathAltSeparator, GlobalProgramState.instance.PathSeparator));
+            var fileextension = System.IO.Path.GetExtension(RealPath);
+            if (fileextension.Contains(".yml") || fileextension.Contains(".yaml"))
+            {
+                //var input = new StreamReader(file);
+                //var yaml = new YamlDotNet.Serialization.Serializer();
+                //yaml.Serialize(file, input);
+            }
+            if(fileextension.Contains(".json"))
+            {
+                File.WriteAllText(RealPath, JSONRepresentation);
+            }
         }
 
-        protected T GetObjectImpl<T>(JObject storage, string path)
+        public T GetObject<T>(string path)
         {
-            var pathSplit = path.Split(GlobalProgramState.instance.PathSeparator[0]);
-            var nowStorage = storage[pathSplit[0]];
-            for (int i = 1; i < pathSplit.Length; i++)
-            {
-                if (!Lambda.TryExecute(() => nowStorage = nowStorage[pathSplit[i]]))
-                    if (!Lambda.TryExecute(() => nowStorage = nowStorage[int.Parse(pathSplit[i])]))
-                        throw new Exception("Wrong JObject iterator");
-            }
-            return nowStorage.ToObject<T>();
+            return this.Deserialized.GetObjectByPath<T>(path);
         }
     }
 
