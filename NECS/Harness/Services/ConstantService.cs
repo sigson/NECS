@@ -235,6 +235,9 @@ namespace NECS.Harness.Services
                 {
                     TemplateSetup();
                     Loaded = true;
+                    CustomSetupInitialized = false;
+                    ServiceInitialized = true;
+                    initializedCallbackCache();
                 }
                 #endregion
             }
