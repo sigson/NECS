@@ -21,7 +21,8 @@ namespace NECS.ECS.DefaultObjects.Events.LowLevelNetEvent.Auth
         static public new long Id { get; set; } = 22;
         public override void Execute()
         {
-            AuthService.instance.RegistrationProcess(this);
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
+                AuthService.instance.RegistrationProcess(this);
         }
 
         public override bool CheckPacket()

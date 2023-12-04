@@ -1,4 +1,5 @@
 ﻿using NECS.ECS.ECSCore;
+using NECS.Harness.Services;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -26,6 +27,11 @@ namespace NECS.ECS.DefaultObjects.Events.ECSEvents
         public override void Execute()
         {
             actionAfterLoggin(this);
+            if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+            {
+                NetworkingService.instance.ClientEntityId = userEntityId;
+                NetworkingService.instance.Username = Username;
+            }
         }
     }
 }

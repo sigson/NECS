@@ -24,7 +24,7 @@ namespace NECS.ECS.DefaultObjects.Events.LowLevelNetEvent.ConfigEvent
             }
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
             {
-                ConstantService.instance.loadedConfigFile = this.NewConfig.ToList();
+                ConstantService.instance.loadedConfigFile = NewConfig == null ? new List<byte>() : this.NewConfig.ToList();
                 ConstantService.instance.checkedConfigVersion = this.configHash;
                 ConstantService.instance.SetupConfigs();
             }

@@ -113,6 +113,7 @@ namespace NECS.Harness.Services
                 initializedCallbackCache();
                 OnConnectExternal.Invoke(socketAdapter);
             }
+            Connected = true;
         }
 
         public void OnDisconnected(SocketAdapter socketAdapter)
