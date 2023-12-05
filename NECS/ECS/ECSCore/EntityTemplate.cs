@@ -48,6 +48,12 @@ namespace NECS.ECS.ECSCore
             else
                 return Id;
         }
+
+        public virtual void TemplateInitialize()
+        {
+
+        }
+
         public List<string> ConfigPath { get; set; } = new List<string>();
         public List<string> ConfigLibName { get; set; }
         public Type TemplateAccessorType;

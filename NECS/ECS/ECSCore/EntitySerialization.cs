@@ -213,7 +213,7 @@ namespace NECS.ECS.ECSCore
                     continue;
                 resultObject.Components[comp] = serialData;
             }
-            resultObject.Entity = fromEntity.binSerializedEntity;
+            resultObject.Entity = serializedData[ECSEntity.Id];
             using (var memoryStream = new MemoryStream())
             {
                 NetSerializer.Serializer.Default.Serialize(memoryStream, resultObject);
@@ -270,7 +270,7 @@ namespace NECS.ECS.ECSCore
                 {
                     memoryStream.Write(serializedData, 0, serializedData.Length);
                     memoryStream.Position = 0;
-                    bufEntity = (SerializedEntity)NetSerializer.Serializer.Default.Deserialize(memoryStream);
+                    bufEntity = (SerializedEntity)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
                 }
                 bufEntity.DeserializeEntity();
 

@@ -49,6 +49,13 @@ namespace NECS.Harness.Services
                     NLogger.Error("Not initialized AuthService.instance.AuthorizationRealization method");
                 }
             }
+            else
+            {
+                clientAuthEvent.SocketSource.Send(new AuthActionFailedEvent()
+                {
+                    Reason = "Wrong username or password"
+                });
+            }
         }
 
         public void RegistrationProcess(ClientRegistrationEvent clientAuthEvent)

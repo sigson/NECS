@@ -269,6 +269,7 @@ namespace NECS.Harness.Services
                     Console.WriteLine(templateAccessor.GetType().Name);
                 }
                 TemplateInterestDB[templateAccessor.GetId()] = interestedList;
+                templateAccessor.TemplateInitialize();
             }
         }
 

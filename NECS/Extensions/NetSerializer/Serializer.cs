@@ -35,6 +35,8 @@ namespace NetSerializer
 			new GenericSerializer(),
 		};
 
+		private List<string> replacementNamespaces = new List<string>();
+
 		/// <summary>
 		/// Initialize NetSerializer
 		/// </summary>
@@ -42,7 +44,10 @@ namespace NetSerializer
 		public Serializer(IEnumerable<Type> rootTypes)
 			: this(rootTypes, new Settings())
 		{
-		}
+			replacementNamespaces.Clear();
+			rootTypes.ForEach(x => replacementNamespaces.Add(x.Namespace));
+            replacementNamespaces = new HashSet<string>(replacementNamespaces).OrderBy(q => q).ToList();
+        }
 
 		/// <summary>
 		/// Initialize NetSerializer
@@ -51,7 +56,10 @@ namespace NetSerializer
 		/// <param name="settings">Settings</param>
 		public Serializer(IEnumerable<Type> rootTypes, Settings settings)
 		{
-			this.Settings = settings;
+            replacementNamespaces.Clear();
+            rootTypes.ForEach(x => replacementNamespaces.Add(x.Namespace));
+            replacementNamespaces = new HashSet<string>(replacementNamespaces).OrderBy(q => q).ToList();
+            this.Settings = settings;
 
 			if (this.Settings.CustomTypeSerializers.All(s => s is IDynamicTypeSerializer || s is IStaticTypeSerializer) == false)
 				throw new ArgumentException("TypeSerializers have to implement IDynamicTypeSerializer or IStaticTypeSerializer");
@@ -80,7 +88,10 @@ namespace NetSerializer
 		public Serializer(Dictionary<Type, uint> typeMap)
 			: this(typeMap, new Settings())
 		{
-		}
+            replacementNamespaces.Clear();
+            typeMap.ForEach(x => replacementNamespaces.Add(x.Key.Namespace));
+            replacementNamespaces = new HashSet<string>(replacementNamespaces).OrderBy(q => q).ToList();
+        }
 
 		/// <summary>
 		/// Initialize NetSerializer
@@ -135,9 +146,12 @@ namespace NetSerializer
 					m_nextAvailableTypeID++;
 				var crc = new NECS.Crc32();
 
-                //uint typeID = m_nextAvailableTypeID++;
+				//uint typeID = m_nextAvailableTypeID++;
 
-				uint typeID = crc.ComputeChecksum(Encoding.UTF8.GetBytes(type.Name));
+				var objectType = type.UnderlyingSystemType.ToString();
+				replacementNamespaces.ForEach(x => objectType = objectType.Replace(x, ""));
+
+                uint typeID = crc.ComputeChecksum(Encoding.UTF8.GetBytes(objectType));
 
                 ITypeSerializer serializer = GetTypeSerializer(type);
 
