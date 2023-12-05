@@ -25,12 +25,15 @@ namespace NECS.ECS.DefaultObjects.Events.LowLevelNetEvent.Auth
 
         public override bool CheckPacket()
         {
-            if (!Username.Any(p => !char.IsLetterOrDigit(p)))
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {
-                return false;
+                if (Username.Any(p => !char.IsLetterOrDigit(p)))
+                {
+                    return false;
+                }
+                if (Username.Length > 32 || Password.Length > 32)
+                    return false;
             }
-            if (Username.Length > 32 || Password.Length > 32)
-                return false;
             return true;
         }
     }

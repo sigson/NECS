@@ -120,6 +120,8 @@ namespace NECS.Harness.Services
         {
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {
+                SocketAdapters.Remove(socketAdapter.Id, out _);
+                NetworkMaliciousEventCounteractionService.instance.maliciousScoringStorage.Remove(socketAdapter.Id, out _);
                 ManagerScope.instance.eventManager.OnEventAdd(new ClientDisconnectedEvent()
                 {
                     SocketSourceId = socketAdapter.Id
@@ -128,6 +130,7 @@ namespace NECS.Harness.Services
                 {
                     NLogger.LogNetwork($"Client {socketAdapter.Address}:{socketAdapter.Port} disconnected from server");
                 }
+                
             }
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
             {
@@ -165,7 +168,7 @@ namespace NECS.Harness.Services
                 memoryStream.Position = 0;
 
                 var deserializedEvent = (ECSEvent)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
-
+                deserializedEvent.cachedGameDataEvent = buffer;
                 if (Defines.ECSNetworkTypeLogging)
                 {
                     NLogger.Log($"Received {deserializedEvent.GetType().Name}");

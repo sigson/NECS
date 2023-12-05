@@ -100,6 +100,7 @@ namespace NECS.Harness.Services
             userLogged.Username = userData.Username;
             userLogged.userEntity = entity;
             userLogged.userEntityId = entity.instanceId;
+            ManagerScope.instance.eventManager.OnEventAdd(userLogged);
         }
 
         public override void InitializeProcess()

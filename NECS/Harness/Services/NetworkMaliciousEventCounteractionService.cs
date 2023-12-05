@@ -62,6 +62,8 @@ namespace NECS.Harness.Services
             foreach(var socket in maliciousScoringStorage)
             {
                 socket.Value.Score -= MaliciousScoreDecreaseValue;
+                if(socket.Value.Score <= 0)
+                    socket.Value.Score = 0;
             }
         }
 

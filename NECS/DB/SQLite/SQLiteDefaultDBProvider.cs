@@ -97,8 +97,8 @@ CREATE TABLE IF NOT EXISTS ""Friends"" (
             var values = "";
             packed.Item1.ForEach(x => columns += x + ", ");
             packed.Item2.ForEach(x => values += "'" + x + "', ");
-            columns = columns.Substring(columns.Length - 2);
-            values = values.Substring(values.Length - 2);
+            columns = columns.Substring(0, columns.Length - 2);
+            values = values.Substring(0, values.Length - 2);
             using (SqliteCommand request = new SqliteCommand(
                 $"INSERT INTO Users({columns}) VALUES({values});",
                 this.Connection
