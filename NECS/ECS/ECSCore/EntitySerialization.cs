@@ -286,7 +286,7 @@ namespace NECS.ECS.ECSCore
                     ManagerScope.instance.entityManager.OnAddNewEntity(entity);
                     return;
                 }
-
+                bufEntity.desEntity.entityComponents.DeserializeStorage(bufEntity.Components);
 
                 if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
                 {
@@ -298,7 +298,7 @@ namespace NECS.ECS.ECSCore
                 }
                 entity.entityComponents.RegisterAllComponents();
 
-                foreach (var component in bufEntity.SerializationContainer)
+                foreach (var component in bufEntity.desEntity.entityComponents.SerializationContainer)
                 {
                     var tComponent = (ECSComponent)component.Value;
                     entity.AddOrChangeComponentSilentWithOwnerRestoring(tComponent);

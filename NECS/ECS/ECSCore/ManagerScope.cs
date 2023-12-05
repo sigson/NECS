@@ -50,8 +50,11 @@ namespace NECS.ECS.ECSCore
             eventManager.InitializeEventManager();
             TaskEx.RunAsync(() =>
             {
-                systemManager.RunSystems();
-                Task.Delay(5).Wait();
+                while (true)
+                {
+                    systemManager.RunSystems();
+                    Task.Delay(5).Wait();
+                }
             });
         }
 

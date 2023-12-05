@@ -32,8 +32,8 @@ namespace NECS.Harness.Services
                 return cacheInstance;
             }
         }
-        private ConcurrentDictionary<SocketAdapter, ECSEntity> SocketToEntity = new ConcurrentDictionary<SocketAdapter, ECSEntity>();
-        private ConcurrentDictionary<ECSEntity, SocketAdapter> EntityToSocket = new ConcurrentDictionary<ECSEntity, SocketAdapter>();
+        public ConcurrentDictionary<SocketAdapter, ECSEntity> SocketToEntity = new ConcurrentDictionary<SocketAdapter, ECSEntity>();
+        public ConcurrentDictionary<ECSEntity, SocketAdapter> EntityToSocket = new ConcurrentDictionary<ECSEntity, SocketAdapter>();
 
         public void AuthProcess(ClientAuthEvent clientAuthEvent)
         {

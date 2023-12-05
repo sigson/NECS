@@ -97,6 +97,7 @@ namespace NECS.ECS.ECSCore
                     try
                     {
                         scoreObject.Score += ecsEvent.GetType().GetCustomAttribute<NetworkScore>().Score + ecsEvent.NetworkScoreBooster();
+                        ecsEvent.EntityOwnerId = AuthService.instance.SocketToEntity[ecsEvent.SocketSource].instanceId;
                     }
                     catch (Exception ex)
                     {

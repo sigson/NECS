@@ -29,7 +29,7 @@ namespace NECS.ECS.DefaultObjects.Events.ECSEvents
             actionAfterLoggin(this);
             if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
             {
-                NetworkingService.instance.ClientEntityId = userEntityId;
+                NetworkingService.instance.PlayerEntityId = userEntityId;
                 NetworkingService.instance.Username = Username;
             }
         }

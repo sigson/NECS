@@ -42,7 +42,6 @@ namespace NECS.Harness.Services
         public delegate void SocketHandler(SocketAdapter socketAdapter);
         public event SocketHandler? OnConnectExternal;
         public event SocketHandler? OnDisconnectExternal;
-        public long ClientEntityId = 0;
         private SocketAdapter cachedClientSocket;
         public SocketAdapter ClientSocket
         {

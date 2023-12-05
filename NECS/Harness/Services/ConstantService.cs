@@ -233,13 +233,14 @@ namespace NECS.Harness.Services
                 #region client
                 if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client && config_path == "")
                 {
-                    TemplateSetup();
                     Loaded = true;
                     CustomSetupInitialized = false;
                     ServiceInitialized = true;
                     initializedCallbackCache();
                 }
                 #endregion
+                if(config_path == "")
+                    TemplateSetup();
             }
         }
 
