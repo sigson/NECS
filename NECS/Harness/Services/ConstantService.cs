@@ -226,6 +226,7 @@ namespace NECS.Harness.Services
                     }
                     hashConfigFilesZip = BitConverter.ToInt64(MD5.Create().ComputeHash(bytes), 0);
                     ConfigFilesZip = new List<byte>(bytes);
+                    TemplateSetup();
                     Loaded = true;
                 }
                 #endregion
@@ -233,14 +234,13 @@ namespace NECS.Harness.Services
                 #region client
                 if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client && config_path == "")
                 {
+                    TemplateSetup();
                     Loaded = true;
                     CustomSetupInitialized = false;
                     ServiceInitialized = true;
                     initializedCallbackCache();
                 }
                 #endregion
-                if(config_path == "")
-                    TemplateSetup();
             }
         }
 
@@ -298,8 +298,16 @@ namespace NECS.Harness.Services
             libName = libName.Replace(GlobalProgramState.instance.PathAltSeparator, GlobalProgramState.instance.PathSeparator);
             foreach (ConfigObj configObj in ConstantDB.Values)
             {
-                if (configObj.LibTree.LibName == libName)
-                    result.Add(configObj);
+                try
+                {
+                    if (configObj.LibTree.LibName == libName)
+                        result.Add(configObj);
+                }
+                catch(Exception e)
+                {
+                    if(Defines.HiddenKeyNotFoundLog)
+                        NLogger.LogError(e);
+                }
             }
             return result.ToArray();
         }
@@ -309,8 +317,16 @@ namespace NECS.Harness.Services
             libName = libName.Replace(GlobalProgramState.instance.PathAltSeparator, GlobalProgramState.instance.PathSeparator);
             foreach (ConfigObj configObj in ConstantDB.Values)
             {
-                if (configObj.LibTree.HeadLib.LibName == libName)
-                    result.Add(configObj);
+                try
+                {
+                    if (configObj.LibTree.HeadLib.LibName == libName)
+                        result.Add(configObj);
+                }
+                catch (Exception e)
+                {
+                    if (Defines.HiddenKeyNotFoundLog)
+                        NLogger.LogError(e);
+                }
             }
             return result.ToArray();
         }
@@ -332,8 +348,10 @@ namespace NECS.Harness.Services
                     ls.Add(filename.Replace("\\", GlobalProgramState.instance.PathSystemSeparator).Replace("/", GlobalProgramState.instance.PathSystemSeparator));
                 }
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
+                if (Defines.HiddenKeyNotFoundLog)
+                    NLogger.LogError(e);
             }
             return ls;
         }

@@ -15,6 +15,7 @@ using System.Reflection.Emit;
 using System.Diagnostics;
 using System.Text;
 using System.Collections.Concurrent;
+using NECS.Core.Logging;
 
 namespace NetSerializer
 {
@@ -79,6 +80,11 @@ namespace NetSerializer
 				GenerateWriters(typeof(object));
 				GenerateReaders(typeof(object));
 			}
+			if(Defines.SerializatorTypesLog)
+			{
+                storeTypesCSV = DebugTypeMapCSV;
+				storeNamespacesCSV = DebugNamespacesCSV;
+            }
 		}
 
 		/// <summary>
@@ -158,8 +164,8 @@ namespace NetSerializer
 				var data = new TypeData(type, typeID, serializer);
 				m_runtimeTypeMap[type] = data;
 				m_runtimeTypeIDList[typeID] = data;
-
-				addedMap[type] = typeID;
+				DebugTypeMap.TryAdd(objectType, (type.UnderlyingSystemType.ToString(), typeID)); ;
+                addedMap[type] = typeID;
 
 				foreach (var t in serializer.GetSubtypes(type))
 				{
@@ -275,8 +281,32 @@ namespace NetSerializer
 
 		readonly TypeDictionary m_runtimeTypeMap;
 		readonly ConcurrentDictionary<uint, TypeData> m_runtimeTypeIDList;
+		private ConcurrentDictionary<string,(string, uint)> DebugTypeMap = new ConcurrentDictionary<string, (string, uint)>();
+		public string storeTypesCSV = "";
+		public string storeNamespacesCSV = "";
+        public string DebugTypeMapCSV
+        {
+            get
+            {
+				var sortedTypes =new SortedList<string, (string, uint)>(DebugTypeMap);
+				var result = "";
+				sortedTypes.ForEach(x => result += x.Key + ";" + x.Value.Item1 + ";" + x.Value.Item2 + "\n");
+                return result;
+            }
+        }
 
-		readonly object m_modifyLock = new object();
+		public string DebugNamespacesCSV
+        {
+            get
+            {
+                var sortedNamespaces = replacementNamespaces;
+                var result = "";
+                sortedNamespaces.ForEach(x => result += x + "\n");
+                return result;
+            }
+        }
+
+        readonly object m_modifyLock = new object();
 
 		uint m_nextAvailableTypeID = 1;
 
@@ -360,7 +390,15 @@ namespace NetSerializer
 
 		internal DeserializeDelegate<object> GetDeserializeTrampolineFromId(uint id)
 		{
-			var data = m_runtimeTypeIDList[id];
+            TypeData data = null;
+            try
+			{
+				data = m_runtimeTypeIDList[id];
+            }
+			catch
+			{
+				NLogger.Error("Invalid serializer type id: " + id);
+            }
 
 			if (data.ReaderTrampolineDelegate != null)
 				return data.ReaderTrampolineDelegate;

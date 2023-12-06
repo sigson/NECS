@@ -40,8 +40,8 @@ namespace NECS.Harness.Services
         public bool Connected = false;
         public bool ServerAvailable = false;
         public delegate void SocketHandler(SocketAdapter socketAdapter);
-        public event SocketHandler? OnConnectExternal;
-        public event SocketHandler? OnDisconnectExternal;
+        public event SocketHandler? OnConnectExternal = (socket) => { };
+        public event SocketHandler? OnDisconnectExternal = (socket) => { };
         private SocketAdapter cachedClientSocket;
         public SocketAdapter ClientSocket
         {
