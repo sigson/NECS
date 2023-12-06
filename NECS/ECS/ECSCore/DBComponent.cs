@@ -471,7 +471,7 @@ namespace NECS.ECS.ECSCore
                     {
                         foreach (var component in serializedRow.Value)
                         {
-                            var unserComp = (ECSComponent)(component.component as JObject).ToObject(ECSComponentManager.AllComponents[component.componentId].GetTypeFast());
+                            var unserComp = (ECSComponent)ReflectionCopy.MakeReverseShallowCopy(component.component);
                             component.componentInstanceId = unserComp.instanceId;
                             unserComp.ownerEntity = entityOwner;
                             if (!components.ContainsKey(unserComp.instanceId))

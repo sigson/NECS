@@ -110,7 +110,12 @@ namespace NECS.ECS.ECSCore
                 NLogger.LogError("Was received error packed " + ecsEvent.GetType().ToString());
                 return;
             }
-
+            lock(EventBus)
+                if (EventBus.ContainsKey(ecsEvent.instanceId))
+                {
+                    NLogger.LogError($"{ecsEvent.GetType().ToString()} {ecsEvent.instanceId} event duplication");
+                    return;
+                }
             ecsEvent.Execute();
 
             if (SystemHandlers.TryGetValue(ecsEvent.GetId(), out var eventHandlers))
@@ -119,8 +124,11 @@ namespace NECS.ECS.ECSCore
 
                 if (eventHandlers.Count > 0)
                     if (!EventBus.TryAdd(ecsEvent.instanceId, ecsEvent))
-                        NLogger.LogError("error add event to bus");
-                
+                        if (EventBus.ContainsKey(ecsEvent.instanceId))
+                            NLogger.LogError($"{ecsEvent.GetType().ToString()} {ecsEvent.instanceId} event duplication");
+                        else
+                            NLogger.LogError($"{ecsEvent.GetType().ToString()} {ecsEvent.instanceId} error add event to bus");
+
                 foreach (var system in eventHandlers)
                 {
                     foreach (var func in system.Value)
@@ -153,9 +161,12 @@ namespace NECS.ECS.ECSCore
             ECSEvent removed;
             if(!EventBus.TryRemove(ecsEventId, out removed))
             {
-                NLogger.LogError("core event error");
+                NLogger.LogError($"No find event {ecsEventId} on bus");
             }
-            watcherPool.Return(removed.eventWatcher);
+            else
+            {
+                watcherPool.Return(removed.eventWatcher);
+            }
         }
         public void UpdateSystemHandlers(long eventId, List<Func<ECSEvent, object>> handler)
         {
