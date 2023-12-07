@@ -25,6 +25,13 @@ namespace NECS.ECS.ECSCore
         }
     }
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface)]
+    public sealed class LowLevelNetworkEvent : Attribute
+    {
+        public LowLevelNetworkEvent()
+        {
+        }
+    }
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface)]
     public sealed class TypeUidAttribute : Attribute
     {
         public int Id { get; set; }

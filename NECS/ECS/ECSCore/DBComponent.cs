@@ -476,6 +476,7 @@ namespace NECS.ECS.ECSCore
                             unserComp.ownerEntity = entityOwner;
                             if (!components.ContainsKey(unserComp.instanceId))
                             {
+                                unserComp.componentManagers.ownerComponent = unserComp;
                                 components[unserComp.instanceId] = (unserComp, component.componentState);
                                 ComponentOwners[unserComp.instanceId] = entityOwner.instanceId;
                                 if (component.componentState != ComponentState.Created)

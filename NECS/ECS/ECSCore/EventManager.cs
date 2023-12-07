@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using NECS.Network.NetworkModels;
 
 namespace NECS.ECS.ECSCore
 {
@@ -82,9 +83,9 @@ namespace NECS.ECS.ECSCore
             }
         }
 
-        public void OnEventAdd(ECSEvent ecsEvent, long SocketId)
+        public void OnEventAdd(ECSEvent ecsEvent, SocketAdapter SocketA)
         {
-            ecsEvent.SocketSourceId = SocketId;
+            ecsEvent.SocketSource = SocketA;
             OnEventAdd(ecsEvent);
         }
 
@@ -97,11 +98,11 @@ namespace NECS.ECS.ECSCore
                     try
                     {
                         scoreObject.Score += ecsEvent.GetType().GetCustomAttribute<NetworkScore>().Score + ecsEvent.NetworkScoreBooster();
-                        ecsEvent.EntityOwnerId = AuthService.instance.SocketToEntity[ecsEvent.SocketSource].instanceId;
                     }
                     catch (Exception ex)
                     {
-                        NLogger.LogError(ex);
+                        if(Defines.HiddenKeyNotFoundLog)
+                            NLogger.LogError(ex);
                     }
                 }
             }

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace NECS.ECS.DefaultObjects.Events.LowLevelNetEvent.ConfigEvent
 {
+    [LowLevelNetworkEvent]
     [NetworkScore(100)]
     [System.Serializable]
     [TypeUid(19)]

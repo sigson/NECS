@@ -53,7 +53,7 @@ namespace NECS.ECS.ECSCore
         [Newtonsoft.Json.JsonIgnore]
         public List<string> ConfigPath { get; }
         [System.NonSerialized]
-        public bool Alive;
+        public bool Alive = false;
 
         public ECSEntity() {
             entityComponents = new EntityComponentStorage(this);

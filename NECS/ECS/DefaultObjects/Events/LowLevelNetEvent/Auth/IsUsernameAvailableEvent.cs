@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 namespace NECS.ECS.DefaultObjects.Events.LowLevelNetEvent.Auth
 {
+    [LowLevelNetworkEvent]
     [NetworkScore(0)]
     [System.Serializable]
     [TypeUid(27)]

@@ -38,7 +38,7 @@ namespace NECS.ECS.ECSCore
         [System.NonSerialized]
         public bool Unregistered = true;
         [System.NonSerialized]
-        public ComponentManagers componentManagers;
+        public ComponentManagers componentManagers = new ComponentManagers();
 
         public List<Action<ECSEntity, ECSComponent>> GetOnChangeComponentCallback()
         {
@@ -72,11 +72,11 @@ namespace NECS.ECS.ECSCore
             }
         }
 
-        public void MarkAsChanged(bool silent = false)
+        public void MarkAsChanged(bool serializationSilent = false, bool eventSilent = false)
         {
             if (ownerEntity != null)
             {
-                ownerEntity.entityComponents.MarkComponentChanged(this, silent);
+                ownerEntity.entityComponents.MarkComponentChanged(this, serializationSilent, eventSilent);
             }
         }
 

@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using System.ComponentModel;
 
 namespace NECS.ECS.ECSCore
 {
@@ -387,11 +388,16 @@ namespace NECS.ECS.ECSCore
             {
                 if(component.Value.Unregistered)
                 {
-                    component.Value.Unregistered = false;
-                    component.Value.OnAdded(entity);
-                    this.entity.manager.OnAddComponent(this.entity, component.Value);
+                    component.Value.MarkAsChanged(false, true);
                 }
             }
+            foreach (var component in components)
+            {
+                component.Value.Unregistered = false;
+                component.Value.OnAdded(entity);
+                this.entity.manager.OnAddComponent(this.entity, component.Value);
+            }
+            this.entity.Alive = true;
         }
 
         public void AddComponentsImmediately(IList<ECSComponent> addedComponents)
@@ -399,24 +405,27 @@ namespace NECS.ECS.ECSCore
             addedComponents.ForEach<ECSComponent>(component => this.AddComponentImmediately(component.GetTypeFast(), component));
         }
 
-        public void MarkComponentChanged(ECSComponent component, bool silent = false)
+        public void MarkComponentChanged(ECSComponent component, bool serializationSilent = false, bool eventSilent = false)
         {
             lock (this.serializationLocker)
             {
                 lock (this.operationLocker)
                 {
                     Type componentClass = component.GetTypeFast();
-                    if (!silent)
+                    if (!serializationSilent)
                     {
                         changedComponents[componentClass] = 1;
                     }
                 }
 
             }
-            TaskEx.RunAsync(() =>
+            if(!eventSilent)
             {
-                component.RunOnChangeCallbacks(this.entity);
-            });
+                TaskEx.RunAsync(() =>
+                {
+                    component.RunOnChangeCallbacks(this.entity);
+                });
+            }
         }
 
         public void ChangeComponent(ECSComponent component, bool silent = false, ECSEntity restoringOwner = null)
@@ -444,7 +453,7 @@ namespace NECS.ECS.ECSCore
             }
             catch (Exception ex)
             {
-                if (ex is KeyNotFoundException)
+                if (ex is KeyNotFoundException && Defines.HiddenKeyNotFoundLog)
                     NLogger.Error(ex.Message + "  \n" + ex.StackTrace);
             }
             return component;
@@ -459,7 +468,7 @@ namespace NECS.ECS.ECSCore
             }
             catch (Exception ex)
             {
-                if (ex is KeyNotFoundException)
+                if (ex is KeyNotFoundException && Defines.HiddenKeyNotFoundLog)
                     NLogger.Error(ex.Message + "  \n" + ex.StackTrace);
             }
             return component;

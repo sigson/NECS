@@ -13,8 +13,8 @@ namespace System
             try
             {
                 Type ObjectType = Object.GetType();
-                PropertyInfo[] Properties = ObjectType.GetProperties();
-                FieldInfo[] Fields = ObjectType.GetFields();
+                PropertyInfo[] Properties = ObjectType.GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+                FieldInfo[] Fields = ObjectType.GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
                 object ClassInstance = Activator.CreateInstance(ObjectType);
 
                 foreach (PropertyInfo Property in Properties)

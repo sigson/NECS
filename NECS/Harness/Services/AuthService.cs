@@ -42,7 +42,7 @@ namespace NECS.Harness.Services
                 var userdata = DBService.instance.DBProvider.GetUserViaCallsign<UserDataRowBase>(clientAuthEvent.Username);
                 if(AuthorizationRealization != null)
                 {
-                    AuthorizationProcess(userdata, NetworkingService.instance.SocketAdapters[clientAuthEvent.SocketSourceId]);
+                    AuthorizationProcess(userdata, clientAuthEvent.SocketSource);
                 }
                 else
                 {
@@ -68,7 +68,7 @@ namespace NECS.Harness.Services
                     var userdata = DBService.instance.DBProvider.CreateUser<UserDataRowBase>(SetupAuthorizationRealization(clientAuthEvent));
                     if (AuthorizationRealization != null)
                     {
-                        AuthorizationProcess(userdata, NetworkingService.instance.SocketAdapters[clientAuthEvent.SocketSourceId]);
+                        AuthorizationProcess(userdata, clientAuthEvent.SocketSource);
                     }
                     else
                     {

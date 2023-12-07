@@ -23,7 +23,7 @@ namespace NECS.ECS.ECSCore
         static public new System.Collections.Generic.List<System.Action> StaticOnChangeHandlers { get; set; }
         [System.NonSerialized]
         [Newtonsoft.Json.JsonIgnore]
-        TimerEx componentTimer = new TimerEx();
+        public TimerEx componentTimer = new TimerEx();
         public double timerAwait = 0;
 
 		public double timeRemaining;

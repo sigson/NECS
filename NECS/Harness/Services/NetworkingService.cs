@@ -11,6 +11,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Threading.Tasks;
+using System.Reflection;
 
 namespace NECS.Harness.Services
 {
@@ -75,13 +76,19 @@ namespace NECS.Harness.Services
                 case "tcp":
                     if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
                     {
-                        tcpClient = new TCPGameClient(HostAddress, Port, BufferSize);
-                        tcpClient.Connect();
+                        TaskEx.RunAsync(() =>
+                        {
+                            tcpClient = new TCPGameClient(HostAddress, Port, BufferSize);
+                            tcpClient.Connect();
+                        });
                     }
                     else
                     {
-                        tcpServer = new TCPGameServer(HostAddress, Port, BufferSize);
-                        tcpServer.Listen();
+                        TaskEx.RunAsync(() =>
+                        {
+                            tcpServer = new TCPGameServer(HostAddress, Port, BufferSize);
+                            tcpServer.Listen();
+                        });
                     }
                     break;
             }
@@ -123,7 +130,7 @@ namespace NECS.Harness.Services
                 NetworkMaliciousEventCounteractionService.instance.maliciousScoringStorage.Remove(socketAdapter.Id, out _);
                 ManagerScope.instance.eventManager.OnEventAdd(new ClientDisconnectedEvent()
                 {
-                    SocketSourceId = socketAdapter.Id
+                    SocketSource = socketAdapter
                 });
                 if (Defines.LowLevelNetworkEventsLogging)
                 {
@@ -172,9 +179,24 @@ namespace NECS.Harness.Services
                 {
                     NLogger.Log($"Received {deserializedEvent.GetType().Name}");
                 }
+                try
+                {
+                    if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
+                    {
+                        deserializedEvent.EntityOwnerId = AuthService.instance.SocketToEntity[socketAdapter].instanceId;
+                    }
+                }
+                catch
+                {
+                    if(deserializedEvent.GetType().GetCustomAttribute<LowLevelNetworkEvent>() == null)
+                    {
+                        NLogger.Error($"Entity Owner Id not found for {deserializedEvent.GetType().Name}");
+                    }
+                }
+                
                 TaskEx.RunAsync(() =>
                 {
-                    ManagerScope.instance.eventManager.OnEventAdd(deserializedEvent, socketAdapter.Id);
+                    ManagerScope.instance.eventManager.OnEventAdd(deserializedEvent, socketAdapter);
                 });
             }
         }

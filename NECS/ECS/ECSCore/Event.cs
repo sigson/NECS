@@ -19,11 +19,19 @@ namespace NECS.ECS.ECSCore
     {
         static new public long Id { get; set; } = 4;
         public long EntityOwnerId;
+        [Newtonsoft.Json.JsonIgnore]
+        public long SocketSourceId {
+            get{
+                if (this.SocketSource == null)
+                {
+                    return 0;
+                }
+                return this.SocketSource.Id;
+            }
+        }
         [System.NonSerialized]
         [Newtonsoft.Json.JsonIgnore]
-        public long SocketSourceId = 0;
-        [Newtonsoft.Json.JsonIgnore]
-        public SocketAdapter SocketSource => NetworkingService.instance.SocketAdapters[this.SocketSourceId];
+        public SocketAdapter SocketSource;
         [System.NonSerialized]
         [Newtonsoft.Json.JsonIgnore]
         public EventWatcher eventWatcher;
