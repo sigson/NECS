@@ -393,9 +393,12 @@ namespace NECS.ECS.ECSCore
             }
             foreach (var component in components)
             {
-                component.Value.Unregistered = false;
-                component.Value.OnAdded(entity);
-                this.entity.manager.OnAddComponent(this.entity, component.Value);
+                if(component.Value.Unregistered)
+                {
+                    component.Value.Unregistered = false;
+                    component.Value.OnAdded(entity);
+                    this.entity.manager.OnAddComponent(this.entity, component.Value);
+                }
             }
             this.entity.Alive = true;
         }
