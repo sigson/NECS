@@ -86,7 +86,8 @@ namespace NECS.Harness.Model
 #if UNITY_5_3_OR_NEWER
                 NLogger.Log($"Singleton {typeof(T)} not initialized");
 #else
-                throw new Exception($"Singleton {typeof(T)} not initialized");
+                if(!Defines.IgnoreNonDangerousExceptions)
+                    throw new Exception($"Singleton {typeof(T)} not initialized");
 #endif
                 //return null;
             }

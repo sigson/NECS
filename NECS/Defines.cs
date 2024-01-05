@@ -13,4 +13,5 @@ public static class Defines
     public static bool DBEventsLogging = false;
     public static bool SerializatorTypesLog = true;
     public static bool HiddenKeyNotFoundLog = false;
+    public static bool IgnoreNonDangerousExceptions = true;
 }

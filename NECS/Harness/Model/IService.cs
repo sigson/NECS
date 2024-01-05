@@ -59,6 +59,7 @@ namespace NECS.Harness.Model
 
 
         #region static
+        public static Action? OnInitializedAllServices;
         private static EngineApiObjectBehaviour ServiceStorage;
         private static ConcurrentHashSet<IService> AllServiceList = new ConcurrentHashSet<IService>();
         private static ConcurrentHashSet<IService> servicesInitialized = new ConcurrentHashSet<IService>();
@@ -111,7 +112,10 @@ namespace NECS.Harness.Model
                 if (Defines.ServiceSetupLogging)
                     NLogger.LogService($"[{servicesPostInitialized.Count}/{AllServiceList.Count}]Service {x.GetType().Name} fully initialized.");
                 if (ServicesPostInitialized)
+                {
                     NLogger.LogSuccess($"All services fully initialized!");
+                    OnInitializedAllServices?.Invoke();
+                }
             }));
             TaskEx.RunAsync(() =>
             {
@@ -125,7 +129,10 @@ namespace NECS.Harness.Model
                         if(Defines.ServiceSetupLogging)
                             NLogger.LogService($"[{servicesPostInitialized.Count}/{AllServiceList.Count}]Service {x.GetType().Name} fully initialized.");
                         if (ServicesPostInitialized)
+                        {
                             NLogger.LogSuccess($"All services fully initialized!");
+                            OnInitializedAllServices?.Invoke();
+                        }
                     }));
                     countTries++;
                     if (countTries > 100)
