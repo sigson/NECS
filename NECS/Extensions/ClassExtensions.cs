@@ -302,7 +302,7 @@ namespace NECS
             {
                 if (t.IsFaulted || t.Exception != null)
                 {
-                    ClientInitService.instance.ExecuteInstruction(() => UnityEngine.Debug.LogException(t.Exception.Flatten().InnerException));
+                    NetworkingService.instance.ExecuteInstruction(() => UnityEngine.Debug.LogException(t.Exception.Flatten().InnerException));
                 }
             });//, TaskScheduler.FromCurrentSynchronizationContext());
             return task;
