@@ -52,5 +52,12 @@ namespace NECS.ECS.Types.AtomicType
                 Y = this.y
             };
         }
+
+#if UNITY_5_3_OR_NEWER
+        public UnityEngine.Vector2 ConvertToUnityVector2()
+        {
+            return new UnityEngine.Vector2(x, y);
+        }
+#endif
     }
 }
