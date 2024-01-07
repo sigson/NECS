@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using NECS.Harness.Model;
 
 namespace NECS.ECS.ECSCore
 {
@@ -20,6 +21,13 @@ namespace NECS.ECS.ECSCore
     [TypeUid(5)]
     public abstract class EntityTemplate
     {
+        UserDataRowBase userDataRow;
+        public EntityTemplate() { }
+
+        public EntityTemplate(UserDataRowBase userDataRowBase)
+        {
+            userDataRow = userDataRowBase;
+        }
         public override string ToString()
         {
             return $"[{this.GetType().Name}, \"{ConfigPath}\"]";
