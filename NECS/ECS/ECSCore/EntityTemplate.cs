@@ -21,7 +21,7 @@ namespace NECS.ECS.ECSCore
     [TypeUid(5)]
     public abstract class EntityTemplate
     {
-        UserDataRowBase userDataRow;
+        public UserDataRowBase userDataRow;
         public EntityTemplate() { }
 
         public EntityTemplate(UserDataRowBase userDataRowBase)
