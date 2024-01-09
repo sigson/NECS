@@ -42,7 +42,7 @@ namespace NECS.ECS.ECSCore
 
         }
 
-        public virtual void AfterDeserialize()
+        public virtual void AfterDeserializeDB()
         { }
     }
 
@@ -499,11 +499,11 @@ namespace NECS.ECS.ECSCore
                         NLogger.Error("error unserialize: no entity");
                     }
                 }
-                AfterDeserialize();
+                AfterDeserializeDB();
             }
         }
 
-        public override void AfterDeserialize()
+        public override void AfterDeserializeDB()
         {
             foreach (var entityRow in serializedDB)
             {

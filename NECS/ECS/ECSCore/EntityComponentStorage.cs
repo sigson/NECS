@@ -81,6 +81,10 @@ namespace NECS.ECS.ECSCore
                             {
                                 (pairComponent.Value as DBComponent).AfterSerializationDB();
                             }
+                            else
+                            {
+                                (pairComponent.Value as ECSComponent).AfterSerialization();
+                            }
                         }
                     }
                     if (clearChanged)

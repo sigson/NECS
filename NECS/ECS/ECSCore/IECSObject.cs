@@ -52,6 +52,19 @@ namespace NECS.ECS.ECSCore
 
         }
 
+        public void AfterSerialization()
+        {
+            //lock(SerialLocker)
+            {
+                AfterSerializationImpl();
+            }
+        }
+
+        protected virtual void AfterSerializationImpl()
+        {
+
+        }
+
         public void AfterDeserialization()
         {
             lock (SerialLocker)

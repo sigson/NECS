@@ -178,6 +178,17 @@ namespace NECS.Extensions
             }
         }
 
+        public static void RemoveAtI<TValue>(this IList<TValue> list, int index, object externalLockerObject)
+        {
+            lock (externalLockerObject)
+            {
+                lock (list)
+                {
+                    list.RemoveAt(index);
+                }
+            }
+        }
+
         public static bool ContainsI<TValue>(this ICollection<TValue> list, TValue value, object externalLockerObject)
         {
             lock (externalLockerObject)
