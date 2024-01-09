@@ -188,6 +188,28 @@ namespace NECS.Extensions
                 }
             }
         }
+
+        public static TValue GetI<TValue>(this IList<TValue> list, int index, object externalLockerObject)
+        {
+            lock (externalLockerObject)
+            {
+                lock (list)
+                {
+                    return list[index];
+                }
+            }
+        }
+
+        public static TValue GetI<TValue>(this ICollection<TValue> list, int index, object externalLockerObject)
+        {
+            lock (externalLockerObject)
+            {
+                lock (list)
+                {
+                    return list.ElementAt(index);
+                }
+            }
+        }
         #endregion
     }
 
