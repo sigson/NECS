@@ -167,6 +167,17 @@ namespace NECS.Extensions
             }
         }
 
+        public static List<TValue> SnapshotI<TValue>(this ICollection<TValue> list, object externalLockerObject)
+        {
+            lock (externalLockerObject)
+            {
+                lock (list)
+                {
+                    return new List<TValue>(list);
+                }
+            }
+        }
+
         public static bool RemoveI<TValue>(this ICollection<TValue> list, TValue value, object externalLockerObject)
         {
             lock (externalLockerObject)
@@ -174,6 +185,17 @@ namespace NECS.Extensions
                 lock (list)
                 {
                     return list.Remove(value);
+                }
+            }
+        }
+
+        public static void InsertI<TValue>(this IList<TValue> list, int index, TValue insValue, object externalLockerObject)
+        {
+            lock (externalLockerObject)
+            {
+                lock (list)
+                {
+                    list.Insert(index, insValue);
                 }
             }
         }
