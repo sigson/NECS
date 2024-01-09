@@ -189,6 +189,63 @@ namespace NECS.Extensions
             }
         }
 
+        public static void SetI<TValue>(this IList<TValue> list, int index, TValue newValue, object externalLockerObject)
+        {
+            lock (externalLockerObject)
+            {
+                lock (list)
+                {
+                    list[index] = newValue;
+                }
+            }
+        }
+
+
+        public static void AddRange<T>(this ICollection<T> collection, IEnumerable<T> items)
+        {
+
+            if (collection is List<T> list)
+            {
+
+                list.AddRange(items);
+
+            }
+            else
+            {
+
+                foreach (T item in items)
+                    collection.Add(item);
+
+            }
+
+        }
+        public static void SetI<TValue>(this ICollection<TValue> list, int index, TValue newValue, object externalLockerObject)
+        {
+            lock (externalLockerObject)
+            {
+                lock (list)
+                {
+                    if (index < 0 || index > list.Count)
+                        throw new ArgumentOutOfRangeException(nameof(index), "Index was out of range. Must be non-negative and less than the size of the collection.");
+
+                    if (list is IList<TValue> ilist)
+                    {
+                        ilist.Insert(index, newValue);
+                    }
+                    else
+                    {
+                        List<TValue> temp = new List<TValue>(list);
+
+                        list.Clear();
+
+                        list.AddRange(temp.Take(index));
+                        list.Add(newValue);
+                        list.AddRange(temp.Skip(index));
+                    }
+                }
+            }
+        }
+
         public static TValue GetI<TValue>(this IList<TValue> list, int index, object externalLockerObject)
         {
             lock (externalLockerObject)
