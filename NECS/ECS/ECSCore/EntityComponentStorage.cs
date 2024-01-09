@@ -43,7 +43,7 @@ namespace NECS.ECS.ECSCore
             {
                 lock (this.serializationLocker)
                 {
-                    ConcurrentDictionary<long, object> serializeContainer = new ConcurrentDictionary<long, object>();
+                    ConcurrentDictionary<long, ECSComponent> serializeContainer = new ConcurrentDictionary<long, ECSComponent>();
                     Dictionary<long, byte[]> slicedComponents = new Dictionary<long, byte[]>();
                     var cachedChangedComponents = changedComponents.Keys.ToList();
                     List<Type> errorList = new List<Type>();
@@ -52,19 +52,7 @@ namespace NECS.ECS.ECSCore
                         try
                         {
                             var component = components[changedComponent];
-                            lock (component.SerialLocker)
-                            {
-                                component.EnterToSerialization();
-                                if (component is DBComponent)
-                                {
-                                    (component as DBComponent).SerializeDB(serializeOnlyChanged, clearChanged);
-                                }
-                                
-                                else
-                                {
-                                    serializeContainer[component.GetId()] = component;
-                                }
-                            }
+                            serializeContainer[component.GetId()] = component;
                         }
                         catch (Exception ex)
                         {
@@ -75,16 +63,30 @@ namespace NECS.ECS.ECSCore
                     {
                         using (MemoryStream writer = new MemoryStream())
                         {
-                            NetSerializer.Serializer.Default.Serialize(writer, pairComponent.Value);
+                            var component = pairComponent.Value;
+                            lock (component.SerialLocker)
+                            {
+                                component.EnterToSerialization();
+
+                                DBComponent dBComponent = null;
+                                if (component is DBComponent)
+                                {
+                                    dBComponent = (component as DBComponent);
+                                }
+                                if (dBComponent != null)
+                                {
+                                    dBComponent.SerializeDB(serializeOnlyChanged, clearChanged);
+                                }
+
+                                NetSerializer.Serializer.Default.Serialize(writer, component);
+
+                                if (dBComponent != null)
+                                {
+                                    dBComponent.AfterSerializationDB();
+                                }
+                                component.AfterSerialization();
+                            }
                             slicedComponents[pairComponent.Key] = writer.ToArray();
-                            if (pairComponent.Value is DBComponent)
-                            {
-                                (pairComponent.Value as DBComponent).AfterSerializationDB();
-                            }
-                            else
-                            {
-                                (pairComponent.Value as ECSComponent).AfterSerialization();
-                            }
                         }
                     }
                     if (clearChanged)
