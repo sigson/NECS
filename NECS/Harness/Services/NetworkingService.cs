@@ -172,9 +172,18 @@ namespace NECS.Harness.Services
             {
                 memoryStream.Write(buffer, 0, buffer.Length);
                 memoryStream.Position = 0;
-
-                var deserializedEvent = (ECSEvent)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
-                deserializedEvent.cachedGameDataEvent = buffer;
+                var unserializedObject = NetSerializer.Serializer.Default.Deserialize(memoryStream);
+                ECSEvent deserializedEvent = null;
+                try
+                {
+                    var shallowCopy = ReflectionCopy.MakeReverseShallowCopy(unserializedObject);
+                    deserializedEvent = (ECSEvent)shallowCopy;
+                }
+                catch(Exception ex)
+                {
+                    NLogger.Error($"Failed to deserialize {unserializedObject.GetType().Name} with error {ex.Message}");
+                }
+                deserializedEvent.cachedGameDataEvent = NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(buffer);
                 if (Defines.ECSNetworkTypeLogging)
                 {
                     NLogger.Log($"Received {deserializedEvent.GetType().Name}");

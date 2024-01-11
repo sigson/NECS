@@ -150,10 +150,11 @@ namespace BitNet
                             break;
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     close();
-                    NLogger.LogError("error data parsing, close");
+                    NLogger.LogError("error data parsing, close\n" +
+                        $"{ex.Message}\n{ex.StackTrace}");
                 }
             }
 
