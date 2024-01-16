@@ -113,7 +113,12 @@ namespace NECS
 
         public static T GetObjectByPath<T>(this JObject storage, string path, bool fixPath = true)
         {
-            if(fixPath)
+            return storage.GetJTokenByPath(path, fixPath).ToObject<T>();
+        }
+
+        public static JToken GetJTokenByPath(this JObject storage, string path, bool fixPath = true)
+        {
+            if (fixPath)
                 path = path.Replace(GlobalProgramState.instance.PathAltSeparator, GlobalProgramState.instance.PathSeparator);
 
             var pathSplit = path.Split(GlobalProgramState.instance.PathSeparator[0]);
@@ -124,7 +129,7 @@ namespace NECS
                     if (!Lambda.TryExecute(() => nowStorage = nowStorage[int.Parse(pathSplit[i])]))
                         throw new Exception("Wrong JObject iterator");
             }
-            return nowStorage.ToObject<T>();
+            return nowStorage;
         }
     }
 
