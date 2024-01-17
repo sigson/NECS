@@ -378,6 +378,93 @@ namespace UnityExtensions
         }
     }
 
+    [System.Serializable]
+    public class SerializableDictionary<TKey, TValue> : Dictionary<TKey, TValue>, ISerializationCallbackReceiver
+    {
+        [SerializeField]
+        public List<DictionaryNode<TKey, TValue>> dictionary = new List<DictionaryNode<TKey, TValue>>();
+
+        public new void Add(TKey key, TValue value)
+        {
+            base.Add(key, value);
+            DirectUpdate();
+        }
+
+        public new void Remove(TKey key)
+        {
+            base.Remove(key);
+            DirectUpdate();
+        }
+
+        public new void Clear()
+        {
+            base.Clear();
+            DirectUpdate();
+        }
+
+        private void DirectUpdate()
+        {
+            dictionary.Clear();
+            foreach (KeyValuePair<TKey, TValue> pair in this)
+            {
+                dictionary.Add(new DictionaryNode<TKey, TValue>(pair.Key, pair.Value));
+            }
+        }
+
+        // save the dictionary to lists
+        public void OnBeforeSerialize()
+        {
+            if (dictionary.Count == this.Count && dictionary.Count == 0)
+                return;
+            if (dictionary.Count == this.Count)
+            {
+                dictionary.Clear();
+                foreach (KeyValuePair<TKey, TValue> pair in this)
+                {
+                    dictionary.Add(new DictionaryNode<TKey, TValue>(pair.Key, pair.Value));
+                }
+            }
+            else
+            {
+                Debug.Log("You have a double key elements in data array. Remove or rename key on this data");
+            }
+        }
+
+        // load dictionary from lists
+        public void OnAfterDeserialize()
+        {
+            base.Clear();
+
+            //while(keys.Count > values.Count)
+            //    values.Add(default(TValue));
+            //while (keys.Count < values.Count)
+            //    keys.Add(default(TKey));
+            //throw new System.Exception(string.Format("there are {0} keys and {1} values after deserialization. Make sure that both key and value types are serializable."));
+            for (int i = 0; i < dictionary.Count; i++)
+            {
+                try
+                {
+                    base.Add(dictionary[i].key, dictionary[i].value);
+                }
+                catch
+                {
+
+                }
+            }
+        }
+    }
+    [System.Serializable]
+    public class DictionaryNode<TKey, TValue>
+    {
+        public TKey key;
+        public TValue value;
+        public DictionaryNode(TKey Key, TValue Value)
+        {
+            key = Key;
+            value = Value;
+        }
+    }
+
     public struct LayerMaskEx
     {
         public static bool PresentedInLayerMask(LayerMask mask, int layer)
