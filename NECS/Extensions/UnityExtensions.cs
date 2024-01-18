@@ -311,6 +311,29 @@ namespace UnityExtensions
         }
     }
 
+    public abstract class ValueStorage : MonoBehaviour
+    {
+        private object _value;
+        public object Value
+        {
+            get
+            {
+                this._value = ValueGetDecoration(this._value);
+                return this._value;
+            }
+            set
+            {
+                this._value = value;
+                ValueSetDecoration(this._value);
+            }
+        }
+
+        public T GetValue<T>() => (T)this.Value;
+
+        abstract protected object ValueGetDecoration(object presentedValue);
+        abstract protected void ValueSetDecoration(object newValue);
+    }
+
     public class IText
     {
         private object OriginalText;
