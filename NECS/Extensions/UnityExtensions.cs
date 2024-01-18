@@ -311,6 +311,88 @@ namespace UnityExtensions
         }
     }
 
+    public class IText
+    {
+        private object OriginalText;
+        private Type OriginalType;
+        public IText(object TextObject)
+        {
+            this.TextObject = TextObject;
+        }
+
+        private static Dictionary<string, PropertyInfo> CachePropertyInfo = new Dictionary<string, PropertyInfo>();
+
+        public object TextObject
+        {
+            get
+            {
+                return OriginalText;
+            }
+            set
+            {
+                OriginalText = value;
+                OriginalType = OriginalText.GetType();
+            }
+        }
+
+        public string text
+        {
+            get
+            {
+                return (string)CachedGetProperty("text").GetValue(this.TextObject);
+            }
+            set
+            {
+                CachedGetProperty("text").SetValue(this.TextObject, value);
+            }
+        }
+
+        private PropertyInfo CachedGetProperty(string name)
+        {
+            PropertyInfo textProperty = null;
+            if (!IText.CachePropertyInfo.TryGetValue(name + OriginalType.Name, out textProperty))
+            {
+                textProperty = OriginalType.GetProperty(name);
+                IText.CachePropertyInfo[name + OriginalType.Name] = textProperty;
+            }
+            return textProperty;
+        }
+    }
+
+    public static class TextControl
+    {
+        public static string GetText(this TMP_Text text)
+        {
+            return text.text;
+        }
+
+        public static string GetText(this Text text)
+        {
+            return text.text;
+        }
+
+        public static void SetText(this TMP_Text text, string newText)
+        {
+            text.text = newText;
+        }
+
+        public static void SetText(this Text text, string newText)
+        {
+            text.text = newText;
+        }
+
+
+        public static IText GetAdapter(this TMP_Text text)
+        {
+            return new IText(text);
+        }
+
+        public static IText GetAdapter(this Text text)
+        {
+            return new IText(text);
+        }
+    }
+
     public static class UnityExtensions
     {
         public static void DestroyAllChilds(this UnityEngine.Transform transform)
