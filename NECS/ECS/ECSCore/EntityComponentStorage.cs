@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using System.ComponentModel;
+using NECS.Harness.Serialization;
 
 namespace NECS.ECS.ECSCore
 {
@@ -64,6 +65,7 @@ namespace NECS.ECS.ECSCore
                         using (MemoryStream writer = new MemoryStream())
                         {
                             var component = pairComponent.Value;
+                            byte[] serializedData = null;
                             lock (component.SerialLocker)
                             {
                                 component.EnterToSerialization();
@@ -78,7 +80,8 @@ namespace NECS.ECS.ECSCore
                                     dBComponent.SerializeDB(serializeOnlyChanged, clearChanged);
                                 }
 
-                                NetSerializer.Serializer.Default.Serialize(writer, component);
+                                //NetSerializer.Serializer.Default.Serialize(writer, component);
+                                serializedData = SerializationAdapter.SerializeECSComponent(component);
 
                                 if (dBComponent != null)
                                 {
@@ -86,7 +89,7 @@ namespace NECS.ECS.ECSCore
                                 }
                                 component.AfterSerialization();
                             }
-                            slicedComponents[pairComponent.Key] = writer.ToArray();
+                            slicedComponents[pairComponent.Key] = serializedData;//writer.ToArray();
                         }
                     }
                     if (clearChanged)
@@ -121,8 +124,11 @@ namespace NECS.ECS.ECSCore
                                         dbComp = (pairComponent as DBComponent);
                                         dbComp.SerializeDB(serializeOnlyChanged, clearChanged);
                                     }
-                                    NetSerializer.Serializer.Default.Serialize(writer, pairComponent);
-                                    slicedComponents[pairComponentKey] = writer.ToArray();
+
+                                    //NetSerializer.Serializer.Default.Serialize(writer, pairComponent);
+                                    var serializedData = SerializationAdapter.SerializeECSComponent((pairComponent as ECSComponent));
+
+                                    slicedComponents[pairComponentKey] = serializedData;//writer.ToArray();
                                     if (dbComp != null)
                                     {
                                         dbComp.AfterSerializationDB();
@@ -146,23 +152,26 @@ namespace NECS.ECS.ECSCore
             {
                 foreach (var changedComponent in changedComponents)
                 {
-                    using (MemoryStream writer = new MemoryStream())
-                    {
-                        var component = components[changedComponent.Key];
-                        NetSerializer.Serializer.Default.Serialize(writer, component);
-                        serializeContainer[component.GetId()] = writer.ToArray();
-                    }
+                    var component = components[changedComponent.Key];
+                    serializeContainer[component.GetId()] = SerializationAdapter.SerializeECSComponent(component);
+                    //using (MemoryStream writer = new MemoryStream())
+                    //{
+                    //    var component = components[changedComponent.Key];
+                    //    NetSerializer.Serializer.Default.Serialize(writer, component);
+                    //    serializeContainer[component.GetId()] = writer.ToArray();
+                    //}
                 }
             }
             else
             {
                 foreach (var changedComponent in SerializationContainer)
                 {
-                    using (MemoryStream writer = new MemoryStream())
-                    {
-                        NetSerializer.Serializer.Default.Serialize(writer, changedComponent.Value);
-                        serializeContainer[changedComponent.Key] = writer.ToArray();
-                    }
+                    serializeContainer[changedComponent.Key] = SerializationAdapter.SerializeECSComponent(changedComponent.Value as ECSComponent);
+                    //using (MemoryStream writer = new MemoryStream())
+                    //{
+                    //    NetSerializer.Serializer.Default.Serialize(writer, changedComponent.Value);
+                    //    serializeContainer[changedComponent.Key] = writer.ToArray();
+                    //}
                 }
             }
             if (clearChanged)
@@ -174,12 +183,13 @@ namespace NECS.ECS.ECSCore
         {
             foreach(var serComponent in serializedComponents)
             {
-                using (var memoryStream = new MemoryStream())
-                {
-                    memoryStream.Write(serComponent.Value, 0, serComponent.Value.Length);
-                    memoryStream.Position = 0;
-                    this.SerializationContainer[serComponent.Key] =  (ECSComponent)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
-                }
+                this.SerializationContainer[serComponent.Key] = (ECSComponent)SerializationAdapter.DeserializeECSComponent(serComponent.Value, serComponent.Key);
+                //using (var memoryStream = new MemoryStream())
+                //{
+                //    memoryStream.Write(serComponent.Value, 0, serComponent.Value.Length);
+                //    memoryStream.Position = 0;
+                //    this.SerializationContainer[serComponent.Key] =  (ECSComponent)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
+                //}
             }
         }
 

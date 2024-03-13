@@ -84,12 +84,18 @@ namespace NECS.Harness.Model
             }
         }
 
-        public static void RegisterAllServices()
+        public static void RegisterAllServices(List<Type> excludeServices = null)
         {
-            #if UNITY_5_3_OR_NEWER
+#if UNITY_5_3_OR_NEWER
             ServiceStorage = new UnityEngine.GameObject("ServiceStorage").AddComponent<EngineApiObjectBehaviour>();
-            #endif
-            AllServiceList = new ConcurrentHashSet<IService>(ECSAssemblyExtensions.GetAllSubclassOf(typeof(IService)).Where(x => !x.IsAbstract).Select(x => IService.InitalizeSingleton(x, ServiceStorage, true)).Cast<IService>().ToList());
+#endif
+            if(ServiceStorage != null)
+                ServiceStorage.AddComponent<ProxyMockComponent>();
+            if (excludeServices == null)
+            {
+                excludeServices = new List<Type>();
+            }
+            AllServiceList = new ConcurrentHashSet<IService>(ECSAssemblyExtensions.GetAllSubclassOf(typeof(IService)).Where(x => !x.IsAbstract && !excludeServices.Contains(x)).Select(x => IService.InitalizeSingleton(x, ServiceStorage, true)).Cast<IService>().ToList());
         }
 
         public static void InitializeService(IService service)
@@ -131,7 +137,16 @@ namespace NECS.Harness.Model
                         if (ServicesPostInitialized)
                         {
                             NLogger.LogSuccess($"All services fully initialized!");
-                            OnInitializedAllServices?.Invoke();
+                            if(ServiceStorage != null)
+                            {
+                                ServiceStorage.GetComponent<ProxyMockComponent>().ExecuteInstruction(
+                                    () => { OnInitializedAllServices?.Invoke(); }
+                                    );
+                            }
+                            else
+                            {
+                                OnInitializedAllServices?.Invoke();
+                            }
                         }
                     }));
                     countTries++;

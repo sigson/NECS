@@ -8,6 +8,8 @@ using System.Linq;
 using System.IO;
 using NECS.Harness.Services;
 using NECS.Network.NetworkModels;
+using NECS.Harness.Serialization;
+using static NECS.ECS.ECSCore.EntitySerialization;
 
 
 namespace NECS.ECS.ECSCore
@@ -56,11 +58,12 @@ namespace NECS.ECS.ECSCore
 
         protected virtual void SerializeEvent()
         {
-            using (MemoryStream writer = new MemoryStream())
-            {
-                NetSerializer.Serializer.Default.Serialize(writer, this);
-                cachedGameDataEvent = NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(writer.ToArray());
-            }
+            cachedGameDataEvent = NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(new SerializedEvent(this).Serialize());
+            //using (MemoryStream writer = new MemoryStream())
+            //{
+            //    NetSerializer.Serializer.Default.Serialize(writer, this);
+            //    cachedGameDataEvent = NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(writer.ToArray());
+            //}
         }
 
         public virtual byte[] GetNetworkPacket()

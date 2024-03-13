@@ -12,6 +12,7 @@ using System.Text;
 using System.IO;
 using System.Threading.Tasks;
 using System.Reflection;
+using NECS.Harness.Serialization;
 
 namespace NECS.Harness.Services
 {
@@ -168,46 +169,58 @@ namespace NECS.Harness.Services
             {
 
             }
-            using (var memoryStream = new MemoryStream())
+
+            ECSEvent deserializedEvent = null;
+            try
             {
-                memoryStream.Write(buffer, 0, buffer.Length);
-                memoryStream.Position = 0;
-                var unserializedObject = NetSerializer.Serializer.Default.Deserialize(memoryStream);
-                ECSEvent deserializedEvent = null;
+                //var shallowCopy = ReflectionCopy.MakeReverseShallowCopy(unserializedObject);
+                //deserializedEvent = (ECSEvent)shallowCopy;
+                var unserializedObject = SerializationAdapter.DeserializeAdapterEvent(buffer);
                 try
                 {
-                    var shallowCopy = ReflectionCopy.MakeReverseShallowCopy(unserializedObject);
-                    deserializedEvent = (ECSEvent)shallowCopy;
+                    deserializedEvent = unserializedObject.Deserialize();
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     NLogger.Error($"Failed to deserialize {unserializedObject.GetType().Name} with error {ex.Message}");
                 }
-                deserializedEvent.cachedGameDataEvent = NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(buffer);
-                if (Defines.ECSNetworkTypeLogging)
-                {
-                    NLogger.Log($"Received {deserializedEvent.GetType().Name}");
-                }
-                try
-                {
-                    if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
-                    {
-                        deserializedEvent.EntityOwnerId = AuthService.instance.SocketToEntity[socketAdapter].instanceId;
-                    }
-                }
-                catch
-                {
-                    if(deserializedEvent.GetType().GetCustomAttribute<LowLevelNetworkEvent>() == null)
-                    {
-                        NLogger.Error($"Entity Owner Id not found for {deserializedEvent.GetType().Name}");
-                    }
-                }
-                
-                TaskEx.RunAsync(() =>
-                {
-                    ManagerScope.instance.eventManager.OnEventAdd(deserializedEvent, socketAdapter);
-                });
             }
+            catch (Exception ex)
+            {
+                NLogger.Error($"Failed to deserialize buffer data with error {ex.Message}");
+            }
+            deserializedEvent.cachedGameDataEvent = NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(buffer);
+            if (Defines.ECSNetworkTypeLogging)
+            {
+                NLogger.Log($"Received {deserializedEvent.GetType().Name}");
+            }
+            try
+            {
+                if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
+                {
+                    deserializedEvent.EntityOwnerId = AuthService.instance.SocketToEntity[socketAdapter].instanceId;
+                }
+            }
+            catch
+            {
+                if (deserializedEvent.GetType().GetCustomAttribute<LowLevelNetworkEvent>() == null)
+                {
+                    NLogger.Error($"Entity Owner Id not found for {deserializedEvent.GetType().Name}");
+                }
+            }
+
+            TaskEx.RunAsync(() =>
+            {
+                ManagerScope.instance.eventManager.OnEventAdd(deserializedEvent, socketAdapter);
+            });
+
+
+            //using (var memoryStream = new MemoryStream())
+            //{
+            //    memoryStream.Write(buffer, 0, buffer.Length);
+            //    memoryStream.Position = 0;
+            //    var unserializedObject = NetSerializer.Serializer.Default.Deserialize(memoryStream);    
+            //}
         }
 
         public void OnError(System.Net.Sockets.SocketError error, SocketAdapter socketAdapter)

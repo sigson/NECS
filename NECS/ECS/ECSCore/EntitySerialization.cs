@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using NECS.Harness.Serialization;
 
 namespace NECS.ECS.ECSCore
 {
@@ -23,13 +24,18 @@ namespace NECS.ECS.ECSCore
     {
         #region setupData
         public static ConcurrentDictionary<long, Type> TypeStorage = new ConcurrentDictionary<long, Type>();
+        public static ConcurrentDictionary<Type, long> TypeIdStorage = new ConcurrentDictionary<Type, long>();
 
         public static void InitSerialize()
         {
             var nonSerializedSet = new HashSet<Type>() { typeof(EntityManagersComponent) };
 
             var ecsObjects = ECSAssemblyExtensions.GetAllSubclassOf(typeof(IECSObject)).Where(x => !x.IsAbstract).Where(x => !nonSerializedSet.Contains(x)).ToList();
-            ecsObjects.Select(x => Activator.CreateInstance(x)).Cast<IECSObject>().ForEach(x => TypeStorage[x.GetId()] = x.GetType());
+            ecsObjects.Select(x => Activator.CreateInstance(x)).Cast<IECSObject>().ForEach(x =>
+            {
+                TypeStorage[x.GetId()] = x.GetType();
+                TypeIdStorage[x.GetType()] = x.GetId();
+            });
 
             ecsObjects.Add(typeof(SerializedEntity));
 
@@ -47,28 +53,59 @@ namespace NECS.ECS.ECSCore
 
             public void DeserializeEntity()
             {
-                using (var memoryStream = new MemoryStream())
-                {
-                    memoryStream.Write(this.Entity, 0, this.Entity.Length);
-                    memoryStream.Position = 0;
-                    desEntity = (ECSEntity)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
-                }
+                desEntity = SerializationAdapter.DeserializeECSEntity(this.Entity);
+                //using (var memoryStream = new MemoryStream())
+                //{
+                //    memoryStream.Write(this.Entity, 0, this.Entity.Length);
+                //    memoryStream.Position = 0;
+                //    desEntity = (ECSEntity)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
+                //}
             }
 
             public void DeserializeComponents()
             {
                 foreach(var sComp in Components)
                 {
-                    using (var memoryStream = new MemoryStream())
-                    {
-                        memoryStream.Write(sComp.Value, 0, sComp.Value.Length);
-                        memoryStream.Position = 0;
-                        SerializationContainer[sComp.Key] = (ECSComponent)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
-                    }
+                    SerializationContainer[sComp.Key] = SerializationAdapter.DeserializeECSComponent(sComp.Value, sComp.Key);
+                    //using (var memoryStream = new MemoryStream())
+                    //{
+                    //    memoryStream.Write(sComp.Value, 0, sComp.Value.Length);
+                    //    memoryStream.Position = 0;
+                    //    SerializationContainer[sComp.Key] = (ECSComponent)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
+                    //}
                 }
                 
             }
         }
+
+        [System.Serializable]
+        public class SerializedEvent
+        {
+            public int TId = 0;
+            public byte[] EventData;
+            [System.NonSerialized]
+            [Newtonsoft.Json.JsonIgnore]
+            private ECSEvent cEvent;
+
+            public SerializedEvent() { }
+            public SerializedEvent(ECSEvent e)
+            {
+                cEvent = e;
+                TId = Convert.ToInt32(e.GetId());
+            }
+
+            public ECSEvent Deserialize()
+            {
+                return SerializationAdapter.DeserializeECSEvent(EventData, TId);
+            }
+
+            public byte[] Serialize()
+            {
+                EventData = SerializationAdapter.SerializeECSEvent(cEvent);
+                return SerializationAdapter.SerializeAdapterEvent(this);
+            }
+        }
+
         #endregion
 
         /// <summary>
@@ -80,17 +117,24 @@ namespace NECS.ECS.ECSCore
         private static byte[] FullSerialize(ECSEntity entity, bool serializeOnlyChanged = false)
         {
             var resultObject = new SerializedEntity();
-            using (var memoryStream = new MemoryStream())
-            {
-                NetSerializer.Serializer.Default.Serialize(memoryStream, entity);
-                resultObject.Entity = memoryStream.ToArray();
-                resultObject.Components = entity.entityComponents.SerializeStorage(serializeOnlyChanged, true);
-            }
-            using (var memoryStream = new MemoryStream())
-            {
-                NetSerializer.Serializer.Default.Serialize(memoryStream, resultObject);
-                return memoryStream.ToArray();
-            }
+
+            resultObject.Entity = SerializationAdapter.SerializeECSEntity(entity);
+            resultObject.Components = entity.entityComponents.SerializeStorage(serializeOnlyChanged, true);
+
+            //using (var memoryStream = new MemoryStream())
+            //{
+            //    NetSerializer.Serializer.Default.Serialize(memoryStream, entity);
+            //    resultObject.Entity = memoryStream.ToArray();
+            //    resultObject.Components = entity.entityComponents.SerializeStorage(serializeOnlyChanged, true);
+            //}
+
+            return SerializationAdapter.SerializeAdapterEntity(resultObject);
+
+            //using (var memoryStream = new MemoryStream())
+            //{
+            //    NetSerializer.Serializer.Default.Serialize(memoryStream, resultObject);
+            //    return memoryStream.ToArray();
+            //}
         }
         /// <summary>
         /// inner method of entity serialization, need for build serialized atomic data
@@ -105,12 +149,15 @@ namespace NECS.ECS.ECSCore
 
             lock (entity.entityComponents.serializationLocker)//wtf double locking is work
             {
-                using (var memoryStream = new MemoryStream())
-                {
-                    NetSerializer.Serializer.Default.Serialize(memoryStream, entity);
-                    resultObject.Entity = memoryStream.ToArray();
-                    resultObject.Components = entity.entityComponents.SlicedSerializeStorage(serializeOnlyChanged, clearChanged);
-                }
+                resultObject.Entity = SerializationAdapter.SerializeECSEntity(entity);
+                resultObject.Components = entity.entityComponents.SlicedSerializeStorage(serializeOnlyChanged, clearChanged);
+
+                //using (var memoryStream = new MemoryStream())
+                //{
+                //    NetSerializer.Serializer.Default.Serialize(memoryStream, entity);
+                //    resultObject.Entity = memoryStream.ToArray();
+                //    resultObject.Components = entity.entityComponents.SlicedSerializeStorage(serializeOnlyChanged, clearChanged);
+                //}
                 resultObject.Components[ECSEntity.Id] = resultObject.Entity;
             }
             return resultObject.Components;
@@ -185,11 +232,14 @@ namespace NECS.ECS.ECSCore
                 data.Item1 = "";
                 resultObject.Components = data.Item2;
             }
-            using (var memoryStream = new MemoryStream())
-            {
-                NetSerializer.Serializer.Default.Serialize(memoryStream, resultObject);
-                return memoryStream.ToArray();
-            }
+
+            return SerializationAdapter.SerializeAdapterEntity(resultObject);
+
+            //using (var memoryStream = new MemoryStream())
+            //{
+            //    NetSerializer.Serializer.Default.Serialize(memoryStream, resultObject);
+            //    return memoryStream.ToArray();
+            //}
         }
         /// <summary>
         /// gdap data exchange building with full entity serialization, mainly needed for setup data exchange, because slower then BuildSerializedEntityWithGDAP and takes up too much space in network traffic
@@ -214,11 +264,14 @@ namespace NECS.ECS.ECSCore
                 resultObject.Components[comp] = serialData;
             }
             resultObject.Entity = serializedData[ECSEntity.Id];
-            using (var memoryStream = new MemoryStream())
-            {
-                NetSerializer.Serializer.Default.Serialize(memoryStream, resultObject);
-                return memoryStream.ToArray();
-            }
+
+            return SerializationAdapter.SerializeAdapterEntity(resultObject);
+
+            //using (var memoryStream = new MemoryStream())
+            //{
+            //    NetSerializer.Serializer.Default.Serialize(memoryStream, resultObject);
+            //    return memoryStream.ToArray();
+            //}
         }
         /// <summary>
         /// OBSOLETE, not has in use
@@ -240,12 +293,13 @@ namespace NECS.ECS.ECSCore
             SerializedEntity bufEntity;
             EntityComponentStorage storage;
 
-            using (var memoryStream = new MemoryStream())
-            {
-                memoryStream.Write(serializedData, 0, serializedData.Length);
-                memoryStream.Position = 0;
-                bufEntity = (SerializedEntity)NetSerializer.Serializer.Default.Deserialize(memoryStream);
-            }
+            bufEntity = SerializationAdapter.DeserializeAdapterEntity(serializedData);
+            //using (var memoryStream = new MemoryStream())
+            //{
+            //    memoryStream.Write(serializedData, 0, serializedData.Length);
+            //    memoryStream.Position = 0;
+            //    bufEntity = (SerializedEntity)NetSerializer.Serializer.Default.Deserialize(memoryStream);
+            //}
             bufEntity.DeserializeEntity();
 
 
@@ -266,12 +320,13 @@ namespace NECS.ECS.ECSCore
 
             lock (ManagerScope.instance)
             {
-                using (var memoryStream = new MemoryStream())
-                {
-                    memoryStream.Write(serializedData, 0, serializedData.Length);
-                    memoryStream.Position = 0;
-                    bufEntity = (SerializedEntity)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
-                }
+                bufEntity = SerializationAdapter.DeserializeAdapterEntity(serializedData);
+                //using (var memoryStream = new MemoryStream())
+                //{
+                //    memoryStream.Write(serializedData, 0, serializedData.Length);
+                //    memoryStream.Position = 0;
+                //    bufEntity = (SerializedEntity)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
+                //}
                 bufEntity.DeserializeEntity();
 
                 if (!ManagerScope.instance.entityManager.EntityStorage.TryGetValue(bufEntity.desEntity.instanceId, out entity))

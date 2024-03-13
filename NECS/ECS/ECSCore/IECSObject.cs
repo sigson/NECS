@@ -23,6 +23,7 @@ namespace NECS.ECS.ECSCore
     public class IECSObject
     {
         static public long Id { get; set; } = 0;
+        static public long GId<T>() => EntitySerialization.TypeIdStorage[typeof(T)];
         public long instanceId = Guid.NewGuid().GuidToLongR();
         [System.NonSerialized]
         public List<IManager> connectPoints = new List<IManager>();
