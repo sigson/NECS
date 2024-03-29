@@ -32,6 +32,12 @@ namespace NECS.ECS.Types.AtomicType
             this.x = qa.x; this.y = qa.y; this.z = qa.z; this.w = qa.w;
         }
 #endif
+#if GODOT4_0_OR_GREATER
+        public QuaternionS(Godot.Quaternion qa)
+        {
+            this.x = qa.X; this.y = qa.Y; this.z = qa.Z; this.w = qa.W;
+        }
+#endif
         public QuaternionS(Quaternion qa)
         {
             this.x = qa.X; this.y = qa.Y; this.z = qa.Z; this.w = qa.W;
@@ -46,6 +52,19 @@ namespace NECS.ECS.Types.AtomicType
                 y = this.y,
                 z = this.z,
                 w = this.w
+            };
+        }
+#endif
+
+#if GODOT4_0_OR_GREATER
+        public Godot.Quaternion GetNum()
+        {
+            return new Godot.Quaternion()
+            {
+                X = this.x,
+                Y = this.y,
+                Z = this.z,
+                W = this.w
             };
         }
 #endif

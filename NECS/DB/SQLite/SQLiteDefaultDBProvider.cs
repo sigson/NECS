@@ -4,6 +4,7 @@ using NECS.Core.Logging;
 using NECS.Harness.Model;
 using NECS.Harness.Services;
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Data;

@@ -28,6 +28,13 @@ namespace NECS.ECS.Types.AtomicType
             this.x = vector.x; this.y = vector.y;
         }
 #endif
+
+#if GODOT4_0_OR_GREATER
+        public Vector2S(Godot.Vector2 vector)
+        {
+            this.x = vector.X; this.y = vector.Y;
+        }
+#endif
         public Vector2S(Vector2 vector)
         {
             this.x = vector.X; this.y = vector.Y;
@@ -40,6 +47,17 @@ namespace NECS.ECS.Types.AtomicType
             {
                 x = this.x,
                 y = this.y
+            };
+        }
+#endif
+
+#if GODOT4_0_OR_GREATER
+        public Godot.Vector2 GetNum()
+        {
+            return new Godot.Vector2()
+            {
+                X = this.x,
+                Y = this.y
             };
         }
 #endif
@@ -57,6 +75,13 @@ namespace NECS.ECS.Types.AtomicType
         public UnityEngine.Vector2 ConvertToUnityVector2()
         {
             return new UnityEngine.Vector2(x, y);
+        }
+#endif
+
+#if GODOT4_0_OR_GREATER
+        public Godot.Vector2 ConvertToUnityVector2()
+        {
+            return new Godot.Vector2(x, y);
         }
 #endif
     }
