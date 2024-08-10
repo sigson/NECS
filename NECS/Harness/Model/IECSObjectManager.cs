@@ -7,7 +7,11 @@ using System.Threading.Tasks;
 
 namespace NECS.Harness.Model
 {
-    public abstract class IECSObjectManager<T> : IManager where T : IECSObject
+public abstract
+#if GODOT4_0_OR_GREATER
+    partial
+#endif
+    class IECSObjectManager<T> : IManager where T : IECSObject
     {
         private new static Type _managerTypeValue = null;
 

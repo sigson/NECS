@@ -7,7 +7,11 @@ using System.Threading.Tasks;
 
 namespace NECS.Harness.Model
 {
-    public abstract class IManagable : ProxyBehaviour
+public abstract
+#if GODOT4_0_OR_GREATER
+    partial
+#endif
+    class IManagable : ProxyBehaviour
     {
         public IEntityManager ownerManagerSpace = null;
         public long instanceId = Guid.NewGuid().GuidToLongR();

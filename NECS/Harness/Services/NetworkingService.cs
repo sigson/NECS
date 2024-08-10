@@ -16,7 +16,11 @@ using NECS.Harness.Serialization;
 
 namespace NECS.Harness.Services
 {
-    public class NetworkingService : IService
+    public
+#if GODOT4_0_OR_GREATER
+    partial
+#endif
+    class NetworkingService : IService
     {
         private static NetworkingService cacheInstance;
         public static NetworkingService instance

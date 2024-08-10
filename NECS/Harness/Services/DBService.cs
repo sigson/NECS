@@ -1,11 +1,15 @@
-﻿#if NET
+﻿#if NET && !GODOT
 using NECS.DB.SQLite;
 #endif
 using NECS.Harness.Model;
 
 namespace NECS.Harness.Services
 {
-    public class DBService : IService
+    public
+#if GODOT4_0_OR_GREATER
+    partial
+#endif
+    class DBService : IService
     {
         private static DBService cacheInstance;
         public static DBService instance
@@ -28,7 +32,7 @@ namespace NECS.Harness.Services
             DBType = ConstantService.instance.GetByConfigPath("baseconfig").GetObject<string>("DataBase/DBType");
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {
-#if NET
+#if NET && !GODOT
                 switch (DBType.ToLower())
                 {
                     case "sqlite":

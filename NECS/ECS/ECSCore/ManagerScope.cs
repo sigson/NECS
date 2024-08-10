@@ -19,7 +19,11 @@ using System.IO;
 
 namespace NECS.ECS.ECSCore
 {
-    public class ManagerScope : IService
+public
+#if GODOT4_0_OR_GREATER
+    partial
+#endif
+    class ManagerScope : IService
     {
         public ECSSystemManager systemManager;
         public ECSEntityManager entityManager;

@@ -11,7 +11,11 @@ using System.Threading.Tasks;
 
 namespace NECS.Harness.Model
 {
-    public abstract class IManager : ProxyBehaviour
+public abstract
+#if GODOT4_0_OR_GREATER
+    partial
+#endif
+    class IManager : ProxyBehaviour
     {
         public long instanceId = Guid.NewGuid().GuidToLongR();
         #region typeId

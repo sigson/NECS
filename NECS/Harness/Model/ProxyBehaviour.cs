@@ -11,7 +11,11 @@ using System.Threading.Tasks;
 
 namespace NECS.Harness.Model
 {
-    public abstract class ProxyBehaviour : EngineApiObjectBehaviour
+    public abstract
+#if GODOT4_0_OR_GREATER
+    partial
+#endif
+    class ProxyBehaviour : EngineApiObjectBehaviour
     {
         private ConcurrentDictionary<long, Action> ExecuteInstructionEvent = new ConcurrentDictionary<long, Action>();
         //private ConcurrentDictionary<long, ProxyJob> Jobs = new ConcurrentDictionary<long, ProxyJob>();

@@ -7,7 +7,11 @@ using System.Threading.Tasks;
 
 namespace NECS.Harness.Model
 {
-    public abstract class IComponentManager : IECSObjectManager<ECSComponent>
+public abstract
+#if GODOT4_0_OR_GREATER
+    partial
+#endif
+    class IComponentManager : IECSObjectManager<ECSComponent>
     {
         public ECSComponent ManagerComponent
         {

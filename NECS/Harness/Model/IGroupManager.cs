@@ -12,7 +12,11 @@ using System.Threading.Tasks;
 
 namespace NECS.Harness.Model
 {
-    public abstract class IGroupManager<T> : IManager, IDictionary<long, T> where T : IECSObject
+public abstract
+#if GODOT4_0_OR_GREATER
+    partial
+#endif
+    class IGroupManager<T> : IManager, IDictionary<long, T> where T : IECSObject
     {
         protected IDictionary<long, T> entityStorage = new ConcurrentDictionary<long, T>();
 

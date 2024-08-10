@@ -9,7 +9,11 @@ using System.Threading.Tasks;
 
 namespace NECS.Harness.Model
 {
-    public abstract class SGT : ProxyBehaviour
+public abstract
+#if GODOT4_0_OR_GREATER
+    partial
+#endif
+    class SGT : ProxyBehaviour
     {
         private static Dictionary<Type, SGT> instances = new Dictionary<Type, SGT>();
 

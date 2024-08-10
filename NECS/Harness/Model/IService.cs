@@ -10,7 +10,11 @@ using System.Threading.Tasks;
 
 namespace NECS.Harness.Model
 {
-    public abstract class IService : SGT
+public abstract
+#if GODOT4_0_OR_GREATER
+    partial
+#endif
+    class IService : SGT
     {
         public bool ServiceInitialized;
         public bool ServicePostInitialized;

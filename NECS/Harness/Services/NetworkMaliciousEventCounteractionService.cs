@@ -9,7 +9,11 @@ using System.Threading.Tasks;
 
 namespace NECS.Harness.Services
 {
-    public class NetworkMaliciousEventCounteractionService : IService
+    public
+#if GODOT4_0_OR_GREATER
+    partial
+#endif
+    class NetworkMaliciousEventCounteractionService : IService
     {
         private static NetworkMaliciousEventCounteractionService cacheInstance;
         public static NetworkMaliciousEventCounteractionService instance

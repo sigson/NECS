@@ -6,7 +6,11 @@ using System.Threading.Tasks;
 
 namespace NECS.Harness.Model
 {
-    public class ProxyMockComponent : ProxyBehaviour
+    public
+#if GODOT4_0_OR_GREATER
+    partial
+#endif
+    class ProxyMockComponent : ProxyBehaviour
     {
     }
 }

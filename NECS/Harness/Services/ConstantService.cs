@@ -19,7 +19,11 @@ using NECS.ECS.DefaultObjects.Events.LowLevelNetEvent.ConfigEvent;
 
 namespace NECS.Harness.Services
 {
-    public class ConstantService : IService
+    public
+#if GODOT4_0_OR_GREATER
+    partial
+#endif
+    class ConstantService : IService
     {
         private static ConstantService cacheInstance;
         public static ConstantService instance {

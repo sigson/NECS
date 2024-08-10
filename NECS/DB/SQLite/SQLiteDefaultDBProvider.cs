@@ -1,4 +1,4 @@
-﻿#if NET
+﻿#if NET && !GODOT
 using Microsoft.Data.Sqlite;
 using NECS.Core.Logging;
 using NECS.Harness.Model;

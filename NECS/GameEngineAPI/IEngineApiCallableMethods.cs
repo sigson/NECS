@@ -60,5 +60,7 @@ namespace NECS.GameEngineAPI
         void OnDisable();
 
         void OnDestroy();
+
+        //void DontDestroyOnLoad(EngineApiObjectBehaviour obj);
     }
 }

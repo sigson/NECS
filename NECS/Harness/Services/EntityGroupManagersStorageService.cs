@@ -13,7 +13,11 @@ using System.Threading.Tasks;
 
 namespace NECS.Harness.Services
 {
-    public class EntityGroupManagersStorageService : IService
+    public
+#if GODOT4_0_OR_GREATER
+    partial
+#endif
+    class EntityGroupManagersStorageService : IService
     {
         private static EntityGroupManagersStorageService cacheInstance;
         public static EntityGroupManagersStorageService instance
@@ -213,7 +217,12 @@ namespace NECS.Harness.Services
         {
 #if UNITY_5_3_OR_NEWER
             ManagersStorageObject = new UnityEngine.GameObject("EntityGroupManagersStorage").AddComponent<EngineApiObjectBehaviour>();
-#else
+#endif
+#if GODOT
+            ManagersStorageObject = new EngineApiObjectBehaviour();
+            GodotRootNode.globalRoot.AddChild(ManagersStorageObject);
+#endif
+#if NET && !GODOT
             ManagersStorageObject = new EngineApiObjectBehaviour("EntityGroupManagersStorage");
             #endif
             DontDestroyOnLoad(ManagersStorageObject);

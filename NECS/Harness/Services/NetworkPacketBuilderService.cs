@@ -10,7 +10,11 @@ using System.IO;
 
 namespace NECS.Harness.Services
 {
-    public class NetworkPacketBuilderService : IService
+    public
+#if GODOT4_0_OR_GREATER
+    partial
+#endif
+    class NetworkPacketBuilderService : IService
     {
         private static NetworkPacketBuilderService cacheInstance;
         public static NetworkPacketBuilderService instance

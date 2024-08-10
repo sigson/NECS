@@ -14,7 +14,11 @@ using System.Threading.Tasks;
 
 namespace NECS.Harness.Services
 {
-    public class AuthService : IService
+    public
+#if GODOT4_0_OR_GREATER
+    partial
+#endif
+    class AuthService : IService
     {
         public Func<UserDataRowBase, ECSEntity> AuthorizationRealization = null;
         public Func<ClientRegistrationEvent, UserDataRowBase> SetupAuthorizationRealization = null;

@@ -11,7 +11,11 @@ using UnityEngine;
 
 namespace NECS.Harness.Services
 {
-    public class GlobalProgramState : IService
+    public
+#if GODOT4_0_OR_GREATER
+    partial
+#endif
+    class GlobalProgramState : IService
     {
         private static GlobalProgramState cacheInstance;
         public static GlobalProgramState instance
