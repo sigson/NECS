@@ -38,6 +38,7 @@ namespace NECS.ECS.ECSCore
             });
 
             ecsObjects.Add(typeof(SerializedEntity));
+            ecsObjects.Add(typeof(SerializedEvent));
 
             NetSerializer.Serializer.Default = new NetSerializer.Serializer(ecsObjects);
         }
