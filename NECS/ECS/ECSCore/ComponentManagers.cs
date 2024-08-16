@@ -56,7 +56,10 @@ namespace NECS.ECS.ECSCore
             if (managersStorage.ContainsKey(key))
             {
                 var manager = managersStorage[key];
-                manager.ExecuteInstruction(() => manager.RemoveManager());
+                if(manager != value)
+                {
+                    manager.ExecuteInstruction(() => manager.RemoveManager());
+                }
             }
             lock (managersStorage)
                 managersStorage[key] = value;

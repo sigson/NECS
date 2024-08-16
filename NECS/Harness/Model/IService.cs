@@ -1,4 +1,5 @@
 ﻿using NECS.Core.Logging;
+using NECS.ECS.ECSCore;
 using NECS.Extensions;
 using NECS.GameEngineAPI;
 using System;
@@ -143,9 +144,17 @@ public abstract
                             NLogger.LogSuccess($"All services fully initialized!");
                             if(ServiceStorage != null)
                             {
+                                #if UNITY_5_3_OR_NEWER
+                                ManagerScope.instance.ExecuteInstruction(() => {
+                                    ServiceStorage.GetComponent<ProxyMockComponent>().ExecuteInstruction(
+                                    () => { OnInitializedAllServices?.Invoke(); }
+                                    );
+                                });
+                                #else
                                 ServiceStorage.GetComponent<ProxyMockComponent>().ExecuteInstruction(
                                     () => { OnInitializedAllServices?.Invoke(); }
                                     );
+                                #endif
                             }
                             else
                             {
