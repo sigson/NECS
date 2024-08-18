@@ -193,7 +193,7 @@ namespace NECS.Harness.Services
             {
                 NLogger.Error($"Failed to deserialize buffer data with error {ex.Message}");
             }
-            deserializedEvent.cachedGameDataEvent = NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(buffer);
+            //deserializedEvent.cachedGameDataEvent = NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(buffer);
             if (Defines.ECSNetworkTypeLogging)
             {
                 NLogger.Log($"Received {deserializedEvent.GetType().Name}");
