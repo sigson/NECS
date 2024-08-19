@@ -11,7 +11,7 @@ public static class Defines
     public static bool ServiceSetupLogging = false;
     public static bool LowLevelNetworkEventsLogging = false;
     public static bool DBEventsLogging = false;
-    public static bool LogECSEntityUpdateSerializationComponents = false;
+    public static bool LogECSEntitySerializationComponents = false;
     public static bool SerializatorTypesLog = true;
     public static bool HiddenKeyNotFoundLog = false;
     public static bool IgnoreNonDangerousExceptions = true;

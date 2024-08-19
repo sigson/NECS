@@ -175,6 +175,15 @@ namespace NECS.ECS.ECSCore
             bool emptyData = true;
             foreach (var GDAP in entity.dataAccessPolicies)
             {
+                if(Defines.LogECSEntitySerializationComponents)
+                {
+                    var preparedData = "";
+                    GDAP.BinAvailableComponents.ForEach(x => preparedData += ECSComponentManager.AllComponents[x.Key].ToString() + "\n");
+                    if(preparedData != "")
+                    {
+                        NLogger.Log($"Will removed last serialization data in {entity.AliasName}:{entity.instanceId} as\n {preparedData}");
+                    }
+                }
                 GDAP.JsonAvailableComponents = "";
                 GDAP.BinAvailableComponents.Clear();
                 GDAP.JsonRestrictedComponents = "";
@@ -222,6 +231,15 @@ namespace NECS.ECS.ECSCore
         public static byte[] BuildSerializedEntityWithGDAP(ECSEntity toEntity, ECSEntity fromEntity, bool ignoreNullData = false)
         {
             var data = GroupDataAccessPolicy.ComponentsFilter(toEntity, fromEntity);
+            if(Defines.LogECSEntitySerializationComponents)
+            {
+                var preparedData = "";
+                data.Item2.ForEach(x => preparedData += ECSComponentManager.AllComponents[x.Key].ToString() + "\n");
+                if(preparedData != "")
+                {
+                    NLogger.Log($"GDAP filtering result from base {toEntity.AliasName}:{toEntity.instanceId} to {fromEntity.AliasName}:{fromEntity.instanceId} as\n {preparedData}");
+                }
+            }
             var resultObject = new SerializedEntity();
             if (data.Item1 == "" && data.Item2.Count() == 0 && !ignoreNullData)
             {
@@ -332,7 +350,7 @@ namespace NECS.ECS.ECSCore
 
                 if (!ManagerScope.instance.entityManager.EntityStorage.TryGetValue(bufEntity.desEntity.instanceId, out entity))
                 {
-                    if(Defines.LogECSEntityUpdateSerializationComponents)
+                    if(Defines.LogECSEntitySerializationComponents)
                     {
                         NLogger.Log( $"In {bufEntity.desEntity.AliasName} Entity added " + bufEntity.desEntity.instanceId.ToString());
                     }
@@ -360,7 +378,7 @@ namespace NECS.ECS.ECSCore
                 foreach (var component in bufEntity.desEntity.entityComponents.SerializationContainer)
                 {
                     var tComponent = (ECSComponent)component.Value;
-                    if(Defines.LogECSEntityUpdateSerializationComponents)
+                    if(Defines.LogECSEntitySerializationComponents)
                     {
                         NLogger.Log($"In entity {bufEntity.desEntity.AliasName}:{entity.instanceId} will updated {tComponent.GetType().ToString()}");
                     }

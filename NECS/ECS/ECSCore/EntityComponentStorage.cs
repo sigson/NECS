@@ -50,6 +50,10 @@ namespace NECS.ECS.ECSCore
                     List<Type> errorList = new List<Type>();
                     foreach (var changedComponent in cachedChangedComponents)
                     {
+                        if(Defines.LogECSEntitySerializationComponents)
+                        {
+                            NLogger.Log($"Will serialized changed component {changedComponent.GetType()} in {this.entity.AliasName}:{this.entity.instanceId}");
+                        }
                         try
                         {
                             var component = components[changedComponent];
@@ -119,6 +123,13 @@ namespace NECS.ECS.ECSCore
                                 if (!(pairComponent as ECSComponent).Unregistered)
                                 {
                                     DBComponent dbComp = null;
+
+                                    if(Defines.LogECSEntitySerializationComponents)
+                                    {
+                                        NLogger.Log($"Will serialized component {pairComponent.GetType()} in {this.entity.AliasName}:{this.entity.instanceId}");
+                                    }
+
+
                                     if (pairComponent is DBComponent)
                                     {
                                         dbComp = (pairComponent as DBComponent);
@@ -153,6 +164,10 @@ namespace NECS.ECS.ECSCore
                 foreach (var changedComponent in changedComponents)
                 {
                     var component = components[changedComponent.Key];
+                    if(Defines.LogECSEntitySerializationComponents)
+                    {
+                        NLogger.Log($"Will serialized component {component.GetType()} in {this.entity.AliasName}:{this.entity.instanceId}");
+                    }
                     serializeContainer[component.GetId()] = SerializationAdapter.SerializeECSComponent(component);
                     //using (MemoryStream writer = new MemoryStream())
                     //{
