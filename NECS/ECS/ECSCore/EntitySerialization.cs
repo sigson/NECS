@@ -332,7 +332,10 @@ namespace NECS.ECS.ECSCore
 
                 if (!ManagerScope.instance.entityManager.EntityStorage.TryGetValue(bufEntity.desEntity.instanceId, out entity))
                 {
-                    NLogger.Log(bufEntity.desEntity.instanceId.ToString() + " new entity");
+                    if(Defines.LogECSEntityUpdateSerializationComponents)
+                    {
+                        NLogger.Log( $"In {bufEntity.desEntity.AliasName} Entity added " + bufEntity.desEntity.instanceId.ToString());
+                    }
                     entity = bufEntity.desEntity;
                     storage = bufEntity.desEntity.entityComponents;
                     storage.DeserializeStorage(bufEntity.Components);
@@ -357,6 +360,10 @@ namespace NECS.ECS.ECSCore
                 foreach (var component in bufEntity.desEntity.entityComponents.SerializationContainer)
                 {
                     var tComponent = (ECSComponent)component.Value;
+                    if(Defines.LogECSEntityUpdateSerializationComponents)
+                    {
+                        NLogger.Log($"In entity {bufEntity.desEntity.AliasName}:{entity.instanceId} will updated {tComponent.GetType().ToString()}");
+                    }
                     entity.AddOrChangeComponentSilentWithOwnerRestoring(tComponent);
                     if (tComponent is DBComponent)
                         TaskEx.RunAsync(() => (entity.GetComponent<DBComponent>(tComponent.GetId())).UnserializeDB());

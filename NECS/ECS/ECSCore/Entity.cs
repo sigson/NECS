@@ -24,6 +24,7 @@ namespace NECS.ECS.ECSCore
     public class ECSEntity : IECSObject, ICloneable
     {
         static new public long Id { get; set; } = 2;
+        public string AliasName = "";
         [System.NonSerialized]
         public List<Type> TemplateAccessor = new List<Type>();
 
