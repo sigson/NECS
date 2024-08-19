@@ -52,7 +52,7 @@ namespace NECS.ECS.ECSCore
                     {
                         if(Defines.LogECSEntitySerializationComponents)
                         {
-                            NLogger.Log($"Will serialized changed component {changedComponent.GetType()} in {this.entity.AliasName}:{this.entity.instanceId}");
+                            NLogger.Log($"Will serialized changed component {changedComponent} in {this.entity.AliasName}:{this.entity.instanceId}");
                         }
                         try
                         {
