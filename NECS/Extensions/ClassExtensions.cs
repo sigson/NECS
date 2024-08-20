@@ -801,7 +801,7 @@ namespace NECS
             this.Elapsed += (async (sender, e) => { 
                 if(base.AutoReset)
                     this.Interval = this.baseInterval; 
-                TimerStart = DateTime.Now.Ticks; TimerPaused = 0;});
+                TimerStart = TimerDateTime.DateTimeNowTicks; TimerPaused = 0;});
             //base.AutoReset = true;
             base.Disposed += new EventHandler(this.OnDisposeTimer);
             this.Disposed += new EventHandler(this.OnDisposeTimer);
@@ -812,7 +812,7 @@ namespace NECS
             this.Elapsed += (async (sender, e) => {
                 if (!base.AutoReset)
                     this.Interval = this.baseInterval; 
-                TimerStart = DateTime.Now.Ticks; TimerPaused = 0; });
+                TimerStart = TimerDateTime.DateTimeNowTicks; TimerPaused = 0; });
             Interval = oldTimer.Interval;
 			inited = true;
             //base.AutoReset = true;
@@ -827,14 +827,14 @@ namespace NECS
 
         public new void Start()
         {
-            TimerStart = DateTime.Now.Ticks;
+            TimerStart = TimerDateTime.DateTimeNowTicks;
 			inited = true;
             base.Start();
         }
 
         public new void Stop()
         {
-            TimerStopped = DateTime.Now.Ticks;
+            TimerStopped = TimerDateTime.DateTimeNowTicks;
             base.Stop();
         }
 
@@ -843,7 +843,7 @@ namespace NECS
             if(this.Enabled)
             {
                 this.Stop();
-                TimerPaused = DateTime.Now.Ticks;
+                TimerPaused = TimerDateTime.DateTimeNowTicks;
             }
         }
 
@@ -854,7 +854,7 @@ namespace NECS
                 this.interval = TimerPaused - TimerStart;
                 base.Interval = TimerPaused - TimerStart;
                 TimerPaused = 0;
-                TimerStart = DateTime.Now.Ticks;
+                TimerStart = TimerDateTime.DateTimeNowTicks;
                 this.Start();
             }
         }
@@ -871,7 +871,33 @@ namespace NECS
 
         public double RemainingToElapsedTime()
         {
-            return baseInterval - TimeSpan.FromTicks((TimerPaused == 0 ? DateTime.Now.Ticks - TimerStart : TimerPaused - TimerStart)).TotalMilliseconds;
+            return baseInterval - TimeSpan.FromTicks((TimerPaused == 0 ? TimerDateTime.DateTimeNowTicks - TimerStart : TimerPaused - TimerStart)).TotalMilliseconds;
+        }
+    }
+
+    public class TimerDateTime
+    {
+        public static long DateTimeNowTicks
+        {
+            get
+            {
+                if(TickUpdate == null)
+                {
+                    TickUpdate = new System.Timers.Timer(1);
+                    TickUpdate.Elapsed += UpdateTicks;
+                    TickUpdate.AutoReset = true;
+                    TickUpdate.Enabled = true;
+                    Ticks = DateTime.Now.Ticks;
+                }
+                return Ticks;
+            }
+        }
+        private static long Ticks;
+        private static System.Timers.Timer? TickUpdate = null;
+
+        private static void UpdateTicks(Object source, ElapsedEventArgs e)
+        {
+            Ticks += DateTimeExtensions.MillisecondToTicks(1);
         }
     }
 }
