@@ -55,7 +55,7 @@ namespace NECS.Harness.Serialization
                 {
                     memoryStream.Write(entity, 0, entity.Length);
                     memoryStream.Position = 0;
-                    return (SerializedEntity)DeepCopy.CopyObject(NetSerializer.Serializer.Default.Deserialize(memoryStream));
+                    return (SerializedEntity)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
                 }
             }
         }
@@ -88,7 +88,7 @@ namespace NECS.Harness.Serialization
                 {
                     memoryStream.Write(entity, 0, entity.Length);
                     memoryStream.Position = 0;
-                    return (SerializedEvent)DeepCopy.CopyObject(NetSerializer.Serializer.Default.Deserialize(memoryStream));
+                    return (SerializedEvent)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
                 }
             }
         }
@@ -122,7 +122,7 @@ namespace NECS.Harness.Serialization
                 {
                     memoryStream.Write(component, 0, component.Length);
                     memoryStream.Position = 0;
-                    return (ECSComponent)DeepCopy.CopyObject(NetSerializer.Serializer.Default.Deserialize(memoryStream));
+                    return (ECSComponent)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
                 }
             }
         }
@@ -155,11 +155,7 @@ namespace NECS.Harness.Serialization
                 {
                     memoryStream.Write(entity, 0, entity.Length);
                     memoryStream.Position = 0;
-                    var deserialized = (ECSEntity)DeepCopy.CopyObject(NetSerializer.Serializer.Default.Deserialize(memoryStream));
-                    deserialized.entityComponents = new EntityComponentStorage(deserialized);
-                    deserialized.dataAccessPolicies = new Extensions.SynchronizedList<GroupDataAccessPolicy>();
-                    deserialized.entityGroups = new System.Collections.Concurrent.ConcurrentDictionary<long, ECSEntityGroup>();
-                    return deserialized;
+                    return (ECSEntity)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
                 }
             }
         }
@@ -192,7 +188,7 @@ namespace NECS.Harness.Serialization
                 {
                     memoryStream.Write(ecsevent, 0, ecsevent.Length);
                     memoryStream.Position = 0;
-                    return (ECSEvent)DeepCopy.CopyObject(NetSerializer.Serializer.Default.Deserialize(memoryStream));
+                    return (ECSEvent)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
                 }
             }
         }
