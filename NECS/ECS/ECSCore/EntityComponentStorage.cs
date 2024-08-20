@@ -203,7 +203,7 @@ namespace NECS.ECS.ECSCore
                 //{
                 //    memoryStream.Write(serComponent.Value, 0, serComponent.Value.Length);
                 //    memoryStream.Position = 0;
-                //    this.SerializationContainer[serComponent.Key] =  (ECSComponent)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
+                //    this.SerializationContainer[serComponent.Key] =  (ECSComponent)DeepCopy.CopyObject(NetSerializer.Serializer.Default.Deserialize(memoryStream));
                 //}
             }
         }

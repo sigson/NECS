@@ -177,7 +177,7 @@ namespace NECS.Harness.Services
             ECSEvent deserializedEvent = null;
             try
             {
-                //var shallowCopy = ReflectionCopy.MakeReverseShallowCopy(unserializedObject);
+                //var shallowCopy = DeepCopy.CopyObject(unserializedObject);
                 //deserializedEvent = (ECSEvent)shallowCopy;
                 var unserializedObject = SerializationAdapter.DeserializeAdapterEvent(buffer);
                 try

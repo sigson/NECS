@@ -55,7 +55,7 @@ namespace NECS.Harness.Serialization
                 {
                     memoryStream.Write(entity, 0, entity.Length);
                     memoryStream.Position = 0;
-                    return (SerializedEntity)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
+                    return (SerializedEntity)DeepCopy.CopyObject(NetSerializer.Serializer.Default.Deserialize(memoryStream));
                 }
             }
         }
@@ -88,7 +88,7 @@ namespace NECS.Harness.Serialization
                 {
                     memoryStream.Write(entity, 0, entity.Length);
                     memoryStream.Position = 0;
-                    return (SerializedEvent)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
+                    return (SerializedEvent)DeepCopy.CopyObject(NetSerializer.Serializer.Default.Deserialize(memoryStream));
                 }
             }
         }
@@ -122,7 +122,7 @@ namespace NECS.Harness.Serialization
                 {
                     memoryStream.Write(component, 0, component.Length);
                     memoryStream.Position = 0;
-                    return (ECSComponent)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
+                    return (ECSComponent)DeepCopy.CopyObject(NetSerializer.Serializer.Default.Deserialize(memoryStream));
                 }
             }
         }
@@ -155,7 +155,7 @@ namespace NECS.Harness.Serialization
                 {
                     memoryStream.Write(entity, 0, entity.Length);
                     memoryStream.Position = 0;
-                    return (ECSEntity)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
+                    return (ECSEntity)DeepCopy.CopyObject(NetSerializer.Serializer.Default.Deserialize(memoryStream));
                 }
             }
         }
@@ -188,7 +188,7 @@ namespace NECS.Harness.Serialization
                 {
                     memoryStream.Write(ecsevent, 0, ecsevent.Length);
                     memoryStream.Position = 0;
-                    return (ECSEvent)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
+                    return (ECSEvent)DeepCopy.CopyObject(NetSerializer.Serializer.Default.Deserialize(memoryStream));
                 }
             }
         }

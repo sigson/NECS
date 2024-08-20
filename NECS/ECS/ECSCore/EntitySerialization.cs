@@ -59,7 +59,7 @@ namespace NECS.ECS.ECSCore
                 //{
                 //    memoryStream.Write(this.Entity, 0, this.Entity.Length);
                 //    memoryStream.Position = 0;
-                //    desEntity = (ECSEntity)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
+                //    desEntity = (ECSEntity)DeepCopy.CopyObject(NetSerializer.Serializer.Default.Deserialize(memoryStream));
                 //}
             }
 
@@ -72,7 +72,7 @@ namespace NECS.ECS.ECSCore
                     //{
                     //    memoryStream.Write(sComp.Value, 0, sComp.Value.Length);
                     //    memoryStream.Position = 0;
-                    //    SerializationContainer[sComp.Key] = (ECSComponent)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
+                    //    SerializationContainer[sComp.Key] = (ECSComponent)DeepCopy.CopyObject(NetSerializer.Serializer.Default.Deserialize(memoryStream));
                     //}
                 }
                 
@@ -344,7 +344,7 @@ namespace NECS.ECS.ECSCore
                 //{
                 //    memoryStream.Write(serializedData, 0, serializedData.Length);
                 //    memoryStream.Position = 0;
-                //    bufEntity = (SerializedEntity)ReflectionCopy.MakeReverseShallowCopy(NetSerializer.Serializer.Default.Deserialize(memoryStream));
+                //    bufEntity = (SerializedEntity)DeepCopy.CopyObject(NetSerializer.Serializer.Default.Deserialize(memoryStream));
                 //}
                 bufEntity.DeserializeEntity();
 

@@ -3,9 +3,26 @@ using System.Reflection;
 using System.ArrayExtensions;
 using Newtonsoft.Json.Linq;
 using System.Linq;
+using NECS.Extensions;
 
 namespace System
 {
+    public static class DeepCopy
+    {
+        public static object CopyObject(object Object)
+        {
+            if(Defines.AOTMode)
+            {
+                //DeepCloneExtension.DeepCopyByExpressionTree
+                return ObjectExtensions.Copy(Object);
+            }
+            else
+            {
+                return ObjectExtensions.Copy(Object);
+            }
+        }
+    }
+
     public static class ReflectionCopy
     {
         public static object MakeReverseShallowCopy(object Object)
