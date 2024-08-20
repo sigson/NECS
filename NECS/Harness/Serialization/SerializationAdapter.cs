@@ -155,7 +155,11 @@ namespace NECS.Harness.Serialization
                 {
                     memoryStream.Write(entity, 0, entity.Length);
                     memoryStream.Position = 0;
-                    return (ECSEntity)DeepCopy.CopyObject(NetSerializer.Serializer.Default.Deserialize(memoryStream));
+                    var deserialized = (ECSEntity)DeepCopy.CopyObject(NetSerializer.Serializer.Default.Deserialize(memoryStream));
+                    deserialized.entityComponents = new EntityComponentStorage(deserialized);
+                    deserialized.dataAccessPolicies = new Extensions.SynchronizedList<GroupDataAccessPolicy>();
+                    deserialized.entityGroups = new System.Collections.Concurrent.ConcurrentDictionary<long, ECSEntityGroup>();
+                    return deserialized;
                 }
             }
         }
