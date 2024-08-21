@@ -56,7 +56,11 @@ public
             {
                 while (true)
                 {
-                    systemManager.RunSystems();
+                    systemManager.RunSystems(false);
+                    TaskEx.RunAsync(() =>
+                    {
+                        systemManager.RunSystems(true);
+                    });
                     Task.Delay(5).Wait();
                 }
             });

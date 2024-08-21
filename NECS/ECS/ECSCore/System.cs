@@ -22,7 +22,7 @@ namespace NECS.ECS.ECSCore
         public long Id { get; set; }
         [System.NonSerialized]
         public Type SystemType;
-
+        public bool Syncronizable { get; set; } = false;
         public bool Enabled { get; set; }
         public bool InWork { get; set; }
         public long LastEndExecutionTimestamp { get; set; }

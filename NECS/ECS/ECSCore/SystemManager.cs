@@ -57,22 +57,28 @@ namespace NECS.ECS.ECSCore
             }
         }
 
-        public void RunSystems()
+        public void RunSystems(bool Syncronizable)
         {
             if (LockSystems)
                 return;
             foreach(var SystemPair in SystemsInterestedEntityDatabase)
             {
-                if (Interlocked.Equals(SystemPair.Key.Enabled, true) && Interlocked.Equals(SystemPair.Key.InWork, false) && SystemPair.Key.LastEndExecutionTimestamp + DateTimeExtensions.MillisecondToTicks
+                if (Interlocked.Equals(SystemPair.Key.Enabled, true) && Interlocked.Equals(SystemPair.Key.Syncronizable, Syncronizable) && Interlocked.Equals(SystemPair.Key.InWork, false) && SystemPair.Key.LastEndExecutionTimestamp + DateTimeExtensions.MillisecondToTicks
                     (SystemPair.Key.DelayRunMilliseconds) < DateTime.Now.Ticks)
                 {
                     SystemPair.Key.InWork = true;
-                    TaskEx.RunAsync(() =>
+                    if(Syncronizable)
                     {
                         SystemPair.Key.Run(SystemsInterestedEntityDatabase[SystemPair.Key].Keys.ToArray());
-                    });
-                }
-                    
+                    }
+                    else
+                    {
+                        TaskEx.RunAsync(() =>
+                        {
+                            SystemPair.Key.Run(SystemsInterestedEntityDatabase[SystemPair.Key].Keys.ToArray());
+                        });
+                    }
+                }   
             }
         }
 
