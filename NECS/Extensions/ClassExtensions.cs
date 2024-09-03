@@ -893,7 +893,7 @@ namespace NECS
             }
         }
         private static long Ticks;
-        private static System.Timers.Timer? TickUpdate = null;
+        private static System.Timers.Timer TickUpdate = null;
 
         private static void UpdateTicks(Object source, ElapsedEventArgs e)
         {

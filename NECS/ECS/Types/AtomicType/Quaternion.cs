@@ -32,6 +32,12 @@ namespace NECS.ECS.Types.AtomicType
             this.x = qa.x; this.y = qa.y; this.z = qa.z; this.w = qa.w;
         }
 #endif
+#if GODOT && !GODOT4_0_OR_GREATER
+        public QuaternionS(Godot.Quat qa)
+        {
+            this.x = qa.x; this.y = qa.y; this.z = qa.z; this.w = qa.w;
+        }
+#endif
 #if GODOT4_0_OR_GREATER
         public QuaternionS(Godot.Quaternion qa)
         {
@@ -47,6 +53,19 @@ namespace NECS.ECS.Types.AtomicType
         public UnityEngine.Quaternion GetNum()
         {
             return new UnityEngine.Quaternion()
+            {
+                x = this.x,
+                y = this.y,
+                z = this.z,
+                w = this.w
+            };
+        }
+#endif
+
+#if GODOT && !GODOT4_0_OR_GREATER
+        public Godot.Quat GetNum()
+        {
+            return new Godot.Quat()
             {
                 x = this.x,
                 y = this.y,

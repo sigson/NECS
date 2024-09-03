@@ -64,7 +64,7 @@ public abstract
 
 
         #region static
-        public static Action? OnInitializedAllServices;
+        public static Action OnInitializedAllServices;
         private static EngineApiObjectBehaviour ServiceStorage;
         private static ConcurrentHashSet<IService> AllServiceList = new ConcurrentHashSet<IService>();
         private static ConcurrentHashSet<IService> servicesInitialized = new ConcurrentHashSet<IService>();

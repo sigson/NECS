@@ -1,4 +1,4 @@
-#if GODOT4_0_OR_GREATER
+#if GODOT
 using System;
 using Godot;
 using NECS.GameEngineAPI;

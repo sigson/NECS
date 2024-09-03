@@ -26,7 +26,7 @@ namespace NECS.GameEngineAPI
         }
     }
 #endif
-#if GODOT4_0_OR_GREATER
+#if GODOT
         : Godot.Node, IEngineApiObjectBehaviour, IEngineApiCallableMethods
     {
         public EngineApiObjectBehaviour gameObject { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
@@ -82,6 +82,7 @@ namespace NECS.GameEngineAPI
             }
         }
 
+#if GODOT4_0_OR_GREATER
         public override void _Process(double delta)
         {
             // Called every frame.
@@ -95,7 +96,23 @@ namespace NECS.GameEngineAPI
             }
 
         }
+#endif
+#if GODOT && !GODOT4_0_OR_GREATER
+        public override void _Process(float delta)
+        {
+            // Called every frame.
+            if (enabled)
+            {
+                base._Process(delta);
+                this.Update();
+                this.Update(delta);
+                this.LateUpdate();
+                this.LateUpdate(delta);
+            }
 
+        }
+#endif
+#if GODOT4_0_OR_GREATER
         public override void _PhysicsProcess(double delta)
         {
             if (enabled)
@@ -105,6 +122,18 @@ namespace NECS.GameEngineAPI
                 this.FixedUpdate(delta);
             }
         }
+#endif
+#if GODOT && !GODOT4_0_OR_GREATER
+        public override void _PhysicsProcess(float delta)
+        {
+            if (enabled)
+            {
+                base._PhysicsProcess(delta);
+                this.FixedUpdate();
+                this.FixedUpdate(delta);
+            }
+        }
+#endif
 
         // Called once for every event.
         public override void _UnhandledInput(Godot.InputEvent @event)
