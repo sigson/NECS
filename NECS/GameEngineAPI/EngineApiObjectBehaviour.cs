@@ -81,7 +81,7 @@ namespace NECS.GameEngineAPI
             return this;
         }
 
-        protected ConcurrentList<EngineApiObjectBehaviour> childComponents = new ConcurrentList<EngineApiObjectBehaviour>();
+        protected SynchronizedList<EngineApiObjectBehaviour> childComponents = new SynchronizedList<EngineApiObjectBehaviour>();
 
         #region GodotBase
 
