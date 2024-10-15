@@ -99,6 +99,62 @@ public static class GodotExtensions
         return dir.DirExists(path);
     }
 
+    public static void RecursiveDelete(string folderPath)
+    {
+        if (!DirectoryExists(folderPath))
+        {
+            GD.PrintErr("Directory does not exist: " + folderPath);
+            return;
+        }
+
+        // Получаем список всех файлов и папок в директории
+        var dir = new Directory();
+        if (dir.Open(folderPath) != Error.Ok)
+        {
+            GD.PrintErr("Failed to open directory: " + folderPath);
+            return;
+        }
+
+        dir.ListDirBegin();
+
+        string fileName;
+        while ((fileName = dir.GetNext()) != "")
+        {
+            // Игнорируем текущую и родительскую директории
+            if (fileName == "." || fileName == "..")
+                continue;
+
+            string currentPath = folderPath + "/" + fileName;
+
+            if (IsDirectory(currentPath))
+            {
+                // Если это директория, рекурсивно удаляем ее
+                RecursiveDelete(currentPath);
+            }
+            else
+            {
+                // Если это файл, удаляем его
+                DeleteFile(currentPath);
+            }
+        }
+
+        dir.ListDirEnd();
+
+        // Удаляем саму директорию
+        dir.Remove(folderPath);
+        GD.Print("Deleted: " + folderPath);
+    }
+
+    public static void DeleteFile(string filePath)
+    {
+        var file = new File();
+        if (file.FileExists(filePath))
+        {
+            file.Remove(filePath);
+            GD.Print("Deleted file: " + filePath);
+        }
+    }
+
     // Копирование файла из sourcePath в targetPath
     public static void CopyFile(string sourcePath, string targetPath)
     {

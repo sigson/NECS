@@ -30,7 +30,7 @@ namespace NECS.GameEngineAPI
 #if GODOT
         : Godot.Node, IEngineApiObjectBehaviour, IEngineApiCallableMethods
     {
-        public EngineApiObjectBehaviour gameObject { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public EngineApiObjectBehaviour gameObject { get => this; set => throw new NotImplementedException(); }
         public bool enabled
         {
             get => isEnabled;
