@@ -219,7 +219,7 @@ namespace NECS.Harness.Services
             ManagersStorageObject = new UnityEngine.GameObject("EntityGroupManagersStorage").AddComponent<EngineApiObjectBehaviour>();
 #endif
 #if GODOT
-            ManagersStorageObject = new EngineApiObjectBehaviour();
+            ManagersStorageObject = new EngineApiObjectBehaviour().InitEAOB("EntityGroupManagersStorage");
             GodotRootNode.globalRoot.AddChild(ManagersStorageObject);
 #endif
 #if NET && !GODOT

@@ -94,6 +94,10 @@ public abstract
 #if UNITY_5_3_OR_NEWER
             ServiceStorage = new UnityEngine.GameObject("ServiceStorage").AddComponent<EngineApiObjectBehaviour>();
 #endif
+#if GODOT
+            ServiceStorage = new EngineApiObjectBehaviour().InitEAOB("ServiceStorage");
+            GodotRootNode.globalRoot.AddChild(ServiceStorage);
+#endif
             if(ServiceStorage != null)
                 ServiceStorage.AddComponent<ProxyMockComponent>();
             if (excludeServices == null)

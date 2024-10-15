@@ -48,12 +48,7 @@ public static class GodotExtensions
     {
         return new Vector3(X == null ? original.X : original.X + (float)X, Y == null ? original.Y : original.Y + (float)Y, Z == null ? original.Z : original.Z + (float)Z);
     }
-}
-#endif
-#if GODOT && !GODOT4_0_OR_GREATER
-public static class FileCopier
-{
-    // Статический метод для рекурсивного копирования файлов
+
     public static void RecursiveCopy(string sourceFolder, string targetFolder)
     {
         // Убедимся, что исходная папка существует
@@ -105,14 +100,14 @@ public static class FileCopier
     }
 
     // Проверка, существует ли директория
-    private static bool DirectoryExists(string path)
+    public static bool DirectoryExists(string path)
     {
         var dir = new Godot.Directory();
         return dir.DirExists(path);
     }
 
     // Создание директории, если она не существует
-    private static void CreateDirectory(string path)
+    public static void CreateDirectory(string path)
     {
         var dir = new Godot.Directory();
         if (dir.MakeDir(path) != Error.Ok)
@@ -123,7 +118,7 @@ public static class FileCopier
     }
 
     // Проверка, является ли путь директорией
-    private static bool IsDirectory(string path)
+    public static bool IsDirectory(string path)
     {
         var dir = new Godot.Directory();
         dir.Dispose();
@@ -131,7 +126,7 @@ public static class FileCopier
     }
 
     // Копирование файла из sourcePath в targetPath
-    private static void CopyFile(string sourcePath, string targetPath)
+    public static void CopyFile(string sourcePath, string targetPath)
     {
         var file = new Godot.File();
         var dest = new Godot.File();
@@ -167,5 +162,8 @@ public static class FileCopier
         dest.Dispose();
     }
 }
+#endif
+#if GODOT && !GODOT4_0_OR_GREATER
+
 
 #endif

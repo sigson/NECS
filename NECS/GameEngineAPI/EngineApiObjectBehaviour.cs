@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NECS.Extensions;
 
 namespace NECS.GameEngineAPI
 {
@@ -50,13 +51,40 @@ namespace NECS.GameEngineAPI
         private bool isEnabled = true;
         public bool activeInHierarchy { get => enabled; set => enabled = value; }
         public GodotPhysicAgent PhysicAgent;
-        
-        protected List<EngineApiObjectBehaviour> childComponents;
+        private bool isInit = false;
+        private Godot.Node componentsStorage = null;
+
+        //public EngineApiObjectBehaviour OwnerEAOB = null;
+
+        public EngineApiObjectBehaviour InitEAOB(string name = null)
+        {
+            bool enterToInit = false;
+            lock (this)
+            {
+                if (!isInit)
+                {
+                    enterToInit = true;
+                }
+            }
+            if (enterToInit)
+            {
+                if (name != null)
+                    this.Name = name;
+                componentsStorage = new Godot.Node();
+                componentsStorage.Name = "ComponentsStorage";
+                this.AddChild(componentsStorage);
+                isInit = true;
+            }
+            return this;
+        }
+
+        protected ConcurrentList<EngineApiObjectBehaviour> childComponents = new ConcurrentList<EngineApiObjectBehaviour>();
 
         #region GodotBase
 
         public override void _EnterTree()//non usable because running before full init of childs
         {
+            InitEAOB();
             if (enabled)
                 base._EnterTree();
         }
@@ -64,6 +92,7 @@ namespace NECS.GameEngineAPI
 
         public override void _Ready() // awake
         {
+            InitEAOB();
             if (enabled)
             {
                 base._Ready();
@@ -154,57 +183,57 @@ namespace NECS.GameEngineAPI
 
         public virtual void Awake()
         {
-            throw new NotImplementedException();
+
         }
 
         public virtual void Start()
         {
-            throw new NotImplementedException();
+
         }
 
         public virtual void Update(double delta)
         {
-            throw new NotImplementedException();
+
         }
 
         public virtual void Update()
         {
-            throw new NotImplementedException();
+
         }
 
         public virtual void FixedUpdate()
         {
-            throw new NotImplementedException();
+
         }
 
         public virtual void FixedUpdate(double delta)
         {
-            throw new NotImplementedException();
+
         }
 
         public virtual void LateUpdate()
         {
-            throw new NotImplementedException();
+
         }
 
         public virtual void LateUpdate(double delta)
         {
-            throw new NotImplementedException();
+
         }
 
         public virtual void OnApplicationFocus(bool focus)
         {
-            throw new NotImplementedException();
+
         }
 
         public virtual void OnApplicationPause(bool pause)
         {
-            throw new NotImplementedException();
+
         }
 
         public virtual void OnApplicationQuit()
         {
-            throw new NotImplementedException();
+
         }
 
 
@@ -276,22 +305,22 @@ namespace NECS.GameEngineAPI
 
         public virtual void OnDestroy()
         {
-            throw new NotImplementedException();
+
         }
 
         public virtual void OnDisable()
         {
-            throw new NotImplementedException();
+
         }
 
         public virtual void OnEnable()
         {
-            throw new NotImplementedException();
+
         }
 
         public virtual void OnRenderObject()
         {
-            throw new NotImplementedException();
+
         }
 
         public virtual void OnTriggerEnter(EngineApiCollider3D other)
@@ -362,7 +391,7 @@ namespace NECS.GameEngineAPI
 
         public virtual void Reset()
         {
-            throw new NotImplementedException();
+
         }
         #endregion
 
@@ -372,137 +401,175 @@ namespace NECS.GameEngineAPI
 
         public EngineApiObjectBehaviour AddComponent(Type componentType)
         {
-            throw new NotImplementedException();
+            var newComponent = (EngineApiObjectBehaviour)Activator.CreateInstance(componentType);
+            childComponents.Add(newComponent);
+            this.componentsStorage?.AddChild(newComponent);
+            return newComponent;
         }
 
         public T AddComponent<T>() where T : class
         {
-            throw new NotImplementedException();
+            return (T)(object)this.AddComponent(typeof(T));
         }
 
         public EngineApiObjectBehaviour GetComponent(string type)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public T GetComponent<T>() where T : class
         {
-            throw new NotImplementedException();
+            return (T)(object)this.GetComponent(typeof(T));
         }
 
         public EngineApiObjectBehaviour GetComponent(Type type)
         {
-            throw new NotImplementedException();
+            EngineApiObjectBehaviour findedComponent = null;
+            childComponents.ForEach(x => { if (findedComponent == null && x.GetType() == type) findedComponent = x; });
+            return findedComponent;
         }
 
         public EngineApiObjectBehaviour GetComponentInChildren(Type type, bool includeInactive)
         {
-            throw new NotImplementedException();
+            var result = new List<EngineApiObjectBehaviour>();
+            childComponents.ForEach(x =>
+            {
+                if (result.Count > 0)
+                {
+                    return;
+                }
+                var childresult = x.GetComponent(type);
+                if (childresult != null)
+                {
+                    result.Add(childresult);
+                }
+                else
+                {
+                    childresult = x.GetComponentInChildren(type, includeInactive);
+                    if (childresult != null)
+                    {
+                        result.Add(childresult);
+                    }
+                }
+            });
+            if (result.Count > 0)
+            {
+                return result[0];
+            }
+            return null;
         }
 
         public T GetComponentInChildren<T>() where T : class
         {
-            throw new NotImplementedException();
+            return (T)(object)this.GetComponentInChildren(typeof(T));
         }
 
         public EngineApiObjectBehaviour GetComponentInChildren(Type type)
         {
-            throw new NotImplementedException();
+            return this.GetComponentInChildren(type, true);
         }
 
         public EngineApiObjectBehaviour GetComponentInParent(Type type, bool includeInactive)
         {
-            throw new NotImplementedException();
+
         }
 
         public EngineApiObjectBehaviour GetComponentInParent(Type type)
         {
-            throw new NotImplementedException();
+
         }
 
         public T GetComponentInParent<T>() where T : class
         {
-            throw new NotImplementedException();
+
         }
 
         public void GetComponents<T>(List<T> results) where T : class
         {
-            throw new NotImplementedException();
+
         }
 
         public EngineApiObjectBehaviour[] GetComponents(Type type)
         {
-            throw new NotImplementedException();
+            List<EngineApiObjectBehaviour> findedComponent = new List<EngineApiObjectBehaviour>();
+            childComponents.ForEach(x => { if (x.GetType() == type) findedComponent.Add(x); });
+            return findedComponent.ToArray();
         }
 
         public T[] GetComponents<T>() where T : class
         {
-            throw new NotImplementedException();
+            return (T[])(object)this.GetComponents(typeof(T));
         }
 
         public void GetComponents(Type type, List<EngineApiObjectBehaviour> results)
         {
-            throw new NotImplementedException();
+
         }
 
         public void GetComponentsInChildren<T>(List<T> results) where T : class
         {
-            throw new NotImplementedException();
+
         }
 
         public T[] GetComponentsInChildren<T>() where T : class
         {
-            throw new NotImplementedException();
+
         }
 
         public void GetComponentsInChildren<T>(bool includeInactive, List<T> results) where T : class
         {
-            throw new NotImplementedException();
+
         }
 
         public T[] GetComponentsInChildren<T>(bool includeInactive) where T : class
         {
-            throw new NotImplementedException();
+
         }
 
         public EngineApiObjectBehaviour[] GetComponentsInChildren(Type type)
         {
-            throw new NotImplementedException();
+            var result = new List<EngineApiObjectBehaviour>();
+            childComponents.ForEach(x =>
+            {
+                x.GetComponents(type).ForEach(y => result.Add(y));
+                x.GetComponentsInChildren(type).ForEach(y => result.Add(y));
+            });
+            return null;
         }
 
         public T[] GetComponentsInParent<T>() where T : class
         {
-            throw new NotImplementedException();
+
         }
 
         public void GetComponentsInParent<T>(bool includeInactive, List<T> results) where T : class
         {
-            throw new NotImplementedException();
+
         }
 
         public T[] GetComponentsInParent<T>(bool includeInactive) where T : class
         {
-            throw new NotImplementedException();
+
         }
 
         public EngineApiObjectBehaviour[] GetComponentsInParent(Type type)
         {
-            throw new NotImplementedException();
+
         }
 
         public T GetOrAddComponent<T>() where T : class
         {
-            throw new NotImplementedException();
+
         }
 
         public bool TryGetComponent(Type type, out EngineApiObjectBehaviour component)
         {
-            throw new NotImplementedException();
+
         }
 
         public bool TryGetComponent<T>(out T component) where T : class
         {
-            throw new NotImplementedException();
+
         }
 
         #endregion
@@ -526,7 +593,7 @@ namespace NECS.GameEngineAPI
 
         public static void DontDestroyOnLoad(EngineApiObjectBehaviour obj)
         {
-            
+
         }
     }
 
