@@ -78,7 +78,16 @@ namespace NECS.Harness.Services
 
                     if (Directory.Exists(GlobalProgramState.instance.GameConfigDir))
                         Directory.Delete(GlobalProgramState.instance.GameConfigDir, true);
+
+                    #if GODOT && !GODOT4_0_OR_GREATER
+                    var file = new Godot.File();
+                    file.Open(Path.Combine(gamedatapath, "zippedconfig.zip"), Godot.File.ModeFlags.Write);
+                    file.StoreBuffer(loadedConfigFile.ToArray());
+                    file.Close();
+                    file.Dispose();
+                    #else
                     File.WriteAllBytes(Path.Combine(gamedatapath, "zippedconfig.zip"), loadedConfigFile.ToArray());
+                    #endif
 
                     var unzipFolder = Path.Combine(gamedatapath, "Unzipped");
                     if (Directory.Exists(unzipFolder))
@@ -90,6 +99,28 @@ namespace NECS.Harness.Services
                 }
                 if(config_path != "")
                 {
+
+                    #if GODOT && !GODOT4_0_OR_GREATER
+                    var file = new Godot.File();
+
+                    if(!file.FileExists(Path.Combine(gameConfDirectory, "baseconfig.json")))
+                    {
+                        file.Open(Path.Combine(gameConfDirectory, "baseconfig.json"), Godot.File.ModeFlags.Write);
+                        file.StoreString(JsonUtil.JsonPrettify(GlobalProgramState.instance.BaseConfigDefault));
+                        file.Close();
+                    }
+                    if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+                    {
+                        if(!file.FileExists(Path.Combine(gameConfDirectory, "loginconfig.json")))
+                        {
+                            file.Open(Path.Combine(gameConfDirectory, "loginconfig.json"), Godot.File.ModeFlags.Write);
+                            file.StoreString(JsonUtil.JsonPrettify(GlobalProgramState.instance.BaseLoginConfig));
+                            file.Close();
+                        }
+                    }
+                    file.Dispose();
+                    #else
+
                     if(!File.Exists(Path.Combine(gameConfDirectory, "baseconfig.json")))
                     {
                         File.WriteAllText(Path.Combine(gameConfDirectory, "baseconfig.json"), JsonUtil.JsonPrettify(GlobalProgramState.instance.BaseConfigDefault));
@@ -101,6 +132,7 @@ namespace NECS.Harness.Services
                             File.WriteAllText(Path.Combine(gameConfDirectory, "loginconfig.json"), JsonUtil.JsonPrettify(GlobalProgramState.instance.BaseLoginConfig));
                         }
                     }
+                    #endif
                 }
                 #region initload
                 var nowLib = "";
@@ -202,8 +234,16 @@ namespace NECS.Harness.Services
 
                 if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server && config_path == "")
                 {
+                    #if GODOT && !GODOT4_0_OR_GREATER
+                    var file = new Godot.File();
+
+                    if (!file.FileExists(GlobalProgramState.instance.GameDataDir + "zippedconfig.zip"))
+                    {
+                        file.Dispose();
+                    #else
                     if (!File.Exists(GlobalProgramState.instance.GameDataDir + "zippedconfig.zip"))
                     {
+                    #endif
                         #region prepareZipTemp
 
                         var ziptempfolder = Path.Combine(GlobalProgramState.instance.GameDataDir, "ZipTemp");
@@ -219,7 +259,15 @@ namespace NECS.Harness.Services
                         }
                         ZipExt.CompressDirectory(ziptempfolder, Path.Combine(GlobalProgramState.instance.GameDataDir, "zippedconfig.zip"), (prog) => { });
                     }
+                    #if GODOT && !GODOT4_0_OR_GREATER
+                    file = new Godot.File();
+                    file.Open(Path.Combine(GlobalProgramState.instance.GameDataDir, "zippedconfig.zip"), Godot.File.ModeFlags.Read);
+                    Byte[] bytes = file.GetBuffer(Convert.ToInt64(file.GetLen()));
+                    file.Close();
+                    file.Dispose();
+                    #else
                     Byte[] bytes = File.ReadAllBytes(Path.Combine(GlobalProgramState.instance.GameDataDir, "zippedconfig.zip"));
+                    #endif
                     using (MD5CryptoServiceProvider CSP = new MD5CryptoServiceProvider())
                     {
                         var byteHash = CSP.ComputeHash(bytes);
@@ -367,11 +415,26 @@ namespace NECS.Harness.Services
                 hashConfig = 0;
                 byte[] configFile = null;
 
+                #if GODOT && !GODOT4_0_OR_GREATER
+                var file = new Godot.File();
+
+                if (file.FileExists(Path.Combine(Directory.GetParent(GlobalProgramState.instance.GameConfigDir).FullName, "zippedconfig.zip")))
+                {
+                    file.Open(Path.Combine(Directory.GetParent(GlobalProgramState.instance.GameConfigDir).FullName, "zippedconfig.zip"), Godot.File.ModeFlags.Read);
+
+                    configFile = file.GetBuffer(Convert.ToInt64(file.GetLen()));
+                    hashConfig = BitConverter.ToInt64(MD5.Create().ComputeHash(configFile), 0);
+                    file.Close();
+                    file.Dispose();
+                }
+                #else
+
                 if (File.Exists(Path.Combine(Directory.GetParent(GlobalProgramState.instance.GameConfigDir).FullName, "zippedconfig.zip")))
                 {
                     configFile = File.ReadAllBytes(Path.Combine(Directory.GetParent(GlobalProgramState.instance.GameConfigDir).FullName, "zippedconfig.zip"));
                     hashConfig = BitConverter.ToInt64(MD5.Create().ComputeHash(configFile), 0);
                 }
+                #endif
                 
                 CustomSetupInitialized = true;
                 Action<Network.NetworkModels.SocketAdapter> socketAction = (Network.NetworkModels.SocketAdapter socketAdapter) => {
@@ -429,7 +492,15 @@ namespace NECS.Harness.Services
             }
             if(fileextension.Contains(".json"))
             {
+                #if GODOT && !GODOT4_0_OR_GREATER
+                var file = new Godot.File();
+                file.Open(RealPath, Godot.File.ModeFlags.Write);
+                file.StoreString(JSONRepresentation);
+                file.Close();
+                file.Dispose();
+                #else
                 File.WriteAllText(RealPath, JSONRepresentation);
+                #endif
             }
         }
 
