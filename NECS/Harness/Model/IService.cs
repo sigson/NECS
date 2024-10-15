@@ -96,7 +96,10 @@ public abstract
 #endif
 #if GODOT
             ServiceStorage = new EngineApiObjectBehaviour().InitEAOB("ServiceStorage");
-            GodotRootNode.globalRoot.AddChild(ServiceStorage);
+            lock(GodotRootStorage.TreeLocker)
+            {
+                GodotRootStorage.globalRoot.AddChild(ServiceStorage);
+            }
 #endif
             if(ServiceStorage != null)
                 ServiceStorage.AddComponent<ProxyMockComponent>();

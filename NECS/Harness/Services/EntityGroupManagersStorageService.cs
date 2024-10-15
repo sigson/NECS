@@ -220,11 +220,14 @@ namespace NECS.Harness.Services
 #endif
 #if GODOT
             ManagersStorageObject = new EngineApiObjectBehaviour().InitEAOB("EntityGroupManagersStorage");
-            GodotRootNode.globalRoot.AddChild(ManagersStorageObject);
+            lock (GodotRootStorage.TreeLocker)
+            {
+                GodotRootStorage.globalRoot.AddChild(ManagersStorageObject);
+            }
 #endif
 #if NET && !GODOT
             ManagersStorageObject = new EngineApiObjectBehaviour("EntityGroupManagersStorage");
-            #endif
+#endif
             DontDestroyOnLoad(ManagersStorageObject);
         }
 

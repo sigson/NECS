@@ -72,7 +72,10 @@ namespace NECS.GameEngineAPI
                     this.Name = name;
                 componentsStorage = new Godot.Node();
                 componentsStorage.Name = "ComponentsStorage";
-                this.AddChild(componentsStorage);
+                lock (GodotRootStorage.TreeLocker)
+                {
+                    this.AddChild(componentsStorage);
+                }
                 isInit = true;
             }
             return this;
@@ -403,13 +406,16 @@ namespace NECS.GameEngineAPI
         {
             var newComponent = (EngineApiObjectBehaviour)Activator.CreateInstance(componentType);
             childComponents.Add(newComponent);
-            this.componentsStorage?.AddChild(newComponent);
+            lock (GodotRootStorage.TreeLocker)
+            {
+                this.componentsStorage?.AddChild(newComponent);
+            }
             return newComponent;
         }
 
         public T AddComponent<T>() where T : class
         {
-            return (T)(object)this.AddComponent(typeof(T));
+            return this.AddComponent(typeof(T)) as T;
         }
 
         public EngineApiObjectBehaviour GetComponent(string type)
@@ -419,7 +425,7 @@ namespace NECS.GameEngineAPI
 
         public T GetComponent<T>() where T : class
         {
-            return (T)(object)this.GetComponent(typeof(T));
+            return this.GetComponent(typeof(T)) as T;
         }
 
         public EngineApiObjectBehaviour GetComponent(Type type)
@@ -461,7 +467,7 @@ namespace NECS.GameEngineAPI
 
         public T GetComponentInChildren<T>() where T : class
         {
-            return (T)(object)this.GetComponentInChildren(typeof(T));
+            return this.GetComponentInChildren(typeof(T)) as T;
         }
 
         public EngineApiObjectBehaviour GetComponentInChildren(Type type)
@@ -471,22 +477,47 @@ namespace NECS.GameEngineAPI
 
         public EngineApiObjectBehaviour GetComponentInParent(Type type, bool includeInactive)
         {
-
+            EngineApiObjectBehaviour component = null;
+            Godot.Node cached = this;
+            while (component == null)
+            {
+                lock (GodotRootStorage.TreeLocker)
+                {
+                    var parent = cached.GetParent();
+                    if (parent != null)
+                    {
+                        if (parent is EngineApiObjectBehaviour)
+                        {
+                            var parentEAOB = parent as EngineApiObjectBehaviour;
+                            component = parentEAOB.GetComponent(type);
+                        }
+                        else
+                        {
+                            cached = parent;
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+            return component;
         }
 
         public EngineApiObjectBehaviour GetComponentInParent(Type type)
         {
-
+            return GetComponentInParent(type, true);
         }
 
         public T GetComponentInParent<T>() where T : class
         {
-
+            return GetComponentInParent(typeof(T)) as T;
         }
 
         public void GetComponents<T>(List<T> results) where T : class
         {
-
+            (GetComponents(typeof(T)) as T[]).ForEach(x => results.Add(x));
         }
 
         public EngineApiObjectBehaviour[] GetComponents(Type type)
@@ -498,32 +529,32 @@ namespace NECS.GameEngineAPI
 
         public T[] GetComponents<T>() where T : class
         {
-            return (T[])(object)this.GetComponents(typeof(T));
+            return this.GetComponents(typeof(T)) as T[];
         }
 
         public void GetComponents(Type type, List<EngineApiObjectBehaviour> results)
         {
-
+            (GetComponents(type)).ForEach(x => results.Add(x));
         }
 
         public void GetComponentsInChildren<T>(List<T> results) where T : class
         {
-
+            (GetComponentsInChildren(typeof(T)) as T[]).ForEach(x => results.Add(x));
         }
 
         public T[] GetComponentsInChildren<T>() where T : class
         {
-
+            return this.GetComponentsInChildren(typeof(T)) as T[];
         }
 
         public void GetComponentsInChildren<T>(bool includeInactive, List<T> results) where T : class
         {
-
+            (GetComponentsInChildren(typeof(T)) as T[]).ForEach(x => results.Add(x));
         }
 
         public T[] GetComponentsInChildren<T>(bool includeInactive) where T : class
         {
-
+            return this.GetComponentsInChildren(typeof(T)) as T[];
         }
 
         public EngineApiObjectBehaviour[] GetComponentsInChildren(Type type)
@@ -537,39 +568,92 @@ namespace NECS.GameEngineAPI
             return null;
         }
 
+        public List<EngineApiObjectBehaviour> GetComponentsInParent(Type type, bool includeInactive)
+        {
+            var components = new List<EngineApiObjectBehaviour>();
+            Godot.Node cached = this;
+            while (true)
+            {
+                lock (GodotRootStorage.TreeLocker)
+                {
+                    var parent = cached.GetParent();
+                    if (parent != null)
+                    {
+                        if (parent is EngineApiObjectBehaviour)
+                        {
+                            var parentEAOB = parent as EngineApiObjectBehaviour;
+                            var component = parentEAOB.GetComponent(type);
+                            if(component != null)
+                            {
+                                components.Add(component);
+                            }
+                        }
+                        else
+                        {
+                            cached = parent;
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+            return components;
+        }
+
         public T[] GetComponentsInParent<T>() where T : class
         {
-
+            return GetComponentsInParent(typeof(T), true).ToArray() as T[];
         }
 
         public void GetComponentsInParent<T>(bool includeInactive, List<T> results) where T : class
         {
-
+            (GetComponentsInParent(typeof(T))).ForEach(x => results.Add(x as T));
         }
 
         public T[] GetComponentsInParent<T>(bool includeInactive) where T : class
         {
-
+            return GetComponentsInParent(typeof(T), includeInactive).ToArray() as T[];
         }
 
         public EngineApiObjectBehaviour[] GetComponentsInParent(Type type)
         {
-
+            return GetComponentsInParent(type).ToArray();
         }
 
         public T GetOrAddComponent<T>() where T : class
         {
-
+            var comp = this.GetComponent<T>();
+            if(comp == null)
+            {
+                comp = this.AddComponent<T>();
+            }
+            return comp;
         }
 
         public bool TryGetComponent(Type type, out EngineApiObjectBehaviour component)
         {
-
+            var comp = this.GetComponent(type);
+            if(comp != null)
+            {
+                component = comp;
+                return true;
+            }
+            component = null;
+            return false;
         }
 
         public bool TryGetComponent<T>(out T component) where T : class
         {
-
+            var comp = this.GetComponent<T>();
+            if(comp != null)
+            {
+                component = comp;
+                return true;
+            }
+            component = null;
+            return false;
         }
 
         #endregion
