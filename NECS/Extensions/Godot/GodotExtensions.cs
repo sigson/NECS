@@ -50,3 +50,122 @@ public static class GodotExtensions
     }
 }
 #endif
+#if GODOT && !GODOT4_0_OR_GREATER
+public static class FileCopier
+{
+    // Статический метод для рекурсивного копирования файлов
+    public static void RecursiveCopy(string sourceFolder, string targetFolder)
+    {
+        // Убедимся, что исходная папка существует
+        if (!DirectoryExists(sourceFolder))
+        {
+            GD.PrintErr("Source directory does not exist: " + sourceFolder);
+            return;
+        }
+
+        // Создаем целевую директорию, если ее нет
+        if (!DirectoryExists(targetFolder))
+        {
+            CreateDirectory(targetFolder);
+        }
+
+        // Получаем список всех файлов и папок в исходной директории
+        var sourceDir = new Godot.Directory();
+        if (sourceDir.Open(sourceFolder) != Error.Ok)
+        {
+            GD.PrintErr("Failed to open source directory: " + sourceFolder);
+            return;
+        }
+
+        sourceDir.ListDirBegin();
+
+        string fileName;
+        while ((fileName = sourceDir.GetNext()) != "")
+        {
+            // Игнорируем текущую и родительскую директории
+            if (fileName == "." || fileName == "..")
+                continue;
+
+            string sourcePath = sourceFolder + "/" + fileName;
+            string targetPath = targetFolder + "/" + fileName;
+
+            if (IsDirectory(sourcePath))
+            {
+                // Если это директория, рекурсивно копируем ее
+                RecursiveCopy(sourcePath, targetPath);
+            }
+            else
+            {
+                // Если это файл, копируем его
+                CopyFile(sourcePath, targetPath);
+            }
+        }
+        
+        sourceDir.ListDirEnd();
+    }
+
+    // Проверка, существует ли директория
+    private static bool DirectoryExists(string path)
+    {
+        var dir = new Godot.Directory();
+        return dir.DirExists(path);
+    }
+
+    // Создание директории, если она не существует
+    private static void CreateDirectory(string path)
+    {
+        var dir = new Godot.Directory();
+        if (dir.MakeDir(path) != Error.Ok)
+        {
+            GD.PrintErr("Failed to create directory: " + path);
+        }
+        dir.Dispose();
+    }
+
+    // Проверка, является ли путь директорией
+    private static bool IsDirectory(string path)
+    {
+        var dir = new Godot.Directory();
+        dir.Dispose();
+        return dir.DirExists(path);
+    }
+
+    // Копирование файла из sourcePath в targetPath
+    private static void CopyFile(string sourcePath, string targetPath)
+    {
+        var file = new Godot.File();
+        var dest = new Godot.File();
+        // Открываем исходный файл для чтения
+        if (file.Open(sourcePath, Godot.File.ModeFlags.Read) != Error.Ok)
+        {
+            GD.PrintErr("Failed to open source file: " + sourcePath);
+            file.Close();
+            dest.Close();
+            file.Dispose();
+            dest.Dispose();
+            return;
+        }
+
+        // Создаем или открываем целевой файл для записи
+        if (dest.Open(targetPath, Godot.File.ModeFlags.Write) != Error.Ok)
+        {
+            GD.PrintErr("Failed to open target file: " + targetPath);
+            file.Close();
+            dest.Close();
+            file.Dispose();
+            dest.Dispose();
+            return;
+        }
+
+        
+        dest.StoreBuffer(file.GetBuffer(Convert.ToInt64(file.GetLen())));
+        
+
+        file.Close();
+        dest.Close();
+        file.Dispose();
+        dest.Dispose();
+    }
+}
+
+#endif
