@@ -150,7 +150,7 @@ public static class GodotExtensions
         var file = new File();
         if (file.FileExists(filePath))
         {
-            file.Remove(filePath);
+            new Directory().Remove(filePath);
             GD.Print("Deleted file: " + filePath);
         }
     }

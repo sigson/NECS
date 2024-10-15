@@ -406,6 +406,7 @@ namespace NECS.GameEngineAPI
         {
             var newComponent = (EngineApiObjectBehaviour)Activator.CreateInstance(componentType);
             childComponents.Add(newComponent);
+            newComponent.Name = componentType.Name;
             lock (GodotRootStorage.TreeLocker)
             {
                 this.componentsStorage?.AddChild(newComponent);
