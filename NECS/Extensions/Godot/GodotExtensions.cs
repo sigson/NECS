@@ -95,7 +95,7 @@ public static class GodotExtensions
     public static bool IsDirectory(string path)
     {
         var dir = new Godot.Directory();
-        dir.Dispose();
+        //dir.Dispose();
         return dir.DirExists(path);
     }
 
