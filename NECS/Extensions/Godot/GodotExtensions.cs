@@ -191,6 +191,96 @@ public static class GodotExtensions
         file.Dispose();
         dest.Dispose();
     }
+
+    public static string ReadAllText(string path)
+    {
+        var file = new File();
+        if (file.Open(path, File.ModeFlags.Read) != Error.Ok)
+        {
+            GD.PrintErr("Failed to open file for reading: " + path);
+            return null;
+        }
+        
+        string content = file.GetAsText();
+        file.Close();
+        file.Dispose();
+        return content;
+    }
+
+    public static void WriteAllText(string path, string content)
+    {
+        var file = new File();
+        if (file.Open(path, File.ModeFlags.Write) != Error.Ok)
+        {
+            GD.PrintErr("Failed to open file for writing: " + path);
+            return;
+        }
+        
+        file.StoreString(content);
+        file.Close();
+        file.Dispose();
+    }
+
+    public static byte[] ReadAllBytes(string path)
+    {
+        var file = new File();
+        if (file.Open(path, File.ModeFlags.Read) != Error.Ok)
+        {
+            GD.PrintErr("Failed to open file for reading: " + path);
+            return null;
+        }
+        
+        byte[] content = file.GetBuffer((long)file.GetLen());
+        file.Close();
+        file.Dispose();
+        return content;
+    }
+
+    public static void WriteAllBytes(string path, byte[] content)
+    {
+        var file = new File();
+        if (file.Open(path, File.ModeFlags.Write) != Error.Ok)
+        {
+            GD.PrintErr("Failed to open file for writing: " + path);
+            return;
+        }
+        
+        file.StoreBuffer(content);
+        file.Close();
+        file.Dispose();
+    }
+
+    public static void AppendText(string path, string content)
+    {
+        var file = new File();
+        if (file.Open(path, File.ModeFlags.ReadWrite) != Error.Ok)
+        {
+            GD.PrintErr("Failed to open file for appending: " + path);
+            return;
+        }
+
+        // Move the cursor to the end of the file
+        file.SeekEnd();
+        file.StoreString(content);
+        file.Close();
+        file.Dispose();
+    }
+
+    public static void AppendBytes(string path, byte[] content)
+    {
+        var file = new File();
+        if (file.Open(path, File.ModeFlags.ReadWrite) != Error.Ok)
+        {
+            GD.PrintErr("Failed to open file for appending: " + path);
+            return;
+        }
+
+        // Move the cursor to the end of the file
+        file.SeekEnd();
+        file.StoreBuffer(content);
+        file.Close();
+        file.Dispose();
+    }
 }
 #endif
 #if GODOT4_0_OR_GREATER

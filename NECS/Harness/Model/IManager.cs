@@ -17,6 +17,9 @@ public abstract
 #endif
     class IManager : ProxyBehaviour
     {
+        #if GODOT
+        [Godot.Export]
+        #endif
         public long instanceId = Guid.NewGuid().GuidToLongR();
         #region typeId
         private static Type _managerTypeValue = null;
@@ -56,6 +59,9 @@ public abstract
         }
 
         private bool NoSetupChild = false;
+        #if GODOT
+        [Godot.Export]
+        #endif
         public bool isNoSetupChild
         {
             get
@@ -69,6 +75,9 @@ public abstract
         }
 
         private bool PrefabScript = false;
+        #if GODOT
+        [Godot.Export]
+        #endif
         public bool isPrefabScript
         {
             get
@@ -108,7 +117,7 @@ public abstract
         }
 
         public
-#if NET
+#if NET || GODOT
             override
 #endif
              void Start()
