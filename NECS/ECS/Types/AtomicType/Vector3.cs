@@ -28,6 +28,12 @@ namespace NECS.ECS.Types.AtomicType
             this.x = vector.x; this.y = vector.y; this.z = vector.z;
         }
 #endif
+#if GODOT && !GODOT4_0_OR_GREATER
+        public Vector3S(Godot.Vector3 vector)
+        {
+            this.x = vector.x; this.y = vector.y; this.z = vector.z;
+        }
+#endif
         public Vector3S(Vector3 vector)
         {
             this.x = vector.X; this.y = vector.Y; this.z = vector.Z;
@@ -44,7 +50,18 @@ namespace NECS.ECS.Types.AtomicType
             };
         }
 #endif
-
+#if GODOT && !GODOT4_0_OR_GREATER
+        public Godot.Vector3 NGetNum()
+        {
+            return new Godot.Vector3()
+            {
+                x = this.x,
+                y = this.y,
+                z = this.z
+            };
+        }
+#endif
+#if NET && !GODOT
         public Vector3 NGetNum()
         {
             return new Vector3()
@@ -54,7 +71,7 @@ namespace NECS.ECS.Types.AtomicType
                 Z = this.z
             };
         }
-
+#endif
 #if UNITY_5_3_OR_NEWER
         public UnityEngine.Vector3 ConvertToUnityVector3()
         {
@@ -72,6 +89,27 @@ namespace NECS.ECS.Types.AtomicType
         }
 
         public static Vector3S ConvertToVector3SScaling(UnityEngine.Vector3 vector3N, float scaler)
+        {
+            return new Vector3S(vector3N.x * scaler, vector3N.y * scaler, vector3N.z * scaler);
+        }
+#endif
+#if GODOT && !GODOT4_0_OR_GREATER
+        public Godot.Vector3 ConvertToUnityVector3()
+        {
+            return new Godot.Vector3(x, y, z);
+        }
+
+        public Godot.Vector3 ConvertToUnityVector3Constant007Scaling()
+        {
+            return new Godot.Vector3(x * 0.007f, y * 0.007f, z * 0.007f);
+        }
+
+        public static Vector3S ConvertToVector3SUnScaling(Godot.Vector3 vector3N, float unscaler)
+        {
+            return new Vector3S(vector3N.x / unscaler, vector3N.y / unscaler, vector3N.z / unscaler);
+        }
+
+        public static Vector3S ConvertToVector3SScaling(Godot.Vector3 vector3N, float scaler)
         {
             return new Vector3S(vector3N.x * scaler, vector3N.y * scaler, vector3N.z * scaler);
         }
