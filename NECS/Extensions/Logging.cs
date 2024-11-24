@@ -18,7 +18,16 @@ namespace NECS.Core.Logging
                     UnityEngine.Debug.LogWarning($"[{DateTime.UtcNow}, {type}] {content}");
                 else
                     UnityEngine.Debug.Log($"[{DateTime.UtcNow}, {type}] {content}");
-
+#elif GODOT && !GODOT_4_0_OR_GREATER
+                if (ConsoleColor.Red.Equals(color))
+                {
+                    Godot.GD.PrintErr($"[{DateTime.UtcNow}, {type}] {content}");
+                    Godot.GD.PrintStack();
+                }
+                else if(ConsoleColor.DarkYellow.Equals(color))
+                    Godot.GD.Print($"[{DateTime.UtcNow}, {type}] {content}");
+                else
+                    Godot.GD.Print($"[{DateTime.UtcNow}, {type}] {content}");
 #else
                 Console.ForegroundColor = color;
                 if(content is Exception)

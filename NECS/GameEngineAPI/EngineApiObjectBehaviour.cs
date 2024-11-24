@@ -52,33 +52,42 @@ namespace NECS.GameEngineAPI
         public bool activeInHierarchy { get => enabled; set => enabled = value; }
         public GodotPhysicAgent PhysicAgent;
         private bool isInit = false;
+        private bool enterToInit = false;
         private Godot.Node componentsStorage = null;
 
         //public EngineApiObjectBehaviour OwnerEAOB = null;
 
         public EngineApiObjectBehaviour InitEAOB(string name = null)
         {
-            bool enterToInit = false;
+            //bool enterToInit = false;
+            if(enterToInit)
+            return this;
             lock (this)
             {
-                if (!isInit)
+                if (!isInit && !enterToInit)
                 {
                     enterToInit = true;
                 }
             }
             if (enterToInit)
             {
-                if (name != null)
-                    this.Name = name;
-                componentsStorage = new Godot.Node();
-                componentsStorage.Name = "ComponentsStorage";
-                lock (GodotRootStorage.TreeLocker)
-                {
-                    this.AddChild(componentsStorage);
-                }
-                isInit = true;
+                this.CallDeferred("DeferredInit", name);
             }
             return this;
+        }
+
+        private void DeferredInit(string name)
+        {
+            if (name != null)
+                this.Name = name;
+            componentsStorage = new Godot.Node();
+            componentsStorage.Name = "ComponentsStorage";
+            lock (GodotRootStorage.TreeLocker)
+            {
+                this.AddChild(componentsStorage);
+            }
+            isInit = true;
+            this.Start();
         }
 
         protected SynchronizedList<EngineApiObjectBehaviour> childComponents = new SynchronizedList<EngineApiObjectBehaviour>();
@@ -99,7 +108,7 @@ namespace NECS.GameEngineAPI
             if (enabled)
             {
                 base._Ready();
-                this.Start();
+                this.Awake();
             }
 
         }
@@ -107,7 +116,7 @@ namespace NECS.GameEngineAPI
 
         public override void _ExitTree()
         {
-            if (enabled)
+            if (enabled && isInit)
             {
                 base._ExitTree();
                 this.OnDisable();
@@ -118,7 +127,7 @@ namespace NECS.GameEngineAPI
         public override void _Process(double delta)
         {
             // Called every frame.
-            if (enabled)
+            if (enabled && isInit)
             {
                 base._Process(delta);
                 this.Update();
@@ -133,7 +142,7 @@ namespace NECS.GameEngineAPI
         public override void _Process(float delta)
         {
             // Called every frame.
-            if (enabled)
+            if (enabled && isInit)
             {
                 base._Process(delta);
                 this.Update();
@@ -147,7 +156,7 @@ namespace NECS.GameEngineAPI
 #if GODOT4_0_OR_GREATER
         public override void _PhysicsProcess(double delta)
         {
-            if (enabled)
+            if (enabled && isInit)
             {
                 base._PhysicsProcess(delta);
                 this.FixedUpdate();
@@ -158,7 +167,7 @@ namespace NECS.GameEngineAPI
 #if GODOT && !GODOT4_0_OR_GREATER
         public override void _PhysicsProcess(float delta)
         {
-            if (enabled)
+            if (enabled && isInit)
             {
                 base._PhysicsProcess(delta);
                 this.FixedUpdate();

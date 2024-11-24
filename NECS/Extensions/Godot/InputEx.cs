@@ -183,6 +183,18 @@ public partial class InputEx : Node
         return InputObjectState.Quiet;
     }
 
+    public float GetKeyStateF(Godot.KeyList key)
+    {
+        if(InputMapState.TryGetValue(typeof(InputEventKey).ToString() + key.ToString(), out var lastState))
+        {
+            if(NonSyncReplacer(lastState) == InputObjectState.Entered || NonSyncReplacer(lastState) == InputObjectState.Pressed)
+            {
+                return 1f;
+            }
+        }
+        return 0f;
+    }
+
     public InputObjectState GetMouseState(ButtonList button)
     {
         if (InputMapState.TryGetValue(typeof(InputEventMouseButton).ToString() + button.ToString(), out var lastState))

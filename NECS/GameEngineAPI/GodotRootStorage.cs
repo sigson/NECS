@@ -9,7 +9,7 @@ partial
 #endif
 class GodotRootStorage: EngineApiObjectBehaviour
 {
-    public static Godot.Node globalRoot = null;
+    public static Godot.Node globalRoot => (Engine.GetMainLoop() as SceneTree)?.Root;
     public static object TreeLocker = new object();
 }
 #endif

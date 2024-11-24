@@ -14,7 +14,7 @@ namespace NECS.GameEngineAPI
 #if UNITY_5_3_OR_NEWER
         : UnityEngine.Component
 #endif
-#if GODOT4_0_OR_GREATER
+#if GODOT
         : Godot.Node
 #endif
     {
@@ -28,6 +28,9 @@ namespace NECS.GameEngineAPI
 #if UNITY_5_3_OR_NEWER
         : UnityEngine.Collider
 #endif
+#if GODOT && !GODOT4_0_OR_GREATER
+        : object
+#endif
 #if GODOT4_0_OR_GREATER
         : object
 #endif
@@ -38,6 +41,9 @@ namespace NECS.GameEngineAPI
     public class EngineApiCollision3D
 #if UNITY_5_3_OR_NEWER
         : UnityEngine.Collision
+#endif
+#if GODOT && !GODOT4_0_OR_GREATER
+        : object
 #endif
 #if GODOT4_0_OR_GREATER
         : object
@@ -50,6 +56,9 @@ namespace NECS.GameEngineAPI
 #if UNITY_5_3_OR_NEWER
         : UnityEngine.Collider2D
 #endif
+#if GODOT && !GODOT4_0_OR_GREATER
+        : object
+#endif
 #if GODOT4_0_OR_GREATER
         : object
 #endif
@@ -60,6 +69,9 @@ namespace NECS.GameEngineAPI
     public class EngineApiCollision2D
 #if UNITY_5_3_OR_NEWER
         : UnityEngine.Collision2D
+#endif
+#if GODOT && !GODOT4_0_OR_GREATER
+        : object
 #endif
 #if GODOT4_0_OR_GREATER
         : object

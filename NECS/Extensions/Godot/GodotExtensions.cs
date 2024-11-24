@@ -8,6 +8,18 @@ using System.Threading.Tasks;
 
 public static class GodotExtensions
 {
+    public static T MockGObject<T>(this Node node) where T : Godot.Node, new()
+    {
+        var parent = node.GetParent();
+        if(parent == null)
+        return null;
+        var mocknode = new T();
+        parent.AddChild(mocknode);
+        var childs = parent.GetChildCount();
+        parent.RemoveChild(node);
+        mocknode.AddChild(node);
+        return mocknode;
+    }
     public static Vector3 MoveTowardDistance(this Vector3 from, Vector3 to, float distance_delta)
     {
         return from.MoveToward(to, distance_delta * from.DistanceTo(to));
