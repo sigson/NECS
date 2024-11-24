@@ -17,6 +17,7 @@ namespace NECS.GameEngineAPI
         void Start();
 
         void FixedUpdate();
+        void FixedUpdate(float delta);
         void FixedUpdate(double delta);
 
         void OnTriggerEnter(EngineApiCollider3D other);
@@ -44,9 +45,11 @@ namespace NECS.GameEngineAPI
         void OnCollisionExit2D(EngineApiCollision2D collision);
 
         void Update(double delta);
+        void Update(float delta);
         void Update();
 
         void LateUpdate();
+        void LateUpdate(float delta);
         void LateUpdate(double delta);
 
         void OnRenderObject();

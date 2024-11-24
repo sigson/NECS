@@ -31,6 +31,7 @@ namespace NECS.GameEngineAPI
         : Godot.Node, IEngineApiObjectBehaviour, IEngineApiCallableMethods
     {
         public EngineApiObjectBehaviour gameObject { get => this; set => throw new NotImplementedException(); }
+        [Godot.Export]
         public bool enabled
         {
             get => isEnabled;
@@ -71,6 +72,14 @@ namespace NECS.GameEngineAPI
             }
             if (enterToInit)
             {
+                if (name != null)
+                this.Name = name;
+                componentsStorage = new Godot.Node();
+                componentsStorage.Name = "ComponentsStorage";
+                lock (GodotRootStorage.TreeLocker)
+                {
+                    this.AddChild(componentsStorage);
+                }
                 this.CallDeferred("DeferredInit", name);
             }
             return this;
@@ -78,16 +87,13 @@ namespace NECS.GameEngineAPI
 
         private void DeferredInit(string name)
         {
-            if (name != null)
-                this.Name = name;
-            componentsStorage = new Godot.Node();
-            componentsStorage.Name = "ComponentsStorage";
-            lock (GodotRootStorage.TreeLocker)
-            {
-                this.AddChild(componentsStorage);
-            }
             isInit = true;
             this.Start();
+            if(enabled)
+            {
+                this.isEnabled = false;
+                this.enabled = true;
+            }
         }
 
         protected SynchronizedList<EngineApiObjectBehaviour> childComponents = new SynchronizedList<EngineApiObjectBehaviour>();
@@ -132,8 +138,10 @@ namespace NECS.GameEngineAPI
                 base._Process(delta);
                 this.Update();
                 this.Update(delta);
+                this.Update(Convert.ToDouble(delta));
                 this.LateUpdate();
                 this.LateUpdate(delta);
+                this.LateUpdate(Convert.ToDouble(delta));
             }
 
         }
@@ -147,8 +155,10 @@ namespace NECS.GameEngineAPI
                 base._Process(delta);
                 this.Update();
                 this.Update(delta);
+                this.Update(Convert.ToDouble(delta));
                 this.LateUpdate();
                 this.LateUpdate(delta);
+                this.LateUpdate(Convert.ToDouble(delta));
             }
 
         }
@@ -161,6 +171,7 @@ namespace NECS.GameEngineAPI
                 base._PhysicsProcess(delta);
                 this.FixedUpdate();
                 this.FixedUpdate(delta);
+                this.FixedUpdate(Convert.ToDouble(delta));
             }
         }
 #endif
@@ -172,6 +183,7 @@ namespace NECS.GameEngineAPI
                 base._PhysicsProcess(delta);
                 this.FixedUpdate();
                 this.FixedUpdate(delta);
+                this.FixedUpdate(Convert.ToDouble(delta));
             }
         }
 #endif
@@ -201,6 +213,21 @@ namespace NECS.GameEngineAPI
         public virtual void Start()
         {
 
+        }
+
+        public virtual void FixedUpdate(float delta)
+        {
+            
+        }
+
+        public virtual void Update(float delta)
+        {
+            
+        }
+
+        public virtual void LateUpdate(float delta)
+        {
+            
         }
 
         public virtual void Update(double delta)
