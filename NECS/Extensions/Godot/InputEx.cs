@@ -176,7 +176,7 @@ public partial class InputEx : Node
 #region isInputBlock
     public InputObjectState GetKeyState(Godot.KeyList key)
     {
-        if(InputMapState.TryGetValue(typeof(InputEventKey).ToString() + key.ToString(), out var lastState))
+        if(InputMapState.TryGetValue(typeof(InputEventKey).ToString() + ((int)key).ToString(), out var lastState))
         {
             return NonSyncReplacer(lastState);
         }
@@ -185,7 +185,7 @@ public partial class InputEx : Node
 
     public float GetKeyStateF(Godot.KeyList key)
     {
-        if(InputMapState.TryGetValue(typeof(InputEventKey).ToString() + key.ToString(), out var lastState))
+        if(InputMapState.TryGetValue(typeof(InputEventKey).ToString() + ((int)key).ToString(), out var lastState))
         {
             if(NonSyncReplacer(lastState) == InputObjectState.Entered || NonSyncReplacer(lastState) == InputObjectState.Pressed)
             {

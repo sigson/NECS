@@ -93,7 +93,7 @@ public abstract
         #region mockFunctions
 
         public
-#if NET
+#if NET || GODOT
             override
 #endif
             void Awake()
@@ -105,7 +105,7 @@ public abstract
         }
 
         public
-#if NET
+#if NET || GODOT
             override
 #endif
              void OnEnable()
@@ -136,7 +136,7 @@ public abstract
         }
 
         public
-#if NET
+#if NET || GODOT
             override
 #endif
              void Reset()
@@ -151,7 +151,7 @@ public abstract
         }
 
         public
-#if NET
+#if NET || GODOT
             override
 #endif
              void FixedUpdate()
@@ -168,7 +168,7 @@ public abstract
         }
 
         public
-#if NET
+#if NET || GODOT
             override
 #endif
              void Update()
@@ -187,7 +187,7 @@ public abstract
 
 
         public
-#if NET
+#if NET || GODOT
             override
 #endif
              void OnCollisionEnter(
@@ -216,7 +216,7 @@ public abstract
         }
 
         public
-#if NET
+#if NET || GODOT
             override
 #endif
              void OnCollisionExit(
@@ -245,7 +245,7 @@ public abstract
         }
 
         public
-#if NET
+#if NET || GODOT
             override
 #endif
              void OnCollisionStay(
@@ -274,7 +274,7 @@ public abstract
         }
 
         public
-#if NET
+#if NET || GODOT
             override
 #endif
              void OnTriggerEnter(
@@ -303,7 +303,7 @@ public abstract
         }
 
         public
-#if NET
+#if NET || GODOT
             override
 #endif
              void OnTriggerExit(
@@ -332,7 +332,7 @@ public abstract
         }
 
         public
-#if NET
+#if NET || GODOT
             override
 #endif
              void OnTriggerStay(
@@ -374,7 +374,7 @@ public abstract
         }
 
         public
-#if NET
+#if NET || GODOT
             override
 #endif
              void OnDisable()
@@ -384,7 +384,7 @@ public abstract
         }
 
         public
-#if NET
+#if NET || GODOT
             override
 #endif
              void OnDestroy()
