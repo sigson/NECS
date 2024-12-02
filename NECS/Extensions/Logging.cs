@@ -1,15 +1,25 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace NECS.Core.Logging
 {
     public static class NLogger
     {
         private static readonly object _lock = new object();
+        private static ConcurrentDictionary<string, List<string>> logs_stack = new ConcurrentDictionary<string, List<string>>();
 
-        private static void Write(string type, ConsoleColor color, object content)
+        private static void Write(string type, ConsoleColor color, object content, string logstack = "")
         {
             lock (_lock)
             {
+                if(logstack != "")
+                {
+                    if(!logs_stack.ContainsKey(logstack))
+                        logs_stack.TryAdd(logstack, new List<string>());
+                    logs_stack[logstack].Add($"{DateTime.UtcNow}##{content}");
+                }
+                
 #if UNITY_5_3_OR_NEWER
                 Console.ForegroundColor = color;
                 if(ConsoleColor.Red.Equals(color))
@@ -38,6 +48,22 @@ namespace NECS.Core.Logging
             }
         }
 
+        public static void DumpLogStack(string logstack, string file, bool clear = true)
+        {
+            if(System.IO.File.Exists(file))
+            {
+                System.IO.File.Delete(file);
+                System.IO.File.Create(file).Dispose();
+            }
+            if(logs_stack.TryGetValue(logstack, out var logs))
+            {
+                foreach (var log in logs)
+                {
+                    System.IO.File.AppendAllText(file, log + "\n");
+                }
+            }
+        }
+
         private static void DebugWrite(string type, ConsoleColor color, object content)
         {
 #if DEBUG
@@ -45,6 +71,7 @@ namespace NECS.Core.Logging
 #endif
         }
 
+        public static void LogStack(object content, string stackName) => Write("INFO", ConsoleColor.Gray, content, stackName);
         public static void Log(object content) => Write("INFO", ConsoleColor.Gray, content);
         public static void LogNetwork(object content) => Write("Network", ConsoleColor.Blue, content);
         public static void LogDB(object content) => Write("DataBase", ConsoleColor.Yellow, content);
