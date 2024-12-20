@@ -49,6 +49,7 @@ namespace NECS.GameEngineAPI
                 this.isEnabled = value;
             }
         }
+        public EngineApiObjectBehaviour ComponentsOwner = null;
         private bool isEnabled = true;
         public bool activeInHierarchy { get => enabled; set => enabled = value; }
         public GodotPhysicAgent PhysicAgent;
@@ -443,6 +444,7 @@ namespace NECS.GameEngineAPI
             var newComponent = (EngineApiObjectBehaviour)Activator.CreateInstance(componentType);
             childComponents.Add(newComponent);
             newComponent.Name = componentType.Name;
+            newComponent.ComponentsOwner = this;
             lock (GodotRootStorage.TreeLocker)
             {
                 this.componentsStorage?.AddChild(newComponent);
