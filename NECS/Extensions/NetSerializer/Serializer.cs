@@ -60,6 +60,7 @@ namespace NetSerializer
             replacementNamespaces.Clear();
             rootTypes.ForEach(x => replacementNamespaces.Add(x.Namespace));
             replacementNamespaces = new HashSet<string>(replacementNamespaces).OrderBy(q => q).ToList();
+            replacementNamespaces.Remove(null);
             this.Settings = settings;
 
 			if (this.Settings.CustomTypeSerializers.All(s => s is IDynamicTypeSerializer || s is IStaticTypeSerializer) == false)
