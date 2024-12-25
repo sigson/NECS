@@ -65,19 +65,19 @@ namespace NECS.Harness.Services
 
                 gameConfDirectory = gameConfDirectory.Replace("\\", GlobalProgramState.instance.PathSystemSeparator).Replace("/", GlobalProgramState.instance.PathSystemSeparator);
 
-                if (!Directory.Exists(gameConfDirectory))
+                if (!DirectoryAdapter.Exists(gameConfDirectory))
                 {
-                    Directory.CreateDirectory(gameConfDirectory);
+                    DirectoryAdapter.CreateDirectory(gameConfDirectory);
                 }
 
                 if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client && checkedConfigVersion != hashConfig && config_path == "")
                 {
                     NLogger.Log("Constant service update config");
 
-                    var gamedatapath = Directory.GetParent(GlobalProgramState.instance.GameConfigDir).FullName;
+                    var gamedatapath = DirectoryAdapter.GetParent(GlobalProgramState.instance.GameConfigDir);
 
-                    if (Directory.Exists(GlobalProgramState.instance.GameConfigDir))
-                        Directory.Delete(GlobalProgramState.instance.GameConfigDir, true);
+                    if (DirectoryAdapter.Exists(GlobalProgramState.instance.GameConfigDir))
+                        DirectoryAdapter.Delete(GlobalProgramState.instance.GameConfigDir, true);
 
                     #if GODOT && !GODOT4_0_OR_GREATER
                     var file = new Godot.File();
@@ -90,12 +90,12 @@ namespace NECS.Harness.Services
                     #endif
 
                     var unzipFolder = Path.Combine(gamedatapath, "Unzipped");
-                    if (Directory.Exists(unzipFolder))
-                        Directory.Delete(unzipFolder, true);
-                    Directory.CreateDirectory(unzipFolder);
+                    if (DirectoryAdapter.Exists(unzipFolder))
+                        DirectoryAdapter.Delete(unzipFolder, true);
+                    DirectoryAdapter.CreateDirectory(unzipFolder);
                     ZipExt.DecompressToDirectory(loadedConfigFile.ToArray(), unzipFolder, (info) => { });
-                    var movingDir = Directory.EnumerateDirectories(unzipFolder).OrderBy(x => x.Length).First();
-                    Directory.Move(movingDir, GlobalProgramState.instance.GameConfigDir);
+                    var movingDir = DirectoryAdapter.EnumerateDirectories(unzipFolder).OrderBy(x => x.Length).First();
+                    DirectoryAdapter.Move(movingDir, GlobalProgramState.instance.GameConfigDir);
                 }
                 if(config_path != "")
                 {
@@ -197,7 +197,7 @@ namespace NECS.Harness.Services
                                 break;
                         }
 
-                        var libname = nowLib.Replace(Directory.GetParent(nowLib).FullName, "").Replace(GlobalProgramState.instance.PathSystemSeparator, "");
+                        var libname = nowLib.Replace(DirectoryAdapter.GetParent(nowLib), "").Replace(GlobalProgramState.instance.PathSystemSeparator, "");
 
                         if (libfiles.Value.Count() == 1)
                         {
@@ -249,13 +249,13 @@ namespace NECS.Harness.Services
                         var ziptempfolder = Path.Combine(GlobalProgramState.instance.GameDataDir, "ZipTemp");
                         var ziptempgamedir = Path.Combine(ziptempfolder, GlobalProgramState.instance.GameConfigDir.Split(GlobalProgramState.instance.PathSystemSeparator[0]).Last());
 
-                        if (Directory.Exists(ziptempfolder))
-                            Directory.Delete(ziptempfolder, true);
+                        if (DirectoryAdapter.Exists(ziptempfolder))
+                            DirectoryAdapter.Delete(ziptempfolder, true);
                         FileEx.CopyFilesRecursively(new DirectoryInfo(GlobalProgramState.instance.GameConfigDir), new DirectoryInfo(ziptempgamedir));
                         #endregion
-                        if (!Directory.Exists(ziptempfolder))
+                        if (!DirectoryAdapter.Exists(ziptempfolder))
                         {
-                            Directory.CreateDirectory(ziptempfolder);
+                            DirectoryAdapter.CreateDirectory(ziptempfolder);
                         }
                         ZipExt.CompressDirectory(ziptempfolder, Path.Combine(GlobalProgramState.instance.GameDataDir, "zippedconfig.zip"), (prog) => { });
                     }
@@ -388,13 +388,13 @@ namespace NECS.Harness.Services
             start_path = start_path.Replace(GlobalProgramState.instance.PathAltSeparator, GlobalProgramState.instance.PathSeparator);
             try
             {
-                string[] folders = Directory.GetDirectories(start_path);
+                string[] folders = DirectoryAdapter.GetDirectories(start_path);
                 foreach (string folder in folders)
                 {
                     ls.Add("Folder: " + folder);
                     ls.AddRange(GetRecursFiles(folder));
                 }
-                string[] files = Directory.GetFiles(start_path);
+                string[] files = DirectoryAdapter.GetFiles(start_path);
                 foreach (string filename in files)
                 {
                     ls.Add(filename.Replace("\\", GlobalProgramState.instance.PathSystemSeparator).Replace("/", GlobalProgramState.instance.PathSystemSeparator));
@@ -418,9 +418,9 @@ namespace NECS.Harness.Services
                 #if GODOT && !GODOT4_0_OR_GREATER
                 var file = new Godot.File();
 
-                if (file.FileExists(Path.Combine(Directory.GetParent(GlobalProgramState.instance.GameConfigDir).FullName, "zippedconfig.zip")))
+                if (file.FileExists(Path.Combine(DirectoryAdapter.GetParent(GlobalProgramState.instance.GameConfigDir), "zippedconfig.zip")))
                 {
-                    file.Open(Path.Combine(Directory.GetParent(GlobalProgramState.instance.GameConfigDir).FullName, "zippedconfig.zip"), Godot.File.ModeFlags.Read);
+                    file.Open(Path.Combine(DirectoryAdapter.GetParent(GlobalProgramState.instance.GameConfigDir), "zippedconfig.zip"), Godot.File.ModeFlags.Read);
 
                     configFile = file.GetBuffer(Convert.ToInt64(file.GetLen()));
                     hashConfig = BitConverter.ToInt64(MD5.Create().ComputeHash(configFile), 0);
@@ -435,22 +435,28 @@ namespace NECS.Harness.Services
                     hashConfig = BitConverter.ToInt64(MD5.Create().ComputeHash(configFile), 0);
                 }
                 #endif
-                
-                CustomSetupInitialized = true;
-                Action<Network.NetworkModels.SocketAdapter> socketAction = (Network.NetworkModels.SocketAdapter socketAdapter) => {
-                    if (!Loaded)
-                    {
-                        ManagerScope.instance.eventManager.OnEventAdd(new ConfigCheckEvent()
+                if(NetworkingService.instance != null)
+                {
+                    CustomSetupInitialized = true;
+                    Action<Network.NetworkModels.SocketAdapter> socketAction = (Network.NetworkModels.SocketAdapter socketAdapter) => {
+                        if (!Loaded)
                         {
-                            configHash = hashConfig
-                        });
+                            ManagerScope.instance.eventManager.OnEventAdd(new ConfigCheckEvent()
+                            {
+                                configHash = hashConfig
+                            });
+                        }
+                    };
+                    if (NetworkingService.instance.SocketAdapters.Count() == 0)
+                        NetworkingService.instance.OnConnectExternal += new SocketHandler(socketAction);
+                    else
+                    {
+                        socketAction(NetworkingService.instance.ClientSocket);
                     }
-                };
-                if (NetworkingService.instance.SocketAdapters.Count() == 0)
-                    NetworkingService.instance.OnConnectExternal += new SocketHandler(socketAction);
+                }
                 else
                 {
-                    socketAction(NetworkingService.instance.ClientSocket);
+                    NLogger.Log("ConstantService: Networking not initialized.");
                 }
             }
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)

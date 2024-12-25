@@ -40,6 +40,11 @@ namespace NECS.ECS.ECSCore
         [System.NonSerialized]
         public ComponentManagers componentManagers = new ComponentManagers();
 
+        public ECSComponent()
+        {
+            componentManagers.ownerComponent = this;
+        }
+
         public List<Action<ECSEntity, ECSComponent>> GetOnChangeComponentCallback()
         {
             if (ObjectType == null)

@@ -37,8 +37,11 @@ namespace NECS.Harness.Services
 #if UNITY_5_3_OR_NEWER
                 return Path.Combine(Path.Combine(persistentDataPath, "GameData"), "GameConfig");
 #endif
-#if NET || GODOT
+#if NET && !GODOT
                 return Path.Combine(Path.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "GameData"), "GameConfig");
+#endif
+#if GODOT
+                return Path.Combine(Path.Combine(persistentDataPath, "GameData").Replace("\\", "/"), "GameConfig").Replace("\\", "/");
 #endif
             }
         }
@@ -50,8 +53,11 @@ namespace NECS.Harness.Services
 #if UNITY_5_3_OR_NEWER
                 return Path.Combine(streamingAssetsPath, "GameData");
 #endif
-#if NET || GODOT
+#if NET && !GODOT
                 return Path.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "GameData");
+#endif
+#if GODOT
+                return Path.Combine(streamingAssetsPath, "GameData").Replace("\\", "/");
 #endif
             }
         }
@@ -63,8 +69,11 @@ namespace NECS.Harness.Services
 #if UNITY_5_3_OR_NEWER
                 return Path.Combine(Path.Combine(streamingAssetsPath, "GameData"), "Config");
 #endif
-#if NET || GODOT
+#if NET && !GODOT
                 return Path.Combine(Path.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "GameData"), "Config");
+#endif
+#if GODOT
+                return Path.Combine(Path.Combine(streamingAssetsPath, "GameData").Replace("\\", "/"), "Config").Replace("\\", "/");
 #endif
             }
         }
@@ -77,7 +86,11 @@ namespace NECS.Harness.Services
         {
             get
             {
+                #if GODOT
+                return "/";
+                #else
                 return Path.DirectorySeparatorChar.ToString();
+                #endif
             }
         }
         public string PathSeparator = "\\";
