@@ -145,15 +145,15 @@ namespace NECS.Harness.Services
                     {
                         if (nowLib == "")
                         {
-                            nowLib = Path.GetDirectoryName(file);
+                            nowLib = Path.GetDirectoryName(file).FixPath();
                         }
-                        if (nowLib != Path.GetDirectoryName(file))
+                        if (nowLib != Path.GetDirectoryName(file).FixPath())
                         {
                             Libs.Add(nowLib, LibFiles);
                             LibFiles = new List<string>();
-                            nowLib = Path.GetDirectoryName(file);
+                            nowLib = Path.GetDirectoryName(file).FixPath();
                         }
-                        if (nowLib == Path.GetDirectoryName(file))
+                        if (nowLib == Path.GetDirectoryName(file).FixPath())
                         {
                             LibFiles.Add(file.Replace("\\", GlobalProgramState.instance.PathSystemSeparator).Replace("/", GlobalProgramState.instance.PathSystemSeparator));
                         }
@@ -170,7 +170,7 @@ namespace NECS.Harness.Services
                     foreach (var file in libfiles.Value)
                     {
                         ConfigObj nowObject = new ConfigObj();
-                        var input = new StreamReader(file);
+                        var input = FileAdapter.OpenText(file);
                         var yaml = new YamlDotNet.Serialization.Deserializer();
                         string jsonText = "";
 

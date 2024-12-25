@@ -8,6 +8,23 @@ using System.Threading.Tasks;
 
 public static class GodotExtensions
 {
+    public static string FixPath(this string path)
+    {
+        #if GODOT
+        var result = path.Replace("\\", NECS.Harness.Services.GlobalProgramState.instance.PathSystemSeparator).Replace("/", NECS.Harness.Services.GlobalProgramState.instance.PathSystemSeparator);
+        if(result.IndexOf("user://") == -1 && result.IndexOf("user:/") != -1)
+        {
+            result = result.Replace("user:/", "user://");
+        }
+        if(result.IndexOf("res://") == -1 && result.IndexOf("res:/") != -1)
+        {
+            result = result.Replace("res:/", "res://");
+        }
+        return result;
+        #else
+        return path;
+        #endif
+    }
     public static T MockGObject<T>(this Node node) where T : Godot.Node, new()
     {
         var parent = node.GetParent();

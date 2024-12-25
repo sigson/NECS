@@ -72,7 +72,7 @@ public class DirectoryAdapter
                 return Directory.GetFiles(path);
             #elif GODOT
                 var files = new List<string>();
-                var error = _godotDirectory.Open(path);
+                var error = _godotDirectory.Open(path.FixPath());
                 if (error != Godot.Error.Ok)
                     throw new IOException($"Failed to open directory: {error}");
 
@@ -82,7 +82,7 @@ public class DirectoryAdapter
                 {
                     if (!_godotDirectory.CurrentIsDir())
                     {
-                        files.Add(Path.Combine(path, fileName));
+                        files.Add(Path.Combine(path, fileName).FixPath());
                     }
                     fileName = _godotDirectory.GetNext();
                 }
@@ -99,7 +99,7 @@ public class DirectoryAdapter
                 return Directory.GetDirectories(path);
             #elif GODOT
                 var directories = new List<string>();
-                var error = _godotDirectory.Open(path);
+                var error = _godotDirectory.Open(path.FixPath());
                 if (error != Godot.Error.Ok)
                     throw new IOException($"Failed to open directory: {error}");
 
@@ -109,7 +109,7 @@ public class DirectoryAdapter
                 {
                     if (_godotDirectory.CurrentIsDir())
                     {
-                        directories.Add(Path.Combine(path, dirName));
+                        directories.Add(Path.Combine(path, dirName).FixPath());
                     }
                     dirName = _godotDirectory.GetNext();
                 }
