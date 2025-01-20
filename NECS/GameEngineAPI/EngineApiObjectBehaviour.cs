@@ -89,9 +89,9 @@ namespace NECS.GameEngineAPI
         private void DeferredInit(string name)
         {
             isInit = true;
-            this.Start();
             if(enabled)
             {
+                this.Start();
                 this.isEnabled = false;
                 this.enabled = true;
             }
