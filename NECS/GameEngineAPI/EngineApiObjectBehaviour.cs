@@ -774,6 +774,11 @@ namespace NECS.GameEngineAPI
             throw new NotImplementedException();
         }
 
+        public void FixedUpdate(float delta)
+        {
+            throw new NotImplementedException();
+        }
+
         public virtual EngineApiObjectBehaviour GetComponent(string type)
         {
             throw new NotImplementedException();
@@ -895,6 +900,11 @@ namespace NECS.GameEngineAPI
         }
 
         public virtual void LateUpdate()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void LateUpdate(float delta)
         {
             throw new NotImplementedException();
         }
@@ -1067,7 +1077,10 @@ namespace NECS.GameEngineAPI
             throw new NotImplementedException();
         }
 
-        
+        public void Update(float delta)
+        {
+            throw new NotImplementedException();
+        }
     }
 #endif
     public

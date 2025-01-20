@@ -1,4 +1,14 @@
-﻿#if GODOT && !GODOT4_0_OR_GREATER
+﻿#if NET || UNITY
+public static class GodotExtensionsMock
+{
+    public static string FixPath(this string path)
+    {
+        return path;
+    }
+}
+#endif
+
+#if GODOT && !GODOT4_0_OR_GREATER
 using Godot;
 using System;
 using System.Collections.Generic;
