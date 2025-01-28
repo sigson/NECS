@@ -25,6 +25,8 @@ namespace NECS.ECS.ECSCore
         [System.NonSerialized]
         public ECSEntity ownerEntity;
         [System.NonSerialized]
+        public DBComponent ownerDB;
+        [System.NonSerialized]
         public ReaderWriterLockSlim locker = new ReaderWriterLockSlim();
 
         [System.NonSerialized]

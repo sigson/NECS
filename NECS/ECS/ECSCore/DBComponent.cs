@@ -92,6 +92,7 @@ namespace NECS.ECS.ECSCore
                     if (components == null)
                         components = new Dictionary<long, (ECSComponent, ComponentState)>();
                     component.ownerEntity = ownerComponent;
+                    component.ownerDB = this;
                     components[component.instanceId] = (component, ComponentState.Created);
                     DB[ownerComponent.instanceId] = components;
                     ComponentOwners[component.instanceId] = ownerComponent.instanceId;
@@ -121,6 +122,7 @@ namespace NECS.ECS.ECSCore
                         lock (ownerEntity.entityComponents.serializationLocker)
                         {
                             component.ownerEntity = ownerComponent;
+                            component.ownerDB = this;
                             components[component.instanceId] = (component, ComponentState.Created);
                             ComponentOwners[component.instanceId] = ownerComponent.instanceId;
                             ChangedComponents[component.instanceId] = 1;
@@ -388,6 +390,7 @@ namespace NECS.ECS.ECSCore
                             serializedComp.TryGetValue(ownerId, out components);
                             if (components == null)
                                 components = new List<dbRow>();
+                            component.Item1.EnterToSerialization();
                             components.Add(new dbRow()
                             {
                                 component = component.Item1,
@@ -415,6 +418,7 @@ namespace NECS.ECS.ECSCore
                         for (int i = 0; i < entityRowValues.Count; i++)
                         {
                             var ecsComponent = entityRowValues[i];
+                            ecsComponent.Item1.EnterToSerialization();
                             components.Add(new dbRow()
                             {
                                 component = ecsComponent.Item1,
@@ -474,11 +478,13 @@ namespace NECS.ECS.ECSCore
                             var unserComp = (ECSComponent)ReflectionCopy.MakeReverseShallowCopy(component.component);
                             component.componentInstanceId = unserComp.instanceId;
                             unserComp.ownerEntity = entityOwner;
+                            unserComp.ownerDB = this;
                             if (!components.ContainsKey(unserComp.instanceId))
                             {
                                 unserComp.componentManagers.ownerComponent = unserComp;
                                 components[unserComp.instanceId] = (unserComp, component.componentState);
                                 ComponentOwners[unserComp.instanceId] = entityOwner.instanceId;
+                                unserComp.AfterDeserialization();
                                 if (component.componentState != ComponentState.Created)
                                 {
                                     unserComp.OnAdded(unserComp.ownerEntity);
@@ -489,6 +495,7 @@ namespace NECS.ECS.ECSCore
                                 unserComp.componentManagers = components[unserComp.instanceId].Item1.componentManagers;
                                 components[unserComp.instanceId] = (unserComp, component.componentState);
                                 unserComp.componentManagers.ForEach(x => x.Value.ConnectPoint = unserComp);
+                                unserComp.AfterDeserialization();
                             }
                             ChangedComponents[unserComp.instanceId] = 1;
                         }

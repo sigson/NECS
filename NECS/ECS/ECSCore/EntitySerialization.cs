@@ -24,6 +24,7 @@ namespace NECS.ECS.ECSCore
     {
         #region setupData
         public static ConcurrentDictionary<long, Type> TypeStorage = new ConcurrentDictionary<long, Type>();
+        public static ConcurrentDictionary<string, Type> TypeStringStorage = new ConcurrentDictionary<string, Type>();
         public static ConcurrentDictionary<Type, long> TypeIdStorage = new ConcurrentDictionary<Type, long>();
 
         public static void InitSerialize()
@@ -35,6 +36,7 @@ namespace NECS.ECS.ECSCore
             {
                 TypeStorage[x.GetId()] = x.GetType();
                 TypeIdStorage[x.GetType()] = x.GetId();
+                TypeStringStorage[x.GetType().Name] = x.GetType();
             });
 
             ecsObjects.Add(typeof(SerializedEntity));
@@ -118,7 +120,7 @@ namespace NECS.ECS.ECSCore
         private static byte[] FullSerialize(ECSEntity entity, bool serializeOnlyChanged = false)
         {
             var resultObject = new SerializedEntity();
-
+            entity.EnterToSerialization();
             resultObject.Entity = SerializationAdapter.SerializeECSEntity(entity);
             resultObject.Components = entity.entityComponents.SerializeStorage(serializeOnlyChanged, true);
 
@@ -150,6 +152,7 @@ namespace NECS.ECS.ECSCore
 
             lock (entity.entityComponents.serializationLocker)//wtf double locking is work
             {
+                entity.EnterToSerialization();
                 resultObject.Entity = SerializationAdapter.SerializeECSEntity(entity);
                 resultObject.Components = entity.entityComponents.SlicedSerializeStorage(serializeOnlyChanged, clearChanged);
 
@@ -325,6 +328,9 @@ namespace NECS.ECS.ECSCore
             storage = bufEntity.desEntity.entityComponents;
             storage.DeserializeStorage(bufEntity.Components);
             storage.RestoreComponentsAfterSerialization(bufEntity.desEntity);
+            bufEntity.desEntity.AddComponentSilent(new EntityManagersComponent());
+            bufEntity.desEntity.fastEntityComponentsId = new Dictionary<long, int>(bufEntity.desEntity.entityComponents.Components.ToDictionary(k => k.instanceId, t => 0));
+            bufEntity.desEntity.AfterDeserialization();
             return bufEntity.desEntity;
         }
         /// <summary>
@@ -360,6 +366,7 @@ namespace NECS.ECS.ECSCore
                     storage.RestoreComponentsAfterSerialization(entity);
                     entity.AddComponentSilent(new EntityManagersComponent());
                     entity.fastEntityComponentsId = new Dictionary<long, int>(entity.entityComponents.Components.ToDictionary(k => k.instanceId, t => 0));
+                    entity.AfterDeserialization();
                     ManagerScope.instance.entityManager.OnAddNewEntity(entity);
                     return;
                 }
@@ -387,6 +394,7 @@ namespace NECS.ECS.ECSCore
                         TaskEx.RunAsync(() => (entity.GetComponent<DBComponent>(tComponent.GetId())).UnserializeDB());
                     tComponent.AfterDeserialization();
                 }
+                entity.AfterDeserialization();
                 entity.entityComponents.RegisterAllComponents();
             }
         }
