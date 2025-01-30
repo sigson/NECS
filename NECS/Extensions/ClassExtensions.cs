@@ -205,6 +205,40 @@ namespace NECS
         //}
     }
 
+    public class RWLock : IDisposable
+    {
+        public struct WriteLockToken : IDisposable
+        {
+            private readonly ReaderWriterLockSlim lockobj;
+            public WriteLockToken(ReaderWriterLockSlim @lock)
+            {
+                this.lockobj = @lock;
+                if(!this.lockobj.IsWriteLockHeld)
+                    lockobj.EnterWriteLock();
+            }
+            public void Dispose() => lockobj.ExitWriteLock();
+        }
+
+        public struct ReadLockToken : IDisposable
+        {
+            private readonly ReaderWriterLockSlim lockobj;
+            public ReadLockToken(ReaderWriterLockSlim @lock)
+            {
+                this.lockobj = @lock;
+                if(!this.lockobj.IsReadLockHeld)
+                    lockobj.EnterReadLock();
+            }
+            public void Dispose() => lockobj.ExitReadLock();
+        }
+
+        private readonly ReaderWriterLockSlim lockobj = new ReaderWriterLockSlim();
+
+        public ReadLockToken ReadLock() => new ReadLockToken(lockobj);
+        public WriteLockToken WriteLock() => new WriteLockToken(lockobj);
+
+        public void Dispose() => lockobj.Dispose();
+    }
+
 #if UNITY_5_3_OR_NEWER
     public static class Lambda
     {

@@ -150,7 +150,7 @@ namespace NECS.ECS.ECSCore
         {
             var resultObject = new SerializedEntity();
 
-            lock (entity.entityComponents.serializationLocker)//wtf double locking is work
+            using(entity.entityComponents.StabilizationLocker.ReadLock())//lock (entity.entityComponents.serializationLocker)//wtf double locking is work
             {
                 entity.EnterToSerialization();
                 resultObject.Entity = SerializationAdapter.SerializeECSEntity(entity);
@@ -422,7 +422,7 @@ namespace NECS.ECS.ECSCore
             string result;
             string strEntity;
             
-            lock(entity.entityComponents.serializationLocker)//wtf double locking is work
+            using(entity.entityComponents.StabilizationLocker.ReadLock())//lock(entity.entityComponents.serializationLocker)//wtf double locking is work
             {
                 var strComponents = entity.entityComponents.SlicedSerializeStorageJSON(GlobalCachingSerialization.cachingSerializer, serializeOnlyChanged, clearChanged);
                 using (StringWriter writer = new StringWriter())

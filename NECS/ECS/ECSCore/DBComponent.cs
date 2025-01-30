@@ -84,7 +84,7 @@ namespace NECS.ECS.ECSCore
         {
             Dictionary<long, (ECSComponent, ComponentState)> components = new Dictionary<long, (ECSComponent, ComponentState)>();
             ECSComponent addedComponent = null;
-            lock (ownerEntity.entityComponents.serializationLocker)
+            using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())//lock (ownerEntity.entityComponents.serializationLocker)
             {
                 lock (this.locker)
                 {
@@ -106,7 +106,7 @@ namespace NECS.ECS.ECSCore
         {
             Dictionary<long, (ECSComponent, ComponentState)> components = new Dictionary<long, (ECSComponent, ComponentState)>();
             bool change = false;
-            lock (ownerEntity.entityComponents.serializationLocker)
+            using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())//lock (ownerEntity.entityComponents.serializationLocker)
             {
                 lock (this.locker)
                 {
@@ -119,7 +119,7 @@ namespace NECS.ECS.ECSCore
                     }
                     else
                     {
-                        lock (ownerEntity.entityComponents.serializationLocker)
+                        //lock (ownerEntity.entityComponents.serializationLocker)
                         {
                             component.ownerEntity = ownerComponent;
                             component.ownerDB = this;
@@ -241,7 +241,7 @@ namespace NECS.ECS.ECSCore
                 NLogger.LogError("error change component from db");
                 return;
             }
-            lock (ownerEntity.entityComponents.serializationLocker)
+            using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())//lock (ownerEntity.entityComponents.serializationLocker)
             {
                 lock (this.locker)
                 {
@@ -273,7 +273,7 @@ namespace NECS.ECS.ECSCore
                 return;
             }
             ECSComponent removedComponent = null;
-            lock (ownerEntity.entityComponents.serializationLocker)
+            using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())//lock (ownerEntity.entityComponents.serializationLocker)
             {
                 lock (this.locker)
                 {
@@ -327,7 +327,7 @@ namespace NECS.ECS.ECSCore
         public virtual void RemoveComponentsByType(List<long> componentTypeId, List<ECSEntity> ownerComponent = null)
         {
             List<ECSComponent> removedComponents = new List<ECSComponent>();
-            lock (ownerEntity.entityComponents.serializationLocker)
+            using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())//lock (ownerEntity.entityComponents.serializationLocker)
             {
                 lock (this.locker)
                 {
