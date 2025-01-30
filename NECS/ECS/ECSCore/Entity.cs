@@ -209,6 +209,10 @@ namespace NECS.ECS.ECSCore
             }
         }
 
+        public void ExclusiveLockedOperation(Action operation) => this.entityComponents.ExclusiveLockedOperation(operation);
+
+        public void ReadLockedOperation(Action operation) => this.entityComponents.ReadLockedOperation(operation);
+
         public void AddComponentSilent(ECSComponent component)
         {
             this.AddComponentImpl(component, false);

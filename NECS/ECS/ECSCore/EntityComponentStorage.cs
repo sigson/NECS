@@ -446,7 +446,21 @@ namespace NECS.ECS.ECSCore
             addedComponents.ForEach<ECSComponent>(component => this.AddComponentImmediately(component.GetTypeFast(), component));
         }
 
-        //public void LockedOperation
+        public void ExclusiveLockedOperation(Action operation)
+        {
+            using(this.StabilizationLocker.WriteLock())
+            {
+                operation();
+            }
+        }
+
+        public void ReadLockedOperation(Action operation)
+        {
+            using(this.StabilizationLocker.ReadLock())
+            {
+                operation();
+            }
+        }
 
         public void MarkComponentChanged(ECSComponent component, bool serializationSilent = false, bool eventSilent = false)
         {
