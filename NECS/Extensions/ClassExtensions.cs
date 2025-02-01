@@ -236,6 +236,22 @@ namespace NECS
         public ReadLockToken ReadLock() => new ReadLockToken(lockobj);
         public WriteLockToken WriteLock() => new WriteLockToken(lockobj);
 
+        public void ExecuteReadLocked(Action action)
+        {
+            using (this.ReadLock())
+            {
+                action();
+            }
+        }
+
+        public void ExecuteWriteLocked(Action action)
+        {
+            using (this.WriteLock())
+            {
+                action();
+            }
+        }
+
         public void Dispose() => lockobj.Dispose();
     }
 

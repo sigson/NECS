@@ -40,6 +40,9 @@ namespace NECS.ECS.ECSCore
         public long ownerECSObjectId;
 
         [System.NonSerialized]
+        RWLock NodeLock = new RWLock();
+
+        [System.NonSerialized]
         private IECSObject ownerECSObjectStorage = null;
         public IECSObject ownerECSObject {
             get{
@@ -91,26 +94,35 @@ namespace NECS.ECS.ECSCore
             return true;
         }
 
-        public void AddChildObject(long key, IECSObject value, bool updateOwner = true)
+        public void AddChildObject(IECSObject value, bool updateOwner = true)
         {
-            lock(childECSObjects)
+            bool isChanged = false;
+            using(NodeLock.WriteLock())
             {
-                if(childECSObjects.ContainsKey(key))
+                if(childECSObjects.ContainsKey(value.instanceId))
                 {
-                    NLogger.Error($"IECSObject '{instanceId}: {this.GetType().Name}': childECSObjects.ContainsKey({key} - {value.GetType().Name})");
+                    NLogger.Error($"IECSObject '{instanceId}: {this.GetType().Name}': childECSObjects.ContainsKey({value.instanceId} - {value.GetType().Name})");
                 }
                 else
                 {
-                    childECSObjects[key] = value;
+                    childECSObjects[value.instanceId] = value;
                     if(updateOwner)
                         value.ownerECSObject = this;
-                    OnAddChildObject(key, value);
+                    isChanged = true;
                     ChangesState = IECSObjectSerializedStateMode.Changed;
                 }
             }
+            NodeLock.ExecuteReadLocked(() =>
+            {
+                if(childECSObjects.ContainsKey(value.instanceId))
+                {
+                    if(isChanged)
+                        OnAddChildObject(value);
+                }
+            });
         }
 
-        protected virtual void OnAddChildObject(long key, IECSObject value)
+        protected virtual void OnAddChildObject(IECSObject value)
         {
             
         }
@@ -129,14 +141,14 @@ namespace NECS.ECS.ECSCore
                 {
                     if(updateOwner)
                         removed.ownerECSObject = null;
-                    OnRemoveChildObject(key, removed);
+                    OnRemoveChildObject(removed);
                 }
                 ChangesState = IECSObjectSerializedStateMode.Changed;
             }
             return result;
         }
 
-        protected virtual void OnRemoveChildObject(long key, IECSObject value)
+        protected virtual void OnRemoveChildObject(IECSObject value)
         {
             
         }
@@ -186,7 +198,7 @@ namespace NECS.ECS.ECSCore
                 newchildECSObjects[entry.Key] = entry.Value.ECSObject;
                 if(entry.Value.ECSObject != null)
                 {
-                    this.AddChildObject(entry.Key, entry.Value.ECSObject);
+                    this.AddChildObject(entry.Value.ECSObject);
                 }
             }
             foreach(var entry in childECSObjects)

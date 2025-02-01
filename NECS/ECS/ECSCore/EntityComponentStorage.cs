@@ -413,11 +413,16 @@ namespace NECS.ECS.ECSCore
             {
                 if (!silent)
                 {
-                    component.Unregistered = false;
-                    component.OnAdded(this.entity);
+                    StabilizationLocker.ExecuteReadLocked(() =>
+                    {
+                        if(this.HasComponent(component.GetTypeFast()))
+                        {
+                            component.Unregistered = false;
+                            component.OnAdded(this.entity);
+                        }
+                    });
                 }
             }
-            
         }
 
         public void RegisterAllComponents()
@@ -483,7 +488,11 @@ namespace NECS.ECS.ECSCore
             {
                 TaskEx.RunAsync(() =>
                 {
-                    component.RunOnChangeCallbacks(this.entity);
+                    StabilizationLocker.ExecuteReadLocked(() =>
+                    {
+                        if(this.HasComponent(component.GetTypeFast()))
+                            component.RunOnChangeCallbacks(this.entity);
+                    });
                 });
             }
         }
