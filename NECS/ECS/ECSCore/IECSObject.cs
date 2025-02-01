@@ -15,6 +15,7 @@ using System.Linq;
 using System.IO;
 
 using System.Threading.Tasks;
+using NECS.ECS.Types.AtomicType;
 
 namespace NECS.ECS.ECSCore
 {
@@ -55,7 +56,7 @@ namespace NECS.ECS.ECSCore
         /// <summary>
         /// serialization container where dictionary key is child ECSObject instanceId and value is array of id path with types to real IECSObject, example idlong;cmp / idlong;ent where cmp - component, ent - entity
         /// </summary>
-        public Dictionary<long, List<string>> childECSObjectsId = new Dictionary<long, List<string>>();
+        public Dictionary<long, IECSObjectPathContainer> childECSObjectsId = new Dictionary<long, IECSObjectPathContainer>();
 
         private ConcurrentDictionary<long, IECSObject> childECSObjects = new ConcurrentDictionary<long, IECSObject>();
         
@@ -167,29 +168,7 @@ namespace NECS.ECS.ECSCore
                 childECSObjectsId.Clear();
                 foreach (var childpair in childECSObjects)
                 {
-                    var pathStorage = new List<string>();
-                    var child = childpair.Value;
-                    childECSObjectsId[childpair.Key] = pathStorage;
-                    if(child is ECSEntity)
-                    {
-                        pathStorage.Add($"{child.instanceId};ent");
-                    }
-                    if(child is ECSComponent)
-                    {
-                        var compChild = (ECSComponent)child;
-                        if(compChild.ownerDB != null)
-                        {
-                            pathStorage.Add($"{child.instanceId};cmp");
-                            pathStorage.Add($"{compChild.ownerDB.instanceId};cmp");
-                            pathStorage.Add($"{compChild.ownerDB.ownerEntity.instanceId};ent");
-                        }
-                        else
-                        {
-                            pathStorage.Add($"{child.instanceId};cmp");
-                            pathStorage.Add($"{compChild.ownerEntity.instanceId};ent");
-                        }
-                        pathStorage.Reverse();
-                    }
+                    childECSObjectsId[childpair.Key] = new IECSObjectPathContainer(){ECSObject = childpair.Value};
                 }
                 ChangesState = IECSObjectSerializedStateMode.Freezed;
                 HasChildChanges = true;
@@ -200,46 +179,14 @@ namespace NECS.ECS.ECSCore
         {
             var newchildECSObjects = new ConcurrentDictionary<long, IECSObject>();
             foreach (var entry in childECSObjectsId)
-            {
-                var pathList = entry.Value;
-                IECSObject currentObject = null;
+            {   
                 if(childECSObjects.ContainsKey(entry.Key))
                     continue;
-
-                foreach (var pathelement in pathList)
+                
+                newchildECSObjects[entry.Key] = entry.Value.ECSObject;
+                if(entry.Value.ECSObject != null)
                 {
-                    var pathParts = pathelement.Split(';');
-                    var instanceId = long.Parse(pathParts[0]);
-                    var objectType = pathParts[1];
-
-                    if (objectType == "ent")
-                    {
-                        currentObject = ManagerScope.instance.entityManager.EntityStorage[instanceId];
-                    }
-                    else if (objectType == "cmp")
-                    {
-                        if (currentObject == null)
-                        {
-                            NLogger.Error($"Something went wrong during deserialization of IECSObject '{instanceId}: {this.GetType().Name}': currentObject == null && objectType == 'cmp'");
-                        }
-                        else if (currentObject is ECSEntity owentity)
-                        {
-                            currentObject = owentity.GetComponent(instanceId);
-                        }
-                        else if (currentObject is ComponentsDBComponent dbowner)
-                        {
-                            currentObject = dbowner.GetComponent(instanceId).Item1;
-                        }
-                        else
-                        {
-                            NLogger.Error($"Something went wrong during deserialization of IECSObject '{instanceId}: {this.GetType().Name}': objectType == 'cmp' && objectType != ComponentsDBComponent");
-                        }
-                    }
-                }
-                newchildECSObjects[entry.Key] = currentObject;
-                if(currentObject != null)
-                {
-                    this.AddChildObject(entry.Key, currentObject);
+                    this.AddChildObject(entry.Key, entry.Value.ECSObject);
                 }
             }
             foreach(var entry in childECSObjects)
