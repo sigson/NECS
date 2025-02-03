@@ -301,7 +301,10 @@ namespace NECS.ECS.ECSCore
                 }
             }
             if(removedComponent != null)
+            {
                 removedComponent.OnRemoving(removedComponent.ownerEntity);
+                removedComponent.IECSDispose();
+            }
         }
         public virtual void RemoveComponent(params long[] componentsId)
         {
@@ -365,7 +368,10 @@ namespace NECS.ECS.ECSCore
                     }
                 }
             }
-            removedComponents.ForEach(x => x.OnRemoving(x.ownerEntity));
+            removedComponents.ForEach(x => {
+                x.OnRemoving(x.ownerEntity);
+                x.IECSDispose();
+            });
         }
         #endregion
 
@@ -452,6 +458,7 @@ namespace NECS.ECS.ECSCore
                         {
                             ecsComponent.Item1.OnRemoving(ecsComponent.Item1.ownerEntity);
                             ownerList.Remove(ecsComponent.Item1.instanceId);
+                            ecsComponent.Item1.IECSDispose();
                             //i--;
                         }
                     }
@@ -538,7 +545,8 @@ namespace NECS.ECS.ECSCore
                     {
                         ecsComponent.Item1.OnRemoving(ecsComponent.Item1.ownerEntity);
                         ownerList.Remove(ecsComponent.Item1.instanceId);
-						ComponentOwners.Remove(ecsComponent.Item1.instanceId);
+			            ComponentOwners.Remove(ecsComponent.Item1.instanceId);
+                        ecsComponent.Item1.IECSDispose();
                         //i--;
                     }
                 }

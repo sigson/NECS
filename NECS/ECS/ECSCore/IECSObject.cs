@@ -41,6 +41,8 @@ namespace NECS.ECS.ECSCore
 
         [System.NonSerialized]
         RWLock NodeLock = new RWLock();
+        [System.NonSerialized]
+        public bool ChildDispose = false; //for db component may be true
 
         [System.NonSerialized]
         private IECSObject ownerECSObjectStorage = null;
@@ -166,6 +168,22 @@ namespace NECS.ECS.ECSCore
         public bool TryGetChildObject(long key, out IECSObject value)
         {
             return childECSObjects.TryGetValue(key, out value);
+        }
+
+        public void IECSDispose()
+        {
+            if(ChildDispose)
+            {
+                foreach (var childpair in childECSObjects)
+                {
+                    childpair.Value.ChainedIECSDispose();
+                }
+            }
+        }
+
+        public virtual void ChainedIECSDispose()
+        {
+            
         }
 
         private void SerializationProcess()

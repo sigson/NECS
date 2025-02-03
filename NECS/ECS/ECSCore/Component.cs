@@ -136,6 +136,22 @@ namespace NECS.ECS.ECSCore
 
         }
 
+        public override void ChainedIECSDispose()
+        {
+            base.ChainedIECSDispose();
+            if(this.ownerEntity != null)
+            {
+                if(this.ownerDB != null)
+                {
+                    this.ownerDB.RemoveComponent(this.instanceId);
+                }
+                else
+                {
+                    this.ownerEntity.RemoveComponent(this.GetTypeFast());
+                }
+            }
+        }
+
         public void OnRemove()
         {
             ConfigPath.Clear();

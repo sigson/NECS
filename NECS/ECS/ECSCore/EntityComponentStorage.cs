@@ -425,13 +425,16 @@ namespace NECS.ECS.ECSCore
             }
         }
 
-        public void RegisterAllComponents()
+        public void RegisterAllComponents(bool previous_changed = true)
         {
-            foreach(var component in components)
+            if(previous_changed)
             {
-                if(component.Value.Unregistered)
+                foreach(var component in components)
                 {
-                    component.Value.MarkAsChanged(false, true);
+                    if(component.Value.Unregistered)
+                    {
+                        component.Value.MarkAsChanged(false, true);
+                    }
                 }
             }
             foreach (var component in components)
@@ -638,7 +641,10 @@ namespace NECS.ECS.ECSCore
             toRemoveComponent.ForEach((removedComponent) =>
             {
                 if(!notRemovedComponent.Contains(removedComponent))
+                {
                     removedComponent.OnRemoving(this.entity);
+                    removedComponent.IECSDispose();
+                }
             });
         }
 
@@ -732,6 +738,7 @@ namespace NECS.ECS.ECSCore
             else
             {
                 component2.OnRemoving(this.entity);
+                component2.IECSDispose();
             }
             return component2;
         }
