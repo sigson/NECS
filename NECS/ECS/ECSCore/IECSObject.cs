@@ -60,7 +60,7 @@ namespace NECS.ECS.ECSCore
         /// serialization container where dictionary key is child ECSObject instanceId and value is array of id path with types to real IECSObject, example idlong;cmp / idlong;ent where cmp - component, ent - entity
         /// </summary>
         public Dictionary<long, IECSObjectPathContainer> childECSObjectsId = new Dictionary<long, IECSObjectPathContainer>();
-
+        [System.NonSerialized]
         private ConcurrentDictionary<long, IECSObject> childECSObjects = new ConcurrentDictionary<long, IECSObject>();
         
         protected virtual void OnUpdateOwner(IECSObject newOwner)

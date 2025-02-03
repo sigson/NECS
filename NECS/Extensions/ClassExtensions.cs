@@ -173,6 +173,20 @@ namespace NECS
 
     public static class ClassEx
     {
+		public static float NextFloat(this Random random, float startFloat, float endFloat)
+		{
+			if (startFloat >= endFloat)
+			{
+				throw new ArgumentException("startFloat must be less than endFloat");
+			}
+
+			// Генерация случайного числа в диапазоне [0, 1)
+			float randomValue = (float)random.NextDouble();
+
+			// Масштабирование и смещение для получения числа в диапазоне [startFloat, endFloat)
+			return startFloat + randomValue * (endFloat - startFloat);
+		}
+		
         public static string RandomString(this Random random, int countSymbols)
         {
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";

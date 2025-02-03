@@ -13,5 +13,6 @@ namespace NECS.ECS.Types.AtomicType
     {
         public Vector3S Position = new Vector3S();
         public Vector3S Rotation = new Vector3S();
+        public WorldPoint2D Get2D() => new WorldPoint2D(){Position = new Vector2S(Position.x, Position.y), Rotation = Rotation};
     }
 }
