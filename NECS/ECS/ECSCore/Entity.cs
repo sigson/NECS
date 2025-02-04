@@ -113,8 +113,9 @@ namespace NECS.ECS.ECSCore
         {
             foreach(var component in components)
             {
-                this.AddComponentImpl(component, true);
+                this.AddComponentImpl(component, false);
             }
+            entityComponents.RegisterAllComponents(false);
         }
 
         public void AddComponentsSilent(IEnumerable<ECSComponent> components)
@@ -230,6 +231,22 @@ namespace NECS.ECS.ECSCore
         {
             bool flag = this.HasComponent(component.GetTypeFast()) && this.GetComponent(component.GetTypeFast()).Equals(component);
             this.entityComponents.ChangeComponent(component, true);
+        }
+
+        public void HasComponentLockedAction<T>(Action action) where T : ECSComponent
+        {
+            HasComponentLockedAction(typeof(T), action);
+        }
+
+        public void HasComponentLockedAction(Type type, Action action)
+        {
+            using (entityComponents.StabilizationLocker.ReadLock())
+            {
+                if( this.HasComponent(type))
+                {
+                    action();
+                }
+            }
         }
 
         public int CompareTo(ECSEntity other) =>

@@ -178,6 +178,15 @@ namespace NECS.ECS.ECSCore
                 {
                     childpair.Value.ChainedIECSDispose();
                 }
+                ClearChildObjects();
+            }
+            else
+            {
+                foreach (var childpair in childECSObjects)
+                {
+                    childpair.Value.ownerECSObject = this.ownerECSObject;
+                }
+                ClearChildObjects();
             }
         }
 
