@@ -17,20 +17,23 @@ using System.IO;
 
 namespace NECS.ECS.ECSCore
 {
-    public abstract class ECSSystem
+    public class ECSExecutableContractContainer
     {
         public long Id { get; set; }
         [System.NonSerialized]
         public Type SystemType;
-        public bool Syncronizable { get; set; } = false;
-        public bool Enabled { get; set; }
+        public IDictionary<long, Func<ECSEntity, bool>> ContractConditions { get; set; } = new ConcurrentDictionary<long, Func<ECSEntity, bool>>();
+
+        public Action<ECSEntity[]> ContractExecutable { get; set; }
+
+        public bool TimeDependExecution { get; set; } = false;
+        public bool TimeDependActive { get; set; } = true;
         public bool InWork { get; set; }
         public long LastEndExecutionTimestamp { get; set; }
         public long DelayRunMilliseconds { get; set; }
-        /// <summary>
-        /// Ignore all SystemEventHandler events. Need setup in Initalize method
-        /// </summary>
-        public bool EventIgnoring { get; set; }
+
+        private bool ContractExecuted { get; set; } = false;
+        private object ContractLocker { get; set; } = new object();
 
         /// <summary>
         /// Need to setup in initalize method. Setting up look like is:
@@ -55,33 +58,56 @@ namespace NECS.ECS.ECSCore
         /// Methor running before ECS system initialliation
         /// </summary>
         /// <param name="SystemManager"></param>
-        public abstract void Initialize(ECSSystemManager SystemManager);
+        public virtual void Initialize()
+        {
+
+        }
+
+        public bool TryExecuteContract(List<ECSEntity> contractEntities)
+        {
+            lock (ContractLocker)
+            {
+                if (!ContractExecuted)
+                {
+                    var LockedPoints = new List<NECS.RWLock.WriteLockToken>();
+                    foreach (var entity in contractEntities)
+                    {
+                        foreach (var condition in ContractConditions)
+                        {
+                            if (condition.Value(entity))
+                            {
+                                LockedPoints.Add(entity.entityComponents.StabilizationLocker.WriteLock());
+                            }
+                        }
+                    }
+                    if (LockedPoints.Count == contractEntities.Count)
+                    {
+                        ContractExecutable(contractEntities.ToArray());
+                        LockedPoints.ForEach(locker => locker.Dispose());
+                        return true;
+                    }
+                    else
+                    {
+                        LockedPoints.ForEach(locker => locker.Dispose());
+                        return false;
+                    }
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+
         /// <summary>
         /// Method running every ECS tick
         /// </summary>
         /// <param name="entities"></param>
-        public abstract void Run(long[] entities);
-
-        //public abstract void Operation(ECSEntity entity, ECSComponent Component);//obsolete shit
-
-        public virtual bool HasInterest(ECSEntity entity)//obsolete check is system interested
+        public virtual void Run(long[] entities)
         {
-            var thisSystemInterest = this.GetInterestedComponentsList();
-            foreach (var interestComponent in thisSystemInterest)
-            {
-                if (entity.HasComponent(interestComponent.Key))
-                    return true;
-            }
-            return false;
+
         }
 
-        //public abstract bool UpdateInterestedList(List<long> ComponentsId);//obsolete and not needed
-
-        /// <summary>
-        /// Return system interested components dictionary <StaticIDComponent, randomint>
-        /// </summary>
-        /// <returns></returns>
-        public abstract IDictionary<long, int> GetInterestedComponentsList();
         /// <summary>
         /// Return system events components dictionary <StaticIDEvent, randomint>
         /// </summary>
@@ -99,15 +125,6 @@ namespace NECS.ECS.ECSCore
         protected void RegisterEventHandler(long eventId)
         {
             ManagerScope.instance.eventManager.UpdateSystemHandlers(eventId, this.SystemEventHandler[eventId]);
-        }
-
-        public Type GetTypeFast()
-        {
-            if (SystemType == null)
-            {
-                SystemType = GetType();
-            }
-            return SystemType;
         }
     }
 }

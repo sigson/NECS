@@ -21,7 +21,7 @@ namespace NECS.ECS.ECSCore
 
         };//allowed events going from internet
 
-        public ConcurrentDictionaryEx<long, ConcurrentDictionaryEx<ECSSystem, List<Func<ECSEvent, object>>>> SystemHandlers = new ConcurrentDictionaryEx<long, ConcurrentDictionaryEx<ECSSystem, List<Func<ECSEvent, object>>>>();
+        public ConcurrentDictionaryEx<long, ConcurrentDictionaryEx<ECSExecutableContractContainer, List<Func<ECSEvent, object>>>> SystemHandlers = new ConcurrentDictionaryEx<long, ConcurrentDictionaryEx<ECSExecutableContractContainer, List<Func<ECSEvent, object>>>>();
         public ConcurrentDictionaryEx<long, ECSEvent> EventBus = new ConcurrentDictionaryEx<long, ECSEvent>();
         public Dictionary<long, Type> EventSerializationCache = new Dictionary<long, Type>();
 
@@ -56,14 +56,14 @@ namespace NECS.ECS.ECSCore
         {
             var AllEvents = ECSAssemblyExtensions.GetAllSubclassOf(typeof(ECSEvent)).Select(x => (ECSEvent)Activator.CreateInstance(x));
             
-            foreach (ECSSystem system in ManagerScope.instance.systemManager.InterestedIDECSComponentsDatabase.Keys.ToList())
+            foreach (ECSExecutableContractContainer system in ManagerScope.instance.systemManager.InterestedIDECSComponentsDatabase.Keys.ToList())
             {
                 var SystemInterest = system.GetInterestedEventsList();
                 foreach (var Event in AllEvents)
                 {
                     if(SystemInterest.Keys.Contains(Event.GetId()))
                     {
-                        ConcurrentDictionaryEx<ECSSystem, List<Func<ECSEvent, object>>> NewDictionary;
+                        ConcurrentDictionaryEx<ECSExecutableContractContainer, List<Func<ECSEvent, object>>> NewDictionary;
                         if(SystemHandlers.TryGetValue(Event.GetId(), out NewDictionary))
                         {
                             List<Func<ECSEvent, object>> outfunc;
@@ -72,7 +72,7 @@ namespace NECS.ECS.ECSCore
                         }
                         else
                         {
-                            NewDictionary = new ConcurrentDictionaryEx<ECSSystem, List<Func<ECSEvent, object>>>();
+                            NewDictionary = new ConcurrentDictionaryEx<ECSExecutableContractContainer, List<Func<ECSEvent, object>>>();
                             List<Func<ECSEvent, object>> outfunc;
                             if (system.SystemEventHandler.TryGetValue(Event.GetId(), out outfunc))
                                 NewDictionary.TryAdd(system, outfunc);

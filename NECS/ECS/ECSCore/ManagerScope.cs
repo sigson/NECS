@@ -56,10 +56,10 @@ public
             {
                 while (true)
                 {
-                    systemManager.RunSystems(false);
+                    systemManager.RunTimeDependContracts(false);
                     TaskEx.RunAsync(() =>
                     {
-                        systemManager.RunSystems(true);
+                        systemManager.RunTimeDependContracts(true);
                     });
                     Task.Delay(5).Wait();
                 }
