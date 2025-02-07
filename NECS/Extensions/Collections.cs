@@ -929,16 +929,14 @@ namespace NECS.Extensions
             public RWLock lockValue;
         }
         private readonly ConcurrentDictionary<TKey, LockedValue> dictionary = new ConcurrentDictionary<TKey, LockedValue>();
-        //private readonly ConcurrentDictionary<TKey, RWLock> keyLocks = new ConcurrentDictionary<TKey, RWLock>();
         public bool LockValue = true;
         private readonly RWLock GlobalLocker = new RWLock();
-        private readonly RWLock RemoveChangeLocker = new RWLock();
-        private readonly RWLock RemoveLocker = new RWLock();
-        private RWLock Remlocker => LockValue ? RemoveChangeLocker : RemoveLocker;
 
-        public bool TryAddOrChange(TKey key, TValue value)
+        #region Base functions
+        private bool TryAddOrChange(TKey key, TValue value, out RWLock.LockToken lockToken, bool lockedMode = false)
         {
             var result = false;
+            lockToken = null;
             using (GlobalLocker.ReadLock())
             {
                 RWLock.LockToken token = null;
@@ -948,9 +946,12 @@ namespace NECS.Extensions
                 {
                     if(!dictionary.ContainsKey(key))
                     {
-                        dictionary.TryAdd(key, new LockedValue() { Value = value, lockValue = new RWLock() });
+                        var newLockedValue = new LockedValue() { Value = value, lockValue = new RWLock() };
+                        if(lockedMode) lockToken = LockValue ? newLockedValue.lockValue.WriteLock() : newLockedValue.lockValue.ReadLock();
+                        dictionary.TryAdd(key, newLockedValue);
                         added = true;
                         result = true;
+                        return result;
                     }
                     if (dictionary.TryGetValue(key, out dvalue) && !added)
                     {
@@ -965,19 +966,20 @@ namespace NECS.Extensions
                     if (dictionary.TryGetValue(key, out dvalue))
                     {
                         dvalue.Value = value;
-                        result = true;
+                        result = false;
+                        lockToken = token;
                     }
                     else
                     {
                         result = false;
+                        token.Dispose();
                     }
-                    token.Dispose();
                 }
             }
             return result;
         }
 
-        public bool TryRemove(TKey key, out TValue value)
+        private bool TryRemove(TKey key, out TValue value, Action<TKey, TValue> action = null)
         {
             bool result = false;
             using (GlobalLocker.ReadLock())
@@ -996,6 +998,10 @@ namespace NECS.Extensions
                     LockedValue outValue = null;
                     if (dictionary.TryGetValue(key, out dvalue))
                     {
+                        if(action != null)
+                        {
+                            action(key, dvalue.Value);
+                        }
                         dictionary.Remove(key, out outValue);
                         value = outValue.Value;
                         result = true;
@@ -1016,6 +1022,14 @@ namespace NECS.Extensions
             return result;
         }
 
+        /// <summary>
+        /// IMPORTANT!!! HALT!!! if you will trying to remove or change value on selected key - YOU ENTER TO DEADLOCK!!! USE Async* or Unsafe* operations for this element, and THINK about you doing!
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <param name="lockToken"></param>
+        /// <param name="overrideLockValue"></param>
+        /// <returns></returns>
         public bool TryGetLockedElement(TKey key, out TValue value, out RWLock.LockToken lockToken, bool? overrideLockValue = null)
         {
             RWLock.LockToken token = null;
@@ -1056,6 +1070,127 @@ namespace NECS.Extensions
             lockToken = token;
             return result;
         }
+
+        public void ExecuteOnAddLocked(TKey key, TValue value, Action<TKey,TValue> action)
+        {
+            if(this.TryAddOrChange(key, value, out var lockToken, true) && lockToken != null)
+            {
+                action(key, value);
+                lockToken.Dispose();
+            }
+        }
+
+        public void ExecuteOnChangeLocked(TKey key, TValue value, Action<TKey,TValue> action)
+        {
+            if(!this.TryAddOrChange(key, value, out var lockToken, true) && lockToken != null)
+            {
+                action(key, value);
+                lockToken.Dispose();
+            }
+        }
+
+        public void ExecuteOnRemoveLocked(TKey key, TValue value, Action<TKey,TValue> action)
+        {
+            TryRemove(key, out var outValue, action);
+        }
+
+        public bool ExecuteOnAddChangeLocked(TKey key, TValue value, Action<TKey,TValue> action)
+        {
+            var result = this.TryAddOrChange(key, value, out var lockToken, true);
+            if(lockToken != null)
+            {
+                action(key, value);
+                lockToken.Dispose();
+            }
+            return result;
+        }
+
+        public void ExecuteReadLocked(TKey key, Action<TKey,TValue> action)
+        {
+            if(this.TryGetLockedElement(key, out var value, out var token, false))
+            {
+                action(key, value);
+                token.Dispose();
+            }
+        }
+
+        public void ExecuteWriteLocked(TKey key, Action<TKey,TValue> action)
+        {
+            if(this.TryGetLockedElement(key, out var value, out var token, true))
+            {
+                action(key, value);
+                token.Dispose();
+            }
+        }
+
+        public void Clear()
+        {
+            using (GlobalLocker.WriteLock())
+            {
+                dictionary.Clear();
+            }
+        }
+
+        public IDictionary<TKey, TValue> ClearSnapshot()
+        {
+            IDictionary<TKey, TValue> result = null;
+            using (GlobalLocker.WriteLock())
+            {
+                result = dictionary.ToDictionary(x => x.Key, x => x.Value.Value);
+                dictionary.Clear();
+            }
+            return result;
+        }
+
+        #endregion
+
+        #region Async functions
+        public void AsyncAdd(TKey key, TValue value)
+        {
+            TaskEx.RunAsync(() => this.Add(key, value));
+        }
+
+        public void AsyncRemove(TKey key)
+        {
+            TaskEx.RunAsync(() => this.Remove(key));
+        }
+
+        public void AsyncRemove(KeyValuePair<TKey, TValue> item)
+        {
+            TaskEx.RunAsync(() => this.Remove(item));
+        }
+
+        public void AsyncAdd(KeyValuePair<TKey, TValue> item)
+        {
+            TaskEx.RunAsync(() => this.Add(item));
+        }
+        #endregion
+
+        #region Unsafe functions
+
+        public void UnsafeAdd(TKey key, TValue value)
+        {
+            this.dictionary.TryAdd(key, new LockedValue(){Value = value, lockValue = new RWLock()});
+        }
+
+        public bool UnsafeRemove(TKey key)
+        {
+            return this.dictionary.Remove(key, out _);
+        }
+
+        public bool UnsafeRemove(KeyValuePair<TKey, TValue> item)
+        {
+            return this.dictionary.Remove(item.Key, out _);
+        }
+
+        public void UnsafeAdd(KeyValuePair<TKey, TValue> item)
+        {
+            this.dictionary.TryAdd(item.Key, new LockedValue(){Value = item.Value, lockValue = new RWLock()});
+        }
+
+        #endregion
+
+        #region Default functions
 
         public bool TryGetValue(TKey key, out TValue value)
         {
@@ -1116,37 +1251,13 @@ namespace NECS.Extensions
             }
             set
             {
-                TryAddOrChange(key, value);
-            }
-        }
-
-        public void ExecuteReadLocked(TKey key, Action<TValue> action)
-        {
-            if(this.TryGetLockedElement(key, out var value, out var token, false))
-            {
-                action(value);
-            }
-        }
-
-        public void ExecuteWriteLocked(TKey key, Action<TValue> action)
-        {
-            if(this.TryGetLockedElement(key, out var value, out var token, true))
-            {
-                action(value);
-            }
-        }
-
-        public void Clear()
-        {
-            using (GlobalLocker.ReadLock())
-            {
-                dictionary.Clear();
+                TryAddOrChange(key, value, out _);
             }
         }
 
         public void Add(TKey key, TValue value)
         {
-            this.TryAdd(key, value);
+            this.TryAddOrChange(key, value, out _);
         }
 
         public bool Remove(TKey key)
@@ -1154,9 +1265,14 @@ namespace NECS.Extensions
             return this.TryRemove(key, out _);
         }
 
+        public bool Remove(KeyValuePair<TKey, TValue> item)
+        {
+            return this.TryRemove(item.Key, out _);
+        }
+
         public void Add(KeyValuePair<TKey, TValue> item)
         {
-            this.TryAdd(item.Key, item.Value);
+            this.TryAddOrChange(item.Key, item.Value, out _);
         }
 
         public bool Contains(KeyValuePair<TKey, TValue> item)
@@ -1169,11 +1285,6 @@ namespace NECS.Extensions
             throw new NotImplementedException();
         }
 
-        public bool Remove(KeyValuePair<TKey, TValue> item)
-        {
-            return this.TryRemove(item.Key, out _);
-        }
-
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
             return dictionary.Select(x => new KeyValuePair<TKey, TValue>(x.Key, x.Value.Value)).GetEnumerator();
@@ -1183,6 +1294,8 @@ namespace NECS.Extensions
         {
             return this.GetEnumerator();
         }
+
+        #endregion
     }
 
 
