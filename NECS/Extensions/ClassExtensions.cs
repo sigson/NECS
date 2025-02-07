@@ -221,40 +221,45 @@ namespace NECS
 
     public class RWLock : IDisposable
     {
-        public struct WriteLockToken : IDisposable
+        public abstract class LockToken : IDisposable
+        {
+            public abstract void ExitLock();
+            public void Dispose() => ExitLock();
+        }
+        public class WriteLockToken : LockToken
         {
             private readonly ReaderWriterLockSlim lockobj;
             public WriteLockToken(ReaderWriterLockSlim @lock)
             {
                 this.lockobj = @lock;
-                if(this.lockobj.IsReadLockHeld)
+                if (this.lockobj.IsReadLockHeld)
                 {
-                    if(!Defines.IgnoreNonDangerousExceptions)
+                    if (!Defines.IgnoreNonDangerousExceptions)
                         NLogger.Error("HALT! DEADLOCK ESCAPE! You tried to enter write lock while read lock is held!");
                     return;
                 }
-                if(!this.lockobj.IsWriteLockHeld)
+                if (!this.lockobj.IsWriteLockHeld)
                     lockobj.EnterWriteLock();
             }
-            public void Dispose() => lockobj.ExitWriteLock();
+            override public void ExitLock() => lockobj.ExitWriteLock();
         }
 
-        public struct ReadLockToken : IDisposable
+        public class ReadLockToken : LockToken
         {
             private readonly ReaderWriterLockSlim lockobj;
             public ReadLockToken(ReaderWriterLockSlim @lock)
             {
                 this.lockobj = @lock;
-                if(this.lockobj.IsWriteLockHeld)
+                if (this.lockobj.IsWriteLockHeld)
                 {
-                    if(!Defines.IgnoreNonDangerousExceptions)
+                    if (!Defines.IgnoreNonDangerousExceptions)
                         NLogger.Error("HALT! DEADLOCK ESCAPE! You tried to enter read lock inner write locked thread!");
                     return;
                 }
-                if(!this.lockobj.IsReadLockHeld)
+                if (!this.lockobj.IsReadLockHeld)
                     lockobj.EnterReadLock();
             }
-            public void Dispose() => lockobj.ExitReadLock();
+            override public void ExitLock() => lockobj.ExitReadLock();
         }
 
         private readonly ReaderWriterLockSlim lockobj = new ReaderWriterLockSlim();

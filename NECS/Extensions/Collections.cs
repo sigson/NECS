@@ -376,6 +376,23 @@ namespace NECS.Extensions
             }
         }
 
+        public static bool FirstIntersect<TSource, TNull>(IDictionary<TSource, TNull> first, IEnumerable<TSource> second)
+        {
+            foreach (KeyValuePair<TSource, TNull> element in first)
+            {
+                if (second.Contains(element.Key)) return true;
+            }
+            return false;
+        }
+
+        public static IEnumerable<TSource> IntersectEnum<TSource, TNull>(IDictionary<TSource, TNull> first, IEnumerable<TSource> second)
+        {
+            foreach (KeyValuePair<TSource, TNull> element in first)
+            {
+                if (second.Contains(element.Key)) yield return element.Key;
+            }
+        }
+
         public static bool FirstIntersect<TSource>(HashSet<TSource> first, IEnumerable<TSource> second)
         {
             foreach (TSource element in first)
@@ -903,6 +920,271 @@ namespace NECS.Extensions
             return dictionary.GetEnumerator();
         }
     }
+
+    public class LockedDictionary<TKey, TValue> : IDictionary<TKey, TValue>
+    {
+        public class LockedValue
+        {
+            public TValue Value;
+            public RWLock lockValue;
+        }
+        private readonly ConcurrentDictionary<TKey, LockedValue> dictionary = new ConcurrentDictionary<TKey, LockedValue>();
+        //private readonly ConcurrentDictionary<TKey, RWLock> keyLocks = new ConcurrentDictionary<TKey, RWLock>();
+        public bool LockValue = true;
+        private readonly RWLock GlobalLocker = new RWLock();
+        private readonly RWLock RemoveChangeLocker = new RWLock();
+        private readonly RWLock RemoveLocker = new RWLock();
+        private RWLock Remlocker => LockValue ? RemoveChangeLocker : RemoveLocker;
+
+        public bool TryAddOrChange(TKey key, TValue value)
+        {
+            var result = false;
+            using (GlobalLocker.ReadLock())
+            {
+                RWLock.LockToken token = null;
+                LockedValue dvalue;
+                bool added = false;
+                //using(this.Remlocker.ReadLock())
+                {
+                    if(!dictionary.ContainsKey(key))
+                    {
+                        dictionary.TryAdd(key, new LockedValue() { Value = value, lockValue = new RWLock() });
+                        added = true;
+                        result = true;
+                    }
+                    if (dictionary.TryGetValue(key, out dvalue) && !added)
+                    {
+                        if (LockValue)
+                            token = dvalue.lockValue.WriteLock();
+                        else
+                            token = dvalue.lockValue.ReadLock();
+                    }
+                }
+                if(!added && dvalue != null)
+                {
+                    if (dictionary.TryGetValue(key, out dvalue))
+                    {
+                        dvalue.Value = value;
+                        result = true;
+                    }
+                    else
+                    {
+                        result = false;
+                    }
+                    token.Dispose();
+                }
+            }
+            return result;
+        }
+
+        public bool TryRemove(TKey key, out TValue value)
+        {
+            bool result = false;
+            using (GlobalLocker.ReadLock())
+            {
+                RWLock.LockToken token = null;
+                LockedValue dvalue;
+                //using(this.Remlocker.ReadLock())
+                {
+                    if (dictionary.TryGetValue(key, out dvalue))
+                    {
+                        token = dvalue.lockValue.WriteLock();
+                    }
+                }
+                if(dvalue != null)
+                {
+                    LockedValue outValue = null;
+                    if (dictionary.TryGetValue(key, out dvalue))
+                    {
+                        dictionary.Remove(key, out outValue);
+                        value = outValue.Value;
+                        result = true;
+                    }
+                    else
+                    {
+                        value = default(TValue);
+                        result = false;
+                    }
+                    token.Dispose();
+                }
+                else
+                {
+                    value = default(TValue);
+                    result = false;
+                }
+            }
+            return result;
+        }
+
+        public bool TryGetLockedElement(TKey key, out TValue value, out RWLock.LockToken lockToken, bool? overrideLockValue = null)
+        {
+            RWLock.LockToken token = null;
+            bool result = false;
+            using (GlobalLocker.ReadLock())
+            {
+                LockedValue dvalue;
+                //using(this.Remlocker.ReadLock())
+                {
+                    if (dictionary.TryGetValue(key, out dvalue))
+                    {
+                        if (overrideLockValue != null ? (bool)overrideLockValue : LockValue)
+                            token = dvalue.lockValue.WriteLock();
+                        else
+                            token = dvalue.lockValue.ReadLock();
+                    }
+                }
+                if(dvalue != null)
+                {
+                    if (dictionary.TryGetValue(key, out dvalue))
+                    {
+                        value = dvalue.Value;
+                        result = true;
+                    }
+                    else
+                    {
+                        value = default(TValue);
+                        token.Dispose();
+                        result = false;
+                    }
+                }
+                else
+                {
+                    value = default(TValue);
+                    result = false;
+                }
+            }
+            lockToken = token;
+            return result;
+        }
+
+        public bool TryGetValue(TKey key, out TValue value)
+        {
+            using (GlobalLocker.ReadLock())
+            {
+                if (dictionary.TryGetValue(key, out var keylock))
+                {
+                    value = keylock.Value;
+                    return true;
+                }
+            }
+            value = default(TValue);
+            return false;
+        }
+
+        public bool ContainsKey(TKey key)
+        {
+            using (GlobalLocker.ReadLock())
+            {
+                return dictionary.ContainsKey(key);
+            }
+        }
+
+        public ICollection<TKey> Keys
+        {
+            get
+            {
+                using (GlobalLocker.ReadLock())
+                    return dictionary.Keys;
+            }
+        }
+
+        public ICollection<TValue> Values{
+            get
+            {
+                using (GlobalLocker.ReadLock())
+                    return dictionary.Values.Select(x => x.Value).ToList();
+            }
+        }
+
+        public int Count
+        {
+            get
+            {
+                using (GlobalLocker.ReadLock())
+                    return dictionary.Count;
+            }
+        }
+
+        public bool IsReadOnly => false;
+
+        public TValue this[TKey key]
+        {
+            get
+            {
+                TryGetValue(key, out var value);
+                return value;
+            }
+            set
+            {
+                TryAddOrChange(key, value);
+            }
+        }
+
+        public void ExecuteReadLocked(TKey key, Action<TValue> action)
+        {
+            if(this.TryGetLockedElement(key, out var value, out var token, false))
+            {
+                action(value);
+            }
+        }
+
+        public void ExecuteWriteLocked(TKey key, Action<TValue> action)
+        {
+            if(this.TryGetLockedElement(key, out var value, out var token, true))
+            {
+                action(value);
+            }
+        }
+
+        public void Clear()
+        {
+            using (GlobalLocker.ReadLock())
+            {
+                dictionary.Clear();
+            }
+        }
+
+        public void Add(TKey key, TValue value)
+        {
+            this.TryAdd(key, value);
+        }
+
+        public bool Remove(TKey key)
+        {
+            return this.TryRemove(key, out _);
+        }
+
+        public void Add(KeyValuePair<TKey, TValue> item)
+        {
+            this.TryAdd(item.Key, item.Value);
+        }
+
+        public bool Contains(KeyValuePair<TKey, TValue> item)
+        {
+            return this.ContainsKey(item.Key);
+        }
+
+        public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Remove(KeyValuePair<TKey, TValue> item)
+        {
+            return this.TryRemove(item.Key, out _);
+        }
+
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+        {
+            return dictionary.Select(x => new KeyValuePair<TKey, TValue>(x.Key, x.Value.Value)).GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return this.GetEnumerator();
+        }
+    }
+
 
     public class ConcurrentDictionaryEx<TKey, TValue> : ConcurrentDictionary<TKey, TValue>
     {
