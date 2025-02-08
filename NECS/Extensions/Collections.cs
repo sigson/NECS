@@ -1089,9 +1089,9 @@ namespace NECS.Extensions
             }
         }
 
-        public void ExecuteOnRemoveLocked(TKey key, TValue value, Action<TKey,TValue> action)
+        public void ExecuteOnRemoveLocked(TKey key, out TValue value, Action<TKey,TValue> action)
         {
-            TryRemove(key, out var outValue, action);
+            TryRemove(key, out value, action);
         }
 
         public bool ExecuteOnAddChangeLocked(TKey key, TValue value, Action<TKey,TValue> action)

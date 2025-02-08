@@ -20,8 +20,8 @@ namespace NECS.ECS.ECSCore
     public class ECSEntityManager
     {
 
-        public ConcurrentDictionary<long, ECSEntity> EntityStorage = new ConcurrentDictionary<long, ECSEntity>();
-        public ConcurrentDictionary<string, ECSEntity> PreinitializedEntities = new ConcurrentDictionary<string, ECSEntity>();//for selectablemap, shopdb, ect.
+        public LockedDictionary<long, ECSEntity> EntityStorage = new LockedDictionary<long, ECSEntity>();
+        public LockedDictionary<string, ECSEntity> PreinitializedEntities = new LockedDictionary<string, ECSEntity>();//for selectablemap, shopdb, ect.
 
         public void OnAddNewEntity(ECSEntity Entity)
         {

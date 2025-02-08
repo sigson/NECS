@@ -14,6 +14,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using System.Diagnostics.Contracts;
 
 namespace NECS.ECS.ECSCore
 {
@@ -23,10 +24,30 @@ namespace NECS.ECS.ECSCore
         [System.NonSerialized]
         public Type SystemType;
         public IDictionary<long, Func<ECSEntity, bool>> ContractConditions { get; set; } = new ConcurrentDictionary<long, Func<ECSEntity, bool>>();
+        /// <summary>
+        /// key long - entityownerid
+        ///long - componentTypeId
+        ///bool - presence state
+        /// </summary>
+        public IDictionary<long, Dictionary<long, bool>> ComponentPresenceSign { get; set; } = new Dictionary<long, Dictionary<long, bool>>();
 
-        public Action<ECSEntity[]> ContractExecutable { get; set; }
+        public Action<ECSExecutableContractContainer, ECSEntity[]> ContractExecutable = (ECSExecutableContractContainer contract, ECSEntity[] entities) => {
+            foreach (var entity in entities)
+            {
+                contract.ContractExecutableSingle(contract, entity);
+            }
+        };
+
+        public Action<ECSExecutableContractContainer, ECSEntity> ContractExecutableSingle = (contract, entity) => {
+            
+        };
 
         public bool TimeDependExecution { get; set; } = false;
+
+        /// <summary>
+        /// Set FALSE if contract is time depend
+        /// </summary>
+        public bool RemoveAfterExecution { get; set; } = true;
         public bool TimeDependActive { get; set; } = true;
         public bool InWork { get; set; }
         public long LastEndExecutionTimestamp { get; set; }
@@ -63,13 +84,24 @@ namespace NECS.ECS.ECSCore
 
         }
 
-        public bool TryExecuteContract(List<ECSEntity> contractEntities)
+        public bool TryExecuteContract(List<ECSEntity> contractEntities, bool ExecuteContract = true)
         {
             lock (ContractLocker)
             {
                 if (!ContractExecuted)
                 {
-                    var LockedPoints = new List<NECS.RWLock.WriteLockToken>();
+                    var LockedPoints = new List<NECS.RWLock.ReadLockToken>();
+                    foreach (var entity in contractEntities)
+                    {
+                        foreach (var presenceCondition in ComponentPresenceSign)
+                        {
+
+                            if (presenceCondition.Value(entity))
+                            {
+                                LockedPoints.Add(entity.entityComponents.StabilizationLocker.WriteLock());
+                            }
+                        }
+                    }
                     foreach (var entity in contractEntities)
                     {
                         foreach (var condition in ContractConditions)
@@ -82,7 +114,10 @@ namespace NECS.ECS.ECSCore
                     }
                     if (LockedPoints.Count == contractEntities.Count)
                     {
-                        ContractExecutable(contractEntities.ToArray());
+                        if(ExecuteContract)
+                        {
+                            ContractExecutable(contractEntities.ToArray());
+                        }
                         LockedPoints.ForEach(locker => locker.Dispose());
                         return true;
                     }

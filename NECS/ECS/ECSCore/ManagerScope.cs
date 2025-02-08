@@ -25,7 +25,7 @@ public
 #endif
     class ManagerScope : IService
     {
-        public ECSSystemManager systemManager;
+        public ECSContractsManager systemManager;
         public ECSEntityManager entityManager;
         public ECSComponentManager componentManager;
         public ECSEventManager eventManager;
@@ -49,7 +49,7 @@ public
             ECSComponentManager.IdStaticCache();
             eventManager = new ECSEventManager();
             eventManager.IdStaticCache();
-            systemManager = new ECSSystemManager();
+            systemManager = new ECSContractsManager();
             systemManager.InitializeSystems();
             eventManager.InitializeEventManager();
             TaskEx.RunAsync(() =>
