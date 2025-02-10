@@ -1082,9 +1082,23 @@ namespace NECS.Extensions
 
         public void ExecuteOnChangeLocked(TKey key, TValue value, Action<TKey,TValue> action)
         {
-            if(!this.TryAddOrChange(key, value, out var lockToken, true) && lockToken != null)
+            if(this.dictionary.ContainsKey(key) && !this.TryAddOrChange(key, value, out var lockToken, true) && lockToken != null)
             {
                 action(key, value);
+                lockToken.Dispose();
+            }
+        }
+
+        public void ExecuteOnAddOrChangeLocked(TKey key, TValue value, Action<TKey,TValue> onAddaction, Action<TKey,TValue> onChangeaction)
+        {
+            if(this.TryAddOrChange(key, value, out var lockToken, true) && lockToken != null)
+            {
+                onAddaction(key, value);
+                lockToken.Dispose();
+            }
+            else if(lockToken != null)
+            {
+                onChangeaction(key, value);
                 lockToken.Dispose();
             }
         }
@@ -1121,6 +1135,11 @@ namespace NECS.Extensions
                 action(key, value);
                 token.Dispose();
             }
+        }
+
+        public RWLock.LockToken LockStorage()
+        {
+            return this.GlobalLocker.WriteLock();
         }
 
         public void Clear()
@@ -1168,14 +1187,34 @@ namespace NECS.Extensions
 
         #region Unsafe functions
 
-        public void UnsafeAdd(TKey key, TValue value)
+        public bool UnsafeAdd(TKey key, TValue value)
         {
-            this.dictionary.TryAdd(key, new LockedValue(){Value = value, lockValue = new RWLock()});
+            if(this.dictionary.ContainsKey(key)) return false;
+            return this.dictionary.TryAdd(key, new LockedValue(){Value = value, lockValue = new RWLock()});
         }
 
-        public bool UnsafeRemove(TKey key)
+        public bool UnsafeRemove(TKey key, out TValue value)
         {
-            return this.dictionary.Remove(key, out _);
+            if(this.dictionary.Remove(key, out var dicvalue))
+            {
+                value = dicvalue.Value;
+                return true;
+            }
+            value = default(TValue);
+            return false;
+        }
+
+        public bool UnsafeChange(TKey key, TValue value)
+        {
+            if(this.dictionary.TryGetValue(key, out var oldvalue))
+            {
+                oldvalue.Value = value;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         public bool UnsafeRemove(KeyValuePair<TKey, TValue> item)
@@ -1297,7 +1336,6 @@ namespace NECS.Extensions
 
         #endregion
     }
-
 
     public class ConcurrentDictionaryEx<TKey, TValue> : ConcurrentDictionary<TKey, TValue>
     {
@@ -1455,87 +1493,146 @@ namespace NECS.Extensions
         }
     }
 
-    public class ConcurrentList<T> : IList<T> where T : class
+    public class PriorityEventQueue<TKey, TEvent> where TEvent : System.Delegate
     {
-        private readonly ConcurrentDictionary<long, T> _store;
-
-        public ConcurrentList(IEnumerable<T> items = null)
+        private struct ActionWrapper
         {
-            var prime = (items ?? Enumerable.Empty<T>()).Select(x => new KeyValuePair<long, T>(Guid.NewGuid().GuidToLongR(), x));
-            _store = new ConcurrentDictionary<long, T>(prime);
+            public Guid actionId;
+            public TEvent actionEvent;
+            public bool inAction;
         }
 
-        public IEnumerator<T> GetEnumerator()
+        private class PriorityWrapper
         {
-            return _store.Values.GetEnumerator();
+            public TKey priorityValue;
+            public bool GateOpened;
         }
+        private int OpenedDownGates;
+        private Func<int, int> GatesCounter;
+        private readonly Dictionary<TKey, SynchronizedList<ActionWrapper>> _eventLists;
+        private readonly List<PriorityWrapper> _priorityOrder;
+        private readonly object _lock = new object();
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="priorityOrder"></param>
+        /// <param name="gatesOpened">minimal gates value = 1, gates opened on first event</param>
+        /// <param name="gatesCounter"> may be + 2</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        public PriorityEventQueue(IEnumerable<TKey> priorityOrder, int gatesOpened = Int32.MaxValue, Func<int, int> gatesCounter = null)
         {
-            return GetEnumerator();
-        }
-
-        public void Add(T item)
-        {
-            if (_store.TryAdd(Guid.NewGuid().GuidToLongR(), item) == false)
-                throw new ApplicationException("Unable to concurrently add item to list");
-        }
-
-        public void Clear()
-        {
-            _store.Clear();
-        }
-
-        public bool Contains(T item)
-        {
-            return _store.Values.Where(x => item == x).Count() > 0;
-        }
-
-        public void CopyTo(T[] array, int arrayIndex)
-        {
-            _store.Values.CopyTo(array, arrayIndex);
-        }
-
-        public T[] ToArray()
-        {
-            return _store.Values.ToArray();
-        }
-
-        public bool Remove(T item)
-        {
-            foreach (var key in _store.Keys)
+            if (priorityOrder == null)
+                throw new ArgumentNullException(nameof(priorityOrder));
+            OpenedDownGates = gatesOpened;
+            if(gatesCounter == null)
             {
-                if (_store.TryGetValue(key, out var value) && value == item)
-                    return _store.TryRemove(key, out _);
+                GatesCounter = x => x + 1;
             }
-            return false;
+            else
+            {
+                GatesCounter = gatesCounter;
+            }
+            _priorityOrder = new List<PriorityWrapper>();
+            if (_priorityOrder.Count == 0)
+                throw new ArgumentException("Priority order must not be empty", nameof(priorityOrder));
+            if (_priorityOrder.Distinct().Count() != _priorityOrder.Count)
+                throw new ArgumentException("Priority order must contain unique keys", nameof(priorityOrder));
+
+            _eventLists = new Dictionary<TKey, SynchronizedList<ActionWrapper>>();
+            foreach (var key in priorityOrder)
+            {
+                _priorityOrder.Add(new PriorityWrapper() { priorityValue = key, GateOpened = false });
+                _eventLists[key] = new SynchronizedList<ActionWrapper>();
+            }
         }
 
-        public int IndexOf(T item)
+        public void AddEvent(TKey key, TEvent eventItem)
         {
-            throw new NotImplementedException();
+            lock (_lock)
+            {
+                if (!_eventLists.ContainsKey(key))
+                    throw new ArgumentException("Key is not part of the priority order", nameof(key));
+                var newAction = new ActionWrapper(){actionId = Guid.NewGuid(), actionEvent = eventItem, inAction = false};
+                _eventLists[key].Add(newAction);
+                IncludeEvent(key, newAction); 
+            }
         }
 
-        public void Insert(int index, T item)
+        private void IncludeEvent(TKey key, ActionWrapper eventItem)
         {
-            throw new NotImplementedException();
+            for (int i = 0; i < OpenedDownGates; i++)
+            {
+                var prioritynow = _priorityOrder[i];
+                if (_eventLists.TryGetValue(prioritynow.priorityValue, out var prioritystorage))
+                {
+                    if (prioritystorage.Count > 0)
+                    {
+                        if (prioritystorage[0].actionId == eventItem.actionId)
+                        {
+                            eventItem.inAction = true;
+                            TaskEx.RunAsync(() =>
+                            {
+                                lock (prioritynow)
+                                {
+                                    eventItem.actionEvent.DynamicInvoke();
+                                    if (!prioritynow.GateOpened)
+                                    {
+                                        prioritynow.GateOpened = true;
+                                        OpenedDownGates = GatesCounter(OpenedDownGates);
+                                    }
+                                    lock (_lock)
+                                    {
+                                        _eventLists[prioritynow.priorityValue].RemoveAt(0);
+                                    }
+                                    ProcessEvents();
+                                }
+                            });
+                        }
+                    }
+                }
+            }
         }
 
-        public void RemoveAt(int index)
+        private void ProcessEvents()
         {
-            throw new NotImplementedException();
-        }
+            lock (_lock)
+            {
+                for (int i = 0; i < OpenedDownGates; i++)
+                {
+                    var prioritynow = _priorityOrder[i];
+                    if (_eventLists.TryGetValue(prioritynow.priorityValue, out var prioritystorage))
+                    {
+                        if (prioritystorage.Count > 0)
+                        {
+                            if (!prioritystorage[0].inAction)
+                            {
+                                var priorevent = prioritystorage[0];
+                                priorevent.inAction = true;
+                                TaskEx.RunAsync(() =>
+                                {
+                                    lock (prioritynow)
+                                    {
+                                        priorevent.actionEvent.DynamicInvoke();
+                                        if (!prioritynow.GateOpened)
+                                        {
+                                            prioritynow.GateOpened = true;
+                                            OpenedDownGates = GatesCounter(OpenedDownGates);
+                                        }
+                                        lock (_lock)
+                                        {
+                                            _eventLists[prioritynow.priorityValue].RemoveAt(0);
+                                        }
 
-        public int Count
-        {
-            get { return _store.Count; }
+                                        ProcessEvents();
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+            }
         }
-
-        public bool IsReadOnly
-        {
-            get { return _store.Keys.IsReadOnly; }
-        }
-
-        public T this[int index] { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     }
 }

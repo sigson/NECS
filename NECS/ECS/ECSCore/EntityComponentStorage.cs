@@ -370,17 +370,7 @@ namespace NECS.ECS.ECSCore
             if (!this.components.Keys.Contains(comType))
             {
                 components.ExecuteOnAddLocked(comType,component,(key, component) =>{
-                    component.ownerEntity = this.entity;
-                    if (this.entity != null)
-                        this.entity.fastEntityComponentsId.AddI(component.instanceId, 0, this.entity.SerialLocker);
-                    else
-                        NLogger.LogError("null owner entity");
-                    if (restoringMode)
-                        this.SerializationContainer.TryAdd(component.GetId(), component);
-                    else
-                        this.SerializationContainer[component.GetId()] = component;
-                    this.IdToTypeComponent.TryAdd(component.GetId(), component.GetTypeFast());
-                    this.entity.manager.OnAddComponent(this.entity, component);
+                    AddComponentProcess(comType, component, restoringMode);
                     added = true;
                 });
             }
@@ -392,7 +382,7 @@ namespace NECS.ECS.ECSCore
                     {
                         addedcomponent.Unregistered = false;
                     });
-                    component.OnAdded(this.entity);
+                    component.AddedReaction(this.entity);
                 }
             }
             else
@@ -400,20 +390,27 @@ namespace NECS.ECS.ECSCore
             return added;
         }
 
+        private void AddComponentProcess(Type comType, ECSComponent component, bool restoringMode = false)
+        {
+            component.ownerEntity = this.entity;
+            if (this.entity != null)
+                this.entity.fastEntityComponentsId.AddI(component.instanceId, 0, this.entity.SerialLocker);
+            else
+                NLogger.LogError("null owner entity");
+            if (restoringMode)
+                this.SerializationContainer.TryAdd(component.GetId(), component);
+            else
+                this.SerializationContainer[component.GetId()] = component;
+            this.IdToTypeComponent.TryAdd(component.GetId(), component.GetTypeFast());
+            this.entity.manager.OnAddComponent(this.entity, component);
+        }
+
         public bool ChangeComponent(ECSComponent component, bool silent = false, ECSEntity restoringOwner = null)
         {
             bool changed = false;
             components.ExecuteOnChangeLocked(component.GetTypeFast(), component, (key, component) =>
                 {
-                    if (restoringOwner != null)
-                        component.ownerEntity = restoringOwner;
-                    component.Unregistered = false;
-                    if (!silent)
-                    {
-                        Type componentClass = component.GetTypeFast();
-                        changedComponents[componentClass] = 1;
-                        changed = true;
-                    }
+                    changed = ChangeComponentProcess(component, silent, restoringOwner);
                 }
             );
             if (!silent && changed)
@@ -425,6 +422,21 @@ namespace NECS.ECS.ECSCore
             }
             return changed;
             //this.MarkComponentChanged(component, silent);
+        }
+
+        private bool ChangeComponentProcess(ECSComponent component, bool silent = false, ECSEntity restoringOwner = null)
+        {
+            bool changed = false;
+            if (restoringOwner != null)
+                component.ownerEntity = restoringOwner;
+            component.Unregistered = false;
+            if (!silent)
+            {
+                Type componentClass = component.GetTypeFast();
+                changedComponents[componentClass] = 1;
+                changed = true;
+            }
+            return changed;
         }
 
         public ECSComponent GetComponent(Type componentClass)
@@ -487,18 +499,12 @@ namespace NECS.ECS.ECSCore
 
             components.ExecuteOnRemoveLocked(componentClass, out component2, (key, component) =>
             {
-                this.changedComponents.Remove(componentClass, out _);
-                this.components.Remove(componentClass);
-                this.SerializationContainer.Remove(component.GetId(), out _);
-                this.IdToTypeComponent.Remove(component.GetId(), out _);
-                this.entity.fastEntityComponentsId.RemoveI(component.instanceId, this.entity.SerialLocker);
-                this.RemovedComponents.Add(component.GetId());
-                ManagerScope.instance.entityManager.OnRemoveComponent(this.entity, component);
+                RemoveComponentProcess(componentClass, component);
                 removed = true;
             });
             if(removed)
             {
-                component2.OnRemoving(this.entity);
+                component2.RemovingReaction(this.entity);
                 component2.IECSDispose();
             }
             else
@@ -508,10 +514,51 @@ namespace NECS.ECS.ECSCore
             return component2;
         }
 
+        private void RemoveComponentProcess(Type componentClass, ECSComponent component)
+        {
+            this.changedComponents.Remove(componentClass, out _);
+            this.components.Remove(componentClass);
+            this.SerializationContainer.Remove(component.GetId(), out _);
+            this.IdToTypeComponent.Remove(component.GetId(), out _);
+            this.entity.fastEntityComponentsId.RemoveI(component.instanceId, this.entity.SerialLocker);
+            this.RemovedComponents.Add(component.GetId());
+            ManagerScope.instance.entityManager.OnRemoveComponent(this.entity, component);
+        }
 
         #endregion
 
         #region Unsafe component functions
+
+        public bool AddComponentUnsafeSilent(Type componentType, ECSComponent component, bool restoringMode = false)
+        {
+            if(this.components.UnsafeAdd(componentType, component))
+            {
+                AddComponentProcess(componentType, component, restoringMode);
+                return true;
+            }
+            return false;
+        }
+
+        public bool ChangeComponentUnsafeSilent(ECSComponent component, bool silent = false, ECSEntity restoringOwner = null)
+        {
+            if(this.components.UnsafeChange(component.GetTypeFast(), component))
+            {
+                ChangeComponentProcess(component, silent, restoringOwner);
+                return true;
+            }
+            return false;
+        }
+        
+        public bool RemoveComponentUnsafeSilent(Type componentType)
+        {
+            if(this.components.UnsafeRemove(componentType, out var component))
+            {
+                RemoveComponentProcess(componentType, component);
+                return true;
+            }
+            return false;
+        }
+
         public ECSComponent GetComponentUnsafe(Type componentType)
         {
             ECSComponent component;
@@ -572,7 +619,7 @@ namespace NECS.ECS.ECSCore
                 foreach (var component in changed_components)
                 {
                     component.Unregistered = false;
-                    component.OnAdded(entity);
+                    component.AddedReaction(entity);
                     this.entity.manager.OnAddComponent(this.entity, component);
                 }
             }
@@ -585,7 +632,7 @@ namespace NECS.ECS.ECSCore
                         if (component.Unregistered)
                         {
                             component.Unregistered = false;
-                            component.OnAdded(entity);
+                            component.AddedReaction(entity);
                             this.entity.manager.OnAddComponent(this.entity, component);
                         }
                     });
@@ -612,6 +659,31 @@ namespace NECS.ECS.ECSCore
             {
                 component.Value.OnRemove();
             }
+        }
+
+        public void ExecuteReadLockedComponent(Type componentType, Action<Type, ECSComponent> action)
+        {
+            components.ExecuteReadLocked(componentType, action);
+        }
+
+        public void ExecuteWriteLockedComponent(Type componentType, Action<Type, ECSComponent> action)
+        {
+            components.ExecuteWriteLocked(componentType, action);
+        }
+
+        public bool GetReadLockedComponent(Type componentType, out ECSComponent component, out RWLock.LockToken token)
+        {
+            return components.TryGetLockedElement(componentType, out component, out token, false);
+        }
+
+        public bool GetWriteLockedComponent(Type componentType, out ECSComponent component, out RWLock.LockToken token)
+        {
+            return components.TryGetLockedElement(componentType, out component, out token, true);
+        }
+
+        public RWLock.LockToken GetWriteLockedComponentStorage()
+        {
+            return components.LockStorage();
         }
 
         #endregion
@@ -692,7 +764,7 @@ namespace NECS.ECS.ECSCore
             {
                 if(!notRemovedComponent.Contains(removedComponent))
                 {
-                    removedComponent.OnRemoving(this.entity);
+                    removedComponent.RemovingReaction(this.entity);
                     removedComponent.IECSDispose();
                 }
             });

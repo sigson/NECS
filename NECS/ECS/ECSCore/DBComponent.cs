@@ -100,7 +100,7 @@ namespace NECS.ECS.ECSCore
                     addedComponent = component;
                 }
             }
-            addedComponent.OnAdded(addedComponent.ownerEntity);
+            addedComponent.AddedReaction(addedComponent.ownerEntity);
         }
         public virtual void AddOrChangeComponent(ECSEntity ownerComponent, ECSComponent component)
         {
@@ -134,7 +134,7 @@ namespace NECS.ECS.ECSCore
             if(change)
                 ChangeComponent(component, ownerComponent);
             else
-                component.OnAdded(ownerComponent);
+                component.AddedReaction(ownerComponent);
         }
         public virtual void AddComponents(ECSEntity ownerComponent, params ECSComponent[] component)
         {
@@ -302,7 +302,7 @@ namespace NECS.ECS.ECSCore
             }
             if(removedComponent != null)
             {
-                removedComponent.OnRemoving(removedComponent.ownerEntity);
+                removedComponent.RemovingReaction(removedComponent.ownerEntity);
                 removedComponent.IECSDispose();
             }
         }
@@ -369,7 +369,7 @@ namespace NECS.ECS.ECSCore
                 }
             }
             removedComponents.ForEach(x => {
-                x.OnRemoving(x.ownerEntity);
+                x.RemovingReaction(x.ownerEntity);
                 x.IECSDispose();
             });
         }
@@ -456,7 +456,7 @@ namespace NECS.ECS.ECSCore
                         var ecsComponent = ownerList[entityRowValues[i].componentInstanceId];
                         if (ecsComponent.Item2 == ComponentState.Removed)
                         {
-                            ecsComponent.Item1.OnRemoving(ecsComponent.Item1.ownerEntity);
+                            ecsComponent.Item1.RemovingReaction(ecsComponent.Item1.ownerEntity);
                             ownerList.Remove(ecsComponent.Item1.instanceId);
                             ecsComponent.Item1.IECSDispose();
                             //i--;
@@ -494,7 +494,7 @@ namespace NECS.ECS.ECSCore
                                 unserComp.AfterDeserialization();
                                 if (component.componentState != ComponentState.Created)
                                 {
-                                    unserComp.OnAdded(unserComp.ownerEntity);
+                                    unserComp.AddedReaction(unserComp.ownerEntity);
                                 }
                             }
                             else
@@ -528,7 +528,7 @@ namespace NECS.ECS.ECSCore
                     var ecsComponent = ownerList[entityRowValues[i].componentInstanceId];
                     if (ecsComponent.Item2 == ComponentState.Created)
                     {
-                        ecsComponent.Item1.OnAdded(ecsComponent.Item1.ownerEntity);
+                        ecsComponent.Item1.AddedReaction(ecsComponent.Item1.ownerEntity);
                         //ownerList.Remove(ecsComponent.Item1.InstanceId);
                         //i--;
                     }
@@ -543,7 +543,7 @@ namespace NECS.ECS.ECSCore
                     }
                     if (ecsComponent.Item2 == ComponentState.Removed)
                     {
-                        ecsComponent.Item1.OnRemoving(ecsComponent.Item1.ownerEntity);
+                        ecsComponent.Item1.RemovingReaction(ecsComponent.Item1.ownerEntity);
                         ownerList.Remove(ecsComponent.Item1.instanceId);
 			            ComponentOwners.Remove(ecsComponent.Item1.instanceId);
                         ecsComponent.Item1.IECSDispose();

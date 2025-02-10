@@ -34,7 +34,7 @@ namespace NECS.ECS.Components.ECSComponents
             };
         }
 
-        public override void OnAdded(ECSEntity entity)
+        protected override void OnAdded(ECSEntity entity)
         {
             base.OnAdded(entity);
             this.TimerStart(timerAwait, entity, false, true);

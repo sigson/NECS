@@ -38,7 +38,7 @@ namespace NECS_Test.SerializationTest
             public List<Vector3S> Vector3Sw = new List<Vector3S>();
             public List<ECSComponentSerializationCheck> points = new List<ECSComponentSerializationCheck>();
 
-            public override void OnAdded(ECSEntity entity)
+            protected override void OnAdded(ECSEntity entity)
             {
                 RandomString = new Random().RandomString(128);
                 points = new List<ECSComponentSerializationCheck> {

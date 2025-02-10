@@ -63,7 +63,7 @@ namespace NECS.ECS.ECSCore
         /// </summary>
         public Dictionary<long, IECSObjectPathContainer> childECSObjectsId = new Dictionary<long, IECSObjectPathContainer>();
         [System.NonSerialized]
-        private ConcurrentDictionary<long, IECSObject> childECSObjects = new ConcurrentDictionary<long, IECSObject>();
+        private LockedDictionary<long, IECSObject> childECSObjects = new LockedDictionary<long, IECSObject>();
         
         protected virtual void OnUpdateOwner(IECSObject newOwner)
         {
@@ -99,29 +99,20 @@ namespace NECS.ECS.ECSCore
         public void AddChildObject(IECSObject value, bool updateOwner = true)
         {
             bool isChanged = false;
-            using(NodeLock.WriteLock())
+            childECSObjects.ExecuteOnAddLocked(value.instanceId, value, (key, component) =>
             {
-                if(childECSObjects.ContainsKey(value.instanceId))
-                {
-                    NLogger.Error($"IECSObject '{instanceId}: {this.GetType().Name}': childECSObjects.ContainsKey({value.instanceId} - {value.GetType().Name})");
-                }
-                else
-                {
-                    childECSObjects[value.instanceId] = value;
-                    if(updateOwner)
-                        value.ownerECSObject = this;
-                    isChanged = true;
-                    ChangesState = IECSObjectSerializedStateMode.Changed;
-                }
-            }
-            NodeLock.ExecuteReadLocked(() =>
-            {
-                if(childECSObjects.ContainsKey(value.instanceId))
-                {
-                    if(isChanged)
-                        OnAddChildObject(value);
-                }
+                childECSObjects[value.instanceId] = value;
+                isChanged = true;
+                ChangesState = IECSObjectSerializedStateMode.Changed;
             });
+            if (isChanged)
+            {
+                if (updateOwner)
+                    value.ownerECSObject = this;
+                OnAddChildObject(value);
+            }
+            else
+                NLogger.Error($"IECSObject '{instanceId}: {this.GetType().Name}': childECSObjects.ContainsKey({value.instanceId} - {value.GetType().Name})");
         }
 
         protected virtual void OnAddChildObject(IECSObject value)
@@ -132,7 +123,7 @@ namespace NECS.ECS.ECSCore
         public bool RemoveChildObject(long key, bool updateOwner = true)
         {
             IECSObject removed = null;
-            var result = childECSObjects.TryRemove(key, out removed);
+            var result = childECSObjects.Remove(key, out removed);
             if(!result)
             {
                 NLogger.Error($"IECSObject '{instanceId}: {this.GetType().Name}': childECSObjects.TryRemove({key})");
@@ -168,6 +159,21 @@ namespace NECS.ECS.ECSCore
         public bool TryGetChildObject(long key, out IECSObject value)
         {
             return childECSObjects.TryGetValue(key, out value);
+        }
+
+        public bool TryGetChildObjectReadLocked(long key, out IECSObject value, out RWLock.LockToken lockToken)
+        {
+            return childECSObjects.TryGetLockedElement(key, out value, out lockToken);
+        }
+
+        public bool TryGetChildObjectWriteLocked(long key, out IECSObject value, out RWLock.LockToken lockToken)
+        {
+            return childECSObjects.TryGetLockedElement(key, out value, out lockToken, true);
+        }
+
+        public RWLock.LockToken GetLockedStorage()
+        {
+            return childECSObjects.LockStorage();
         }
 
         public void IECSDispose()

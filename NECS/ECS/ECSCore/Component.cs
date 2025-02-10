@@ -42,9 +42,22 @@ namespace NECS.ECS.ECSCore
         [System.NonSerialized]
         public ComponentManagers componentManagers = new ComponentManagers();
 
+        private enum StateReactionType
+        {
+            Added,
+            Changed,
+            Removed
+        }
+
+        [System.NonSerialized]
+        private PriorityEventQueue<StateReactionType, Action> StateReactionQueue = null;
+
+
+
         public ECSComponent()
         {
             componentManagers.ownerComponent = this;
+            StateReactionQueue = new PriorityEventQueue<StateReactionType, Action>(new List<StateReactionType>() { StateReactionType.Added, StateReactionType.Changed, StateReactionType.Removed }, 1, x => x + 2);
         }
 
         public List<Action<ECSEntity, ECSComponent>> GetOnChangeComponentCallback()
@@ -114,7 +127,18 @@ namespace NECS.ECS.ECSCore
         /// ATTENTION! Use lock(this.SerialLocker) if you want to edit fields value for prevent serialization error!
         /// </summary>
         /// <param name="entity"></param>
-        public virtual void OnAdded(ECSEntity entity)
+        public void AddedReaction(ECSEntity entity)
+        {
+            StateReactionQueue.AddEvent(StateReactionType.Added, () =>
+            {
+                lock (this.SerialLocker)
+                {
+                    this.OnAdded(entity);
+                }
+            });
+        }
+
+        protected virtual void OnAdded(ECSEntity entity)
         {
             this.MarkAsChanged();
         }
@@ -123,17 +147,39 @@ namespace NECS.ECS.ECSCore
         /// ATTENTION! Use lock(this.SerialLocker) if you want to edit fields value for prevent serialization error!
         /// </summary>
         /// <param name="entity"></param>
-        public virtual void OnChange(ECSEntity entity)
+        public void ChangeReaction(ECSEntity entity)
         {
+            StateReactionQueue.AddEvent(StateReactionType.Changed, () =>
+            {
+                lock (this.SerialLocker)
+                {
+                    this.OnChanged(entity);
+                }
+            });
+        }
 
+        protected virtual void OnChanged(ECSEntity entity)
+        {
+            
         }
         /// <summary>
         /// ATTENTION! Use lock(this.SerialLocker) if you want to edit fields value for prevent serialization error!
         /// </summary>
         /// <param name="entity"></param>
-        public virtual void OnRemoving(ECSEntity entity)
+        public void RemovingReaction(ECSEntity entity)
         {
+            StateReactionQueue.AddEvent(StateReactionType.Removed, () =>
+            {
+                lock (this.SerialLocker)
+                {
+                    this.OnRemoved(entity);
+                }
+            });
+        }
 
+        protected virtual void OnRemoved(ECSEntity entity)
+        {
+            
         }
 
         public override void ChainedIECSDispose()
@@ -162,7 +208,7 @@ namespace NECS.ECS.ECSCore
         {
             List<Action<ECSEntity, ECSComponent>> callbackActions;
             ECSComponentManager.OnChangeCallbacksDB.TryGetValue(this.GetId(), out callbackActions);
-            this.OnChange(parentEntity);
+            this.ChangeReaction(parentEntity);
             if (callbackActions!=null)
             {
                 foreach (var act in callbackActions)
@@ -171,6 +217,7 @@ namespace NECS.ECS.ECSCore
                 }
             }            
         }
+
         public object Clone() => MemberwiseClone();
     }
 }
