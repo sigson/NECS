@@ -332,6 +332,47 @@ namespace NECS.ECS.ECSCore
         }
 
         #region Base functions
+
+        public bool AddOrChangeComponentImmediately(Type comType, ECSComponent component, bool restoringMode = false, bool silent = false)
+        {
+            bool added = false;
+            bool changed = false;
+            components.ExecuteOnAddOrChangeLocked(comType, component, (key, component) => {
+                AddComponentProcess(comType, component, restoringMode);
+                    added = true;
+            }, (key, component, oldcomponent) => {
+                changed = ChangeComponentProcess(component, silent, restoringMode ? this.entity : null);
+                if (restoringMode)
+				{
+					if (component is DBComponent dBComponent)
+                    {
+                        this.components.UnsafeChange(key, oldcomponent);
+                        (oldcomponent as DBComponent).serializedDB = (component as DBComponent).serializedDB;
+                    }
+				}
+            });
+            if (added)
+            {
+                if (!silent)
+                {
+                    components.ExecuteReadLocked(comType, (key, addedcomponent) =>
+                    {
+                        addedcomponent.Unregistered = false;
+                        component.AddedReaction(this.entity);
+                    });
+                }
+            }
+            else
+                NLogger.Error("try add presented component");
+            
+            if (!silent && changed)
+            {
+                component.ChangeReaction(this.entity);
+            }
+            return added;
+        }
+
+
         public bool AddComponentImmediately(Type comType, ECSComponent component, bool restoringMode = false, bool silent = false)
         {
             bool added = false;
@@ -377,7 +418,7 @@ namespace NECS.ECS.ECSCore
         public bool ChangeComponent(ECSComponent component, bool silent = false, ECSEntity restoringOwner = null)
         {
             bool changed = false;
-            components.ExecuteOnChangeLocked(component.GetTypeFast(), component, (key, component) =>
+            components.ExecuteOnChangeLocked(component.GetTypeFast(), component, (key, component, oldcomponent) =>
                 {
                     changed = ChangeComponentProcess(component, silent, restoringOwner);
                 }
@@ -438,7 +479,7 @@ namespace NECS.ECS.ECSCore
         public bool MarkComponentChanged(ECSComponent component, bool serializationSilent = false, bool eventSilent = false)
         {
             bool changed = false;
-            components.ExecuteOnChangeLocked(component.GetType(), component, (key, component) =>
+            components.ExecuteOnChangeLocked(component.GetType(), component, (key, component, oldcomponent) =>
                 {
                     Type componentClass = component.GetTypeFast();
                     if (!serializationSilent)

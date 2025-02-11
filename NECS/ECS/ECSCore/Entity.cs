@@ -82,6 +82,31 @@ namespace NECS.ECS.ECSCore
             this.TemplateAccessor.Add(userTemplate.GetType());
         }
 
+
+        #region Locked functionas
+
+        public void ExecuteReadLockedComponent(Type type, Action <Type, ECSComponent> action)
+        {
+            this.entityComponents.ExecuteReadLockedComponent(type, action);
+        }
+
+        public void ExecuteReadLockedComponent<T>(Action<Type, ECSComponent> action) where T : ECSComponent
+        {
+            ExecuteReadLockedComponent(typeof(T), action);
+        }
+
+        public void ExecuteWriteLockedComponent(Type type, Action <Type, ECSComponent> action)
+        {
+            this.entityComponents.ExecuteWriteLockedComponent(type, action);
+        }
+
+        public void ExecuteWriteLockedComponent<T>(Action<Type, ECSComponent> action) where T : ECSComponent
+        {
+            ExecuteWriteLockedComponent(typeof(T), action);
+        }
+        #endregion
+
+
         #region BasedRealizarion
 
         private void AddComponentImpl(ECSComponent component, bool sendEvent)
@@ -91,39 +116,7 @@ namespace NECS.ECS.ECSCore
 
         private void AddOrChangeComponentImpl(ECSComponent component, bool sendEvent, bool restoringOwner = false)
         {
-            Type componentClass = component.GetTypeFast();
-            if (!this.entityComponents.HasComponent(componentClass))
-            {
-                this.entityComponents.AddComponentImmediately(component.GetTypeFast(), component, false, !sendEvent);
-                
-                if (sendEvent)
-                {
-                    this.manager.OnAddComponent(this, component);
-                }
-            }
-            else
-            {
-                if (restoringOwner)
-				{
-					if (component is DBComponent)
-                        this.GetComponent<DBComponent>(component.GetId()).serializedDB = (component as DBComponent).serializedDB;
-                    else
-                        this.entityComponents.ChangeComponent(component, false, this);
-				}
-                else
-                    this.entityComponents.ChangeComponent(component);
-            }
-        }
-
-        public void HasComponentLockedAction(Type type, Action action)
-        {
-            using (entityComponents.StabilizationLocker.ReadLock())
-            {
-                if( this.HasComponent(type))
-                {
-                    action();
-                }
-            }
+            this.entityComponents.AddOrChangeComponentImmediately(component.GetTypeFast(), component,restoringOwner, !sendEvent);
         }
 
         public ECSComponent[] GetComponents(params long[] componentTypeId)
@@ -151,16 +144,7 @@ namespace NECS.ECS.ECSCore
 
         public bool TryAddComponent(ECSComponent component)
         {
-            try
-            {
-                if (!this.HasComponent(component.GetId()))
-                {
-                    this.AddComponentImpl(component, true);
-                    return true;
-                }
-                return false;
-            }
-            catch { return false; }
+            return this.entityComponents.AddComponentImmediately(component.GetTypeFast(), component);
         }
 
         public void AddComponents(IEnumerable<ECSComponent> components)
@@ -169,7 +153,7 @@ namespace NECS.ECS.ECSCore
             {
                 this.AddComponentImpl(component, false);
             }
-            entityComponents.RegisterAllComponents(false);
+            //entityComponents.RegisterAllComponents(false);
         }
 
         public void AddComponentsSilent(IEnumerable<ECSComponent> components)
@@ -216,14 +200,6 @@ namespace NECS.ECS.ECSCore
             return (T) component;
         }
 
-        public void AddComponentIfAbsent<T>() where T : ECSComponent, new()
-        {
-            if (!this.HasComponent<T>())
-            {
-                this.AddComponent(typeof(T));
-            }
-        }
-
         public void AddComponentSilent(ECSComponent component)
         {
             this.AddComponentImpl(component, false);
@@ -237,17 +213,10 @@ namespace NECS.ECS.ECSCore
             bool flag = this.HasComponent(component.GetTypeFast()) && this.GetComponent(component.GetTypeFast()).Equals(component);
             this.entityComponents.ChangeComponent(component);
         }
-        public void ChangeComponentSilent(ECSComponent component)//for fast components, who not must autoupdate, because we broadcast his event from user to other users, like moving or shooting
+        public bool ChangeComponentSilent(ECSComponent component)
         {
-            bool flag = this.HasComponent(component.GetTypeFast()) && this.GetComponent(component.GetTypeFast()).Equals(component);
-            this.entityComponents.ChangeComponent(component, true);
+            return this.entityComponents.ChangeComponent(component, true);
         }
-
-        public void HasComponentLockedAction<T>(Action action) where T : ECSComponent
-        {
-            HasComponentLockedAction(typeof(T), action);
-        }
-
         
 
         public int CompareTo(ECSEntity other) =>
@@ -338,17 +307,9 @@ namespace NECS.ECS.ECSCore
             this.entityComponents.RemoveComponentImmediately(componentTypeId);
         }
 
-        public void TryRemoveComponent(long componentTypeId)
+        public bool TryRemoveComponent(long componentTypeId)
         {
-            if(this.HasComponent(componentTypeId))
-            {
-                try
-                {
-                    this.entityComponents.RemoveComponentImmediately(componentTypeId);
-                }
-                catch { };
-            }
-                
+            return this.entityComponents.RemoveComponentImmediately(componentTypeId) == null? false : true;
         }
 
         public void RemoveComponentIfPresent<T>() where T : ECSComponent

@@ -929,14 +929,15 @@ namespace NECS.Extensions
             public RWLock lockValue;
         }
         private readonly ConcurrentDictionary<TKey, LockedValue> dictionary = new ConcurrentDictionary<TKey, LockedValue>();
-        public bool LockValue = true;
+        public bool LockValue = false;
         private readonly RWLock GlobalLocker = new RWLock();
 
         #region Base functions
-        private bool TryAddOrChange(TKey key, TValue value, out RWLock.LockToken lockToken, bool lockedMode = false)
+        private bool TryAddOrChange(TKey key, TValue value, out TValue oldValue, out RWLock.LockToken lockToken, bool lockedMode = false)
         {
             var result = false;
             lockToken = null;
+            oldValue = default(TValue);
             using (GlobalLocker.ReadLock())
             {
                 RWLock.LockToken token = null;
@@ -965,9 +966,13 @@ namespace NECS.Extensions
                 {
                     if (dictionary.TryGetValue(key, out dvalue))
                     {
+                        oldValue = dvalue.Value;
                         dvalue.Value = value;
                         result = false;
-                        lockToken = token;
+                        if(lockedMode)
+                            lockToken = token;
+                        else
+                            token.Dispose();
                     }
                     else
                     {
@@ -1073,32 +1078,45 @@ namespace NECS.Extensions
 
         public void ExecuteOnAddLocked(TKey key, TValue value, Action<TKey,TValue> action)
         {
-            if(this.TryAddOrChange(key, value, out var lockToken, true) && lockToken != null)
+            if(this.TryAddOrChange(key, value, out _, out var lockToken, true) && lockToken != null)
             {
                 action(key, value);
                 lockToken.Dispose();
             }
         }
-
-        public void ExecuteOnChangeLocked(TKey key, TValue value, Action<TKey,TValue> action)
+        /// <summary>
+        /// input change action has key, value, oldvalue params
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <param name="action">key, value, oldvalue</param>
+        /// <returns></returns>
+        public void ExecuteOnChangeLocked(TKey key, TValue value, Action<TKey,TValue,TValue> action)
         {
-            if(this.dictionary.ContainsKey(key) && !this.TryAddOrChange(key, value, out var lockToken, true) && lockToken != null)
+            if(this.dictionary.ContainsKey(key) && !this.TryAddOrChange(key, value, out var oldvalue, out var lockToken, true) && lockToken != null)
             {
-                action(key, value);
+                action(key, value, oldvalue);
                 lockToken.Dispose();
             }
         }
 
-        public void ExecuteOnAddOrChangeLocked(TKey key, TValue value, Action<TKey,TValue> onAddaction, Action<TKey,TValue> onChangeaction)
+        /// <summary>
+        /// input change action has key, value, oldvalue params
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <param name="action">key, value, oldvalue</param>
+        /// <returns></returns>
+        public void ExecuteOnAddOrChangeLocked(TKey key, TValue value, Action<TKey,TValue> onAddaction, Action<TKey,TValue,TValue> onChangeaction)
         {
-            if(this.TryAddOrChange(key, value, out var lockToken, true) && lockToken != null)
+            if(this.TryAddOrChange(key, value, out var oldvalue, out var lockToken, true) && lockToken != null)
             {
                 onAddaction(key, value);
                 lockToken.Dispose();
             }
             else if(lockToken != null)
             {
-                onChangeaction(key, value);
+                onChangeaction(key, value, oldvalue);
                 lockToken.Dispose();
             }
         }
@@ -1107,13 +1125,19 @@ namespace NECS.Extensions
         {
             TryRemove(key, out value, action);
         }
-
-        public bool ExecuteOnAddChangeLocked(TKey key, TValue value, Action<TKey,TValue> action)
+        /// <summary>
+        /// input change action has key, value, oldvalue params
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <param name="action">key, value, oldvalue</param>
+        /// <returns></returns>
+        public bool ExecuteOnAddChangeLocked(TKey key, TValue value, Action<TKey,TValue,TValue> action)
         {
-            var result = this.TryAddOrChange(key, value, out var lockToken, true);
+            var result = this.TryAddOrChange(key, value, out var oldValue, out var lockToken, true);
             if(lockToken != null)
             {
-                action(key, value);
+                action(key, value, oldValue);
                 lockToken.Dispose();
             }
             return result;
@@ -1290,13 +1314,13 @@ namespace NECS.Extensions
             }
             set
             {
-                TryAddOrChange(key, value, out _);
+                TryAddOrChange(key, value, out _, out _);
             }
         }
 
         public void Add(TKey key, TValue value)
         {
-            this.TryAddOrChange(key, value, out _);
+            this.TryAddOrChange(key, value, out _, out _);
         }
 
         public bool Remove(TKey key)
@@ -1311,7 +1335,7 @@ namespace NECS.Extensions
 
         public void Add(KeyValuePair<TKey, TValue> item)
         {
-            this.TryAddOrChange(item.Key, item.Value, out _);
+            this.TryAddOrChange(item.Key, item.Value, out _, out _);
         }
 
         public bool Contains(KeyValuePair<TKey, TValue> item)
