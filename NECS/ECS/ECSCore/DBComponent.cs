@@ -303,7 +303,6 @@ namespace NECS.ECS.ECSCore
             if(removedComponent != null)
             {
                 removedComponent.RemovingReaction(removedComponent.ownerEntity);
-                removedComponent.IECSDispose();
             }
         }
         public virtual void RemoveComponent(params long[] componentsId)
@@ -370,7 +369,6 @@ namespace NECS.ECS.ECSCore
             }
             removedComponents.ForEach(x => {
                 x.RemovingReaction(x.ownerEntity);
-                x.IECSDispose();
             });
         }
         #endregion
@@ -458,7 +456,6 @@ namespace NECS.ECS.ECSCore
                         {
                             ecsComponent.Item1.RemovingReaction(ecsComponent.Item1.ownerEntity);
                             ownerList.Remove(ecsComponent.Item1.instanceId);
-                            ecsComponent.Item1.IECSDispose();
                             //i--;
                         }
                     }
@@ -537,7 +534,7 @@ namespace NECS.ECS.ECSCore
                         //ecsComponent.Item1.OnAdded(ecsComponent.Item1.ownerEntity);
                         TaskEx.Run(() =>
                         {
-                            ecsComponent.Item1.RunOnChangeCallbacks(ecsComponent.Item1.ownerEntity);
+                            ecsComponent.Item1.ChangeReaction(ecsComponent.Item1.ownerEntity);
                         });
                         //i--;
                     }
@@ -546,7 +543,6 @@ namespace NECS.ECS.ECSCore
                         ecsComponent.Item1.RemovingReaction(ecsComponent.Item1.ownerEntity);
                         ownerList.Remove(ecsComponent.Item1.instanceId);
 			            ComponentOwners.Remove(ecsComponent.Item1.instanceId);
-                        ecsComponent.Item1.IECSDispose();
                         //i--;
                     }
                 }

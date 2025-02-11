@@ -25,7 +25,7 @@ namespace NECS.ECS.ECSCore
         private readonly LockedDictionary<Type, ECSComponent> components = new LockedDictionary<Type, ECSComponent>();
         private readonly IDictionary<Type, int> changedComponents = new ConcurrentDictionary<Type, int>();
         public readonly IDictionary<long, Type> IdToTypeComponent = new ConcurrentDictionary<long, Type>();
-        public ConcurrentDictionary<long, object> SerializationContainer = new ConcurrentDictionary<long, object>();
+        public LockedDictionary<long, object> SerializationContainer = new LockedDictionary<long, object>();
         public List<long> RemovedComponents = new List<long>();
         //public object serializationLocker = new object();
         //public object operationLocker = new object();
@@ -34,7 +34,7 @@ namespace NECS.ECS.ECSCore
         public EntityComponentStorage(ECSEntity entity)
         {
             this.entity = entity;
-            if(StorageType != null)
+            if (StorageType != null)
                 StorageType = SerializationContainer.GetType();
         }
 
@@ -44,89 +44,73 @@ namespace NECS.ECS.ECSCore
         {
             if (serializeOnlyChanged)
             {
-                using(this.StabilizationLocker.ReadLock())//lock (this.serializationLocker)
+                //using (this.StabilizationLocker.ReadLock())//lock (this.serializationLocker)
                 {
-                    ConcurrentDictionary<long, ECSComponent> serializeContainer = new ConcurrentDictionary<long, ECSComponent>();
+                    ConcurrentDictionary<Type, ECSComponent> serializedContainer = new ConcurrentDictionary<Type, ECSComponent>();
                     Dictionary<long, byte[]> slicedComponents = new Dictionary<long, byte[]>();
                     var cachedChangedComponents = changedComponents.Keys.ToList();
                     List<Type> errorList = new List<Type>();
                     foreach (var changedComponent in cachedChangedComponents)
                     {
-                        if(Defines.LogECSEntitySerializationComponents)
+                        if (Defines.LogECSEntitySerializationComponents)
                         {
                             NLogger.Log($"Will serialized changed component {changedComponent} in {this.entity.AliasName}:{this.entity.instanceId}");
                         }
-                        try
+                        components.ExecuteReadLocked(changedComponent, (key, component) =>
                         {
-                            var component = components[changedComponent];
-                            serializeContainer[component.GetId()] = component;
-                        }
-                        catch (Exception ex)
-                        {
-                            errorList.Add(changedComponent);
-                        }
-                    }
-                    foreach (var pairComponent in serializeContainer)
-                    {
-                        using (MemoryStream writer = new MemoryStream())
-                        {
-                            var component = pairComponent.Value;
-                            byte[] serializedData = null;
-                            lock (component.SerialLocker)
+                            using (MemoryStream writer = new MemoryStream())
                             {
-                                component.EnterToSerialization();
-
-                                DBComponent dBComponent = null;
-                                if (component is DBComponent)
+                                var pairComponent = new KeyValuePair<long, ECSComponent>(component.GetId(), component);
+                                //var component = pairComponent.Value;
+                                byte[] serializedData = null;
+                                lock (component.SerialLocker)
                                 {
-                                    dBComponent = (component as DBComponent);
-                                }
-                                if (dBComponent != null)
-                                {
-                                    dBComponent.SerializeDB(serializeOnlyChanged, clearChanged);
-                                }
+                                    component.EnterToSerialization();
 
-                                //NetSerializer.Serializer.Default.Serialize(writer, component);
-                                serializedData = SerializationAdapter.SerializeECSComponent(component);
+                                    DBComponent dBComponent = null;
+                                    if (component is DBComponent)
+                                    {
+                                        dBComponent = (component as DBComponent);
+                                    }
+                                    if (dBComponent != null)
+                                    {
+                                        dBComponent.SerializeDB(serializeOnlyChanged, clearChanged);
+                                    }
 
-                                if (dBComponent != null)
-                                {
-                                    dBComponent.AfterSerializationDB();
+                                    //NetSerializer.Serializer.Default.Serialize(writer, component);
+                                    serializedData = SerializationAdapter.SerializeECSComponent(component);
+
+                                    if (dBComponent != null)
+                                    {
+                                        dBComponent.AfterSerializationDB();
+                                    }
+                                    component.AfterSerialization();
                                 }
-                                component.AfterSerialization();
+                                slicedComponents[pairComponent.Key] = serializedData;//writer.ToArray();
+                                if (clearChanged)
+                                    changedComponents.Remove(component.GetTypeFast(), out _);
                             }
-                            slicedComponents[pairComponent.Key] = serializedData;//writer.ToArray();
-                        }
+                        });
                     }
-                    if (clearChanged)
-                    {
-                        changedComponents.Clear();
-                        errorList.ForEach((errorType) => changedComponents.Add(errorType, 0));
-                        if (errorList.Count > 0)
-                            NLogger.LogError("serialization error");
-                    }
-
                     return slicedComponents;
                 }
             }
             else
             {
-                using(this.StabilizationLocker.ReadLock())//lock (this.serializationLocker)
+                //using (this.StabilizationLocker.ReadLock())//lock (this.serializationLocker)
                 {
                     Dictionary<long, byte[]> slicedComponents = new Dictionary<long, byte[]>();
                     var cacheSerializationContainerKeys = SerializationContainer.Keys.ToList();
                     foreach (var pairComponentKey in cacheSerializationContainerKeys)
                     {
-                        object pairComponent;
-                        if (SerializationContainer.TryGetValue(pairComponentKey, out pairComponent))
-                        {
+                        SerializationContainer.ExecuteReadLocked(pairComponentKey, (key, pairComponent) => { 
                             using (MemoryStream writer = new MemoryStream())
                             {
                                 if (!(pairComponent as ECSComponent).Unregistered)
                                 {
                                     DBComponent dbComp = null;
 
-                                    if(Defines.LogECSEntitySerializationComponents)
+                                    if (Defines.LogECSEntitySerializationComponents)
                                     {
                                         NLogger.Log($"Will serialized component {pairComponent.GetType()} in {this.entity.AliasName}:{this.entity.instanceId}");
                                     }
@@ -146,19 +130,19 @@ namespace NECS.ECS.ECSCore
                                     {
                                         dbComp.AfterSerializationDB();
                                     }
+                                    if (clearChanged)
+                                        changedComponents.Remove((pairComponent as ECSComponent).GetTypeFast(), out _);
                                 }
                             }
-                        }
+                            });
                     }
-                    if (clearChanged)
-                        changedComponents.Clear();
                     return slicedComponents;
                 }
                 return null;
             }
         }
 
-        public Dictionary<long, byte[]> SerializeStorage(bool serializeOnlyChanged, bool clearChanged)
+        public Dictionary<long, byte[]> SerializeStorage(bool serializeOnlyChanged, bool clearChanged) // OBSOLETE
         {
             Dictionary<long, byte[]> serializeContainer = new Dictionary<long, byte[]>();
             if (serializeOnlyChanged)
@@ -166,17 +150,11 @@ namespace NECS.ECS.ECSCore
                 foreach (var changedComponent in changedComponents)
                 {
                     var component = components[changedComponent.Key];
-                    if(Defines.LogECSEntitySerializationComponents)
+                    if (Defines.LogECSEntitySerializationComponents)
                     {
                         NLogger.Log($"Will serialized component {component.GetType()} in {this.entity.AliasName}:{this.entity.instanceId}");
                     }
                     serializeContainer[component.GetId()] = SerializationAdapter.SerializeECSComponent(component);
-                    //using (MemoryStream writer = new MemoryStream())
-                    //{
-                    //    var component = components[changedComponent.Key];
-                    //    NetSerializer.Serializer.Default.Serialize(writer, component);
-                    //    serializeContainer[component.GetId()] = writer.ToArray();
-                    //}
                 }
             }
             else
@@ -184,11 +162,6 @@ namespace NECS.ECS.ECSCore
                 foreach (var changedComponent in SerializationContainer)
                 {
                     serializeContainer[changedComponent.Key] = SerializationAdapter.SerializeECSComponent(changedComponent.Value as ECSComponent);
-                    //using (MemoryStream writer = new MemoryStream())
-                    //{
-                    //    NetSerializer.Serializer.Default.Serialize(writer, changedComponent.Value);
-                    //    serializeContainer[changedComponent.Key] = writer.ToArray();
-                    //}
                 }
             }
             if (clearChanged)
@@ -198,15 +171,9 @@ namespace NECS.ECS.ECSCore
 
         public void DeserializeStorage(Dictionary<long, byte[]> serializedComponents)
         {
-            foreach(var serComponent in serializedComponents)
+            foreach (var serComponent in serializedComponents)
             {
                 this.SerializationContainer[serComponent.Key] = (ECSComponent)SerializationAdapter.DeserializeECSComponent(serComponent.Value, serComponent.Key);
-                //using (var memoryStream = new MemoryStream())
-                //{
-                //    memoryStream.Write(serComponent.Value, 0, serComponent.Value.Length);
-                //    memoryStream.Position = 0;
-                //    this.SerializationContainer[serComponent.Key] =  (ECSComponent)DeepCopy.CopyObject(NetSerializer.Serializer.Default.Deserialize(memoryStream));
-                //}
             }
         }
 
@@ -216,7 +183,7 @@ namespace NECS.ECS.ECSCore
             {
                 if (serializeOnlyChanged)
                 {
-                    using(this.StabilizationLocker.ReadLock())//lock (this.serializationLocker)
+                    using (this.StabilizationLocker.ReadLock())//lock (this.serializationLocker)
                     {
                         ConcurrentDictionary<long, object> serializeContainer = new ConcurrentDictionary<long, object>();
                         Dictionary<long, string> slicedComponents = new Dictionary<long, string>();
@@ -266,7 +233,7 @@ namespace NECS.ECS.ECSCore
                 }
                 else
                 {
-                    using(this.StabilizationLocker.ReadLock())//lock (this.serializationLocker)
+                    using (this.StabilizationLocker.ReadLock())//lock (this.serializationLocker)
                     {
                         Dictionary<long, string> slicedComponents = new Dictionary<long, string>();
                         var cacheSerializationContainerKeys = SerializationContainer.Keys.ToList();
@@ -358,18 +325,20 @@ namespace NECS.ECS.ECSCore
         public bool CheckChanged(Type typeComponent) => changedComponents.Keys.Contains(typeComponent);
         public void DirectiveChange(Type typeComponent)
         {
-            components.ExecuteReadLocked(typeComponent,(key, component) =>
+            components.ExecuteReadLocked(typeComponent, (key, component) =>
             {
                 changedComponents[typeComponent] = 1;
             });
         }
+
         #region Base functions
         public bool AddComponentImmediately(Type comType, ECSComponent component, bool restoringMode = false, bool silent = false)
         {
             bool added = false;
             if (!this.components.Keys.Contains(comType))
             {
-                components.ExecuteOnAddLocked(comType,component,(key, component) =>{
+                components.ExecuteOnAddLocked(comType, component, (key, component) =>
+                {
                     AddComponentProcess(comType, component, restoringMode);
                     added = true;
                 });
@@ -381,8 +350,8 @@ namespace NECS.ECS.ECSCore
                     components.ExecuteReadLocked(comType, (key, addedcomponent) =>
                     {
                         addedcomponent.Unregistered = false;
+                        component.AddedReaction(this.entity);
                     });
-                    component.AddedReaction(this.entity);
                 }
             }
             else
@@ -415,10 +384,7 @@ namespace NECS.ECS.ECSCore
             );
             if (!silent && changed)
             {
-                TaskEx.RunAsync(() =>
-                {
-                    component.RunOnChangeCallbacks(this.entity);
-                });
+                component.ChangeReaction(this.entity);
             }
             return changed;
             //this.MarkComponentChanged(component, silent);
@@ -484,10 +450,7 @@ namespace NECS.ECS.ECSCore
             );
             if (!eventSilent && changed)
             {
-                TaskEx.RunAsync(() =>
-                {
-                    component.RunOnChangeCallbacks(this.entity);
-                });
+                component.ChangeReaction(this.entity);
             }
             return changed;
         }
@@ -502,10 +465,9 @@ namespace NECS.ECS.ECSCore
                 RemoveComponentProcess(componentClass, component);
                 removed = true;
             });
-            if(removed)
+            if (removed)
             {
                 component2.RemovingReaction(this.entity);
-                component2.IECSDispose();
             }
             else
             {
@@ -525,33 +487,138 @@ namespace NECS.ECS.ECSCore
             ManagerScope.instance.entityManager.OnRemoveComponent(this.entity, component);
         }
 
+
+
+
+        public void RemoveComponentsWithGroup(long componentGroup)
+        {
+            List<ECSComponent> toRemoveComponent = new List<ECSComponent>();
+            List<ECSComponent> notRemovedComponent = new List<ECSComponent>();
+            bool exception = false;
+            foreach (var component in components)
+            {
+                if (component.Value.ComponentGroups.TryGetValueI(componentGroup, out _, component.Value.SerialLocker))
+                {
+                    toRemoveComponent.Add(component.Value);
+                }
+            }
+            toRemoveComponent.ForEach((removedComponent) =>
+                {
+                    this.ExecuteWriteLockedComponent(removedComponent.GetTypeFast(), (key, component) =>
+                    {
+                        if (!this.components.Keys.Contains(removedComponent.GetTypeFast()))
+                        {
+                            exception = true;
+                            notRemovedComponent.Add(removedComponent);
+                        }
+                        else
+                        {
+                            this.changedComponents.Remove(removedComponent.GetTypeFast(), out _);
+                            this.entity.fastEntityComponentsId.RemoveI(removedComponent.instanceId, this.entity.SerialLocker);
+                            this.components.Remove(removedComponent.GetTypeFast());
+                            this.SerializationContainer.Remove(removedComponent.GetId(), out _);
+                            this.IdToTypeComponent.Remove(removedComponent.GetId(), out _);
+                            this.RemovedComponents.Add(removedComponent.GetId());
+                            ManagerScope.instance.entityManager.OnRemoveComponent(this.entity, removedComponent);
+                            removedComponent.RemovingReaction(this.entity);
+                        }
+                    });
+                });
+            if (exception)
+            {
+                NLogger.Error("try to remove non present component in group removing");
+            }
+        }
+
+        public void FilterRemovedComponents(List<long> filterList, List<long> filteringOnlyGroups)
+        {
+            var bufFilterList = new List<long>(filterList);
+            foreach (var component in this.components)
+            {
+                if (filteringOnlyGroups.Count == 0)
+                {
+                    var id = component.Value.instanceId;
+                    bool finded = false;
+                    int i;
+                    for (i = 0; i < bufFilterList.Count; i++)
+                    {
+                        if (id == bufFilterList[i])
+                        {
+                            finded = true;
+                        }
+                    }
+                    if (!finded)
+                    {
+                        this.RemoveComponentImmediately(component.Key);
+                    }
+                }
+                else
+                {
+                    foreach (var group in filteringOnlyGroups)
+                    {
+                        foreach (var componentGroup in component.Value.ComponentGroups.SnapshotI(component.Value.SerialLocker))
+                        {
+                            if (componentGroup.Key == group)
+                            {
+                                var id = component.Value.instanceId;
+                                bool finded = false;
+                                int i;
+                                for (i = 0; i < bufFilterList.Count; i++)
+                                {
+                                    if (id == bufFilterList[i])
+                                    {
+                                        finded = true;
+                                    }
+                                }
+                                if (!finded)
+                                {
+                                    this.RemoveComponentImmediately(component.Key);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
+
+
         #endregion
 
         #region Unsafe component functions
 
-        public bool AddComponentUnsafeSilent(Type componentType, ECSComponent component, bool restoringMode = false)
+        public bool AddComponentUnsafe(Type componentType, ECSComponent component, bool restoringMode = false, bool silent = false)
         {
-            if(this.components.UnsafeAdd(componentType, component))
+            if (this.components.UnsafeAdd(componentType, component))
             {
                 AddComponentProcess(componentType, component, restoringMode);
+                if (!silent)
+                {
+                    component.AddedReaction(this.entity);
+                }
                 return true;
             }
             return false;
         }
 
-        public bool ChangeComponentUnsafeSilent(ECSComponent component, bool silent = false, ECSEntity restoringOwner = null)
+        public bool ChangeComponentUnsafe(ECSComponent component, bool silent = false, ECSEntity restoringOwner = null)
         {
-            if(this.components.UnsafeChange(component.GetTypeFast(), component))
+            if (this.components.UnsafeChange(component.GetTypeFast(), component))
             {
                 ChangeComponentProcess(component, silent, restoringOwner);
+                if (!silent)
+                {
+                    component.ChangeReaction(this.entity);
+                }
                 return true;
             }
             return false;
         }
-        
+
         public bool RemoveComponentUnsafeSilent(Type componentType)
         {
-            if(this.components.UnsafeRemove(componentType, out var component))
+            if (this.components.UnsafeRemove(componentType, out var component))
             {
                 RemoveComponentProcess(componentType, component);
                 return true;
@@ -596,21 +663,31 @@ namespace NECS.ECS.ECSCore
 
         #region Additional Base functions
 
+        public ECSComponent RemoveComponentImmediately(long componentTypeId)
+        {
+            return RemoveComponentImmediately(this.IdToTypeComponent[componentTypeId]);
+        }
+
         public void AddComponentsImmediately(IList<ECSComponent> addedComponents)
         {
             addedComponents.ForEach<ECSComponent>(component => this.AddComponentImmediately(component.GetTypeFast(), component));
         }
 
-        public void RegisterAllComponents(bool previous_changed = true)
+        public void RemoveComponentsImmediately(IList<ECSComponent> removedComponents)
         {
-            if (previous_changed)
+            removedComponents.ForEach(component => this.RemoveComponentImmediately(component.GetTypeFast()));
+        }
+
+        public void RegisterAllComponents(bool previous_changed = false)
+        {
+            if (previous_changed)//bullshit from oldest version, need to check, but better been deleted
             {
                 List<ECSComponent> changed_components = new List<ECSComponent>();
                 foreach (var component in components)
                 {
                     if (component.Value.Unregistered)
                     {
-                        if(MarkComponentChanged(component.Value,false, true))
+                        if (MarkComponentChanged(component.Value, false, true))
                         {
                             changed_components.Add(component.Value);
                         }
@@ -687,142 +764,6 @@ namespace NECS.ECS.ECSCore
         }
 
         #endregion
-
-
-
-        
-
-        public void ExclusiveLockedOperation(Action operation)
-        {
-            using(this.StabilizationLocker.WriteLock())
-            {
-                operation();
-            }
-        }
-
-        public void ReadLockedOperation(Action operation)
-        {
-            using(this.StabilizationLocker.ReadLock())
-            {
-                operation();
-            }
-        }
-
-
-
-        
-
-        public ECSComponent RemoveComponentImmediately(long componentTypeId)
-        {
-            return RemoveComponentImmediately(this.IdToTypeComponent[componentTypeId]);
-        }
-
-        public void RemoveComponentsWithGroup(long componentGroup)
-        {
-            List<ECSComponent> toRemoveComponent = new List<ECSComponent>();
-            List<ECSComponent> notRemovedComponent = new List<ECSComponent>();
-            bool exception = false;
-            using(this.StabilizationLocker.WriteLock())
-            {
-                //lock (this.serializationLocker)
-                {     
-                    foreach (var component in components)
-                    {
-                        if (component.Value.ComponentGroups.TryGetValueI(componentGroup, out _, component.Value.SerialLocker))
-                        {
-                            toRemoveComponent.Add(component.Value);
-                        }
-                    }
-                    //lock (this.operationLocker)
-                    {
-                        toRemoveComponent.ForEach((removedComponent) =>
-                        {
-                            if (!this.components.Keys.Contains(removedComponent.GetTypeFast()))
-                            {
-                                exception = true;
-                                notRemovedComponent.Add(removedComponent);
-                            }
-                            else
-                            {
-                                this.changedComponents.Remove(removedComponent.GetTypeFast(), out _);
-                                this.entity.fastEntityComponentsId.RemoveI(removedComponent.instanceId, this.entity.SerialLocker);
-                                this.components.Remove(removedComponent.GetTypeFast());
-                                this.SerializationContainer.Remove(removedComponent.GetId(), out _);
-                                this.IdToTypeComponent.Remove(removedComponent.GetId(), out _);
-                                this.RemovedComponents.Add(removedComponent.GetId());
-                                ManagerScope.instance.entityManager.OnRemoveComponent(this.entity, removedComponent);
-                            }
-                        });
-                    }
-                }
-            }
-            if(exception)
-            {
-                NLogger.Error("try to remove non present component in group removing");
-            }
-            toRemoveComponent.ForEach((removedComponent) =>
-            {
-                if(!notRemovedComponent.Contains(removedComponent))
-                {
-                    removedComponent.RemovingReaction(this.entity);
-                    removedComponent.IECSDispose();
-                }
-            });
-        }
-
-        public void FilterRemovedComponents(List<long> filterList, List<long> filteringOnlyGroups)
-        {
-            var bufFilterList = new List<long>(filterList);
-            foreach(var component in this.components)
-            {
-                if(filteringOnlyGroups.Count == 0)
-                {
-                    var id = component.Value.instanceId;
-                    bool finded = false;
-                    int i;
-                    for (i = 0; i < bufFilterList.Count; i++)
-                    {
-                        if (id == bufFilterList[i])
-                        {
-                            finded = true;
-                        }
-                    }
-                    if (!finded)
-                    {
-                        this.RemoveComponentImmediately(component.Key);
-                    }
-                }
-                else
-                {
-                    foreach (var group in filteringOnlyGroups)
-                    {
-                        foreach(var componentGroup in component.Value.ComponentGroups.SnapshotI(component.Value.SerialLocker))
-                        {
-                            if (componentGroup.Key == group)
-                            {
-                                var id = component.Value.instanceId;
-                                bool finded = false;
-                                int i;
-                                for (i = 0; i < bufFilterList.Count; i++)
-                                {
-                                    if (id == bufFilterList[i])
-                                    {
-                                        finded = true;
-                                    }
-                                }
-                                if (!finded)
-                                {
-                                    this.RemoveComponentImmediately(component.Key);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-
-
 
         public ICollection<Type> ComponentClasses =>
             this.components.Keys;

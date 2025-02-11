@@ -131,7 +131,7 @@ namespace NECS.ECS.ECSCore
         {
             StateReactionQueue.AddEvent(StateReactionType.Added, () =>
             {
-                lock (this.SerialLocker)
+                lock (this.StateReactionQueue)
                 {
                     this.OnAdded(entity);
                 }
@@ -151,9 +151,18 @@ namespace NECS.ECS.ECSCore
         {
             StateReactionQueue.AddEvent(StateReactionType.Changed, () =>
             {
-                lock (this.SerialLocker)
+                lock (this.StateReactionQueue)
                 {
+                    List<Action<ECSEntity, ECSComponent>> callbackActions;
+                    ECSComponentManager.OnChangeCallbacksDB.TryGetValue(this.GetId(), out callbackActions);
                     this.OnChanged(entity);
+                    if (callbackActions != null)
+                    {
+                        foreach (var act in callbackActions)
+                        {
+                            act(entity, this);
+                        }
+                    }
                 }
             });
         }
@@ -170,9 +179,10 @@ namespace NECS.ECS.ECSCore
         {
             StateReactionQueue.AddEvent(StateReactionType.Removed, () =>
             {
-                lock (this.SerialLocker)
+                lock (this.StateReactionQueue)
                 {
                     this.OnRemoved(entity);
+                    this.IECSDispose();
                 }
             });
         }
@@ -206,16 +216,7 @@ namespace NECS.ECS.ECSCore
         }
         public void RunOnChangeCallbacks(ECSEntity parentEntity)
         {
-            List<Action<ECSEntity, ECSComponent>> callbackActions;
-            ECSComponentManager.OnChangeCallbacksDB.TryGetValue(this.GetId(), out callbackActions);
-            this.ChangeReaction(parentEntity);
-            if (callbackActions!=null)
-            {
-                foreach (var act in callbackActions)
-                {
-                    act(parentEntity, this);
-                }
-            }            
+            
         }
 
         public object Clone() => MemberwiseClone();

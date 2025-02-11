@@ -30,10 +30,6 @@ namespace NECS.ECS.ECSCore
 
         [System.NonSerialized]
         public ECSEntityManager manager;
-        [System.NonSerialized]
-        public ReaderWriterLockSlim locker = new ReaderWriterLockSlim();
-        [System.NonSerialized]
-        public object contextSwitchLocker = new object();
         [ServerOnlyData]
         [System.NonSerialized]
         public ConcurrentDictionary<long, ECSEntityGroup> entityGroups;
@@ -90,20 +86,7 @@ namespace NECS.ECS.ECSCore
 
         private void AddComponentImpl(ECSComponent component, bool sendEvent)
         {
-            Type componentClass = component.GetTypeFast();
-            if (!this.entityComponents.HasComponent(componentClass))//|| !this.IsSkipExceptionOnAddRemove(componentClass)
-            {
-                this.entityComponents.AddComponentImmediately(component.GetTypeFast(), component, false, !sendEvent);
-                
-                if (sendEvent)
-                {
-                    this.manager.OnAddComponent(this, component);
-                }
-            }
-            else
-            {
-                throw new Exception();
-            }
+            this.entityComponents.AddComponentImmediately(component.GetTypeFast(), component, false, !sendEvent);
         }
 
         private void AddOrChangeComponentImpl(ECSComponent component, bool sendEvent, bool restoringOwner = false)
@@ -240,10 +223,6 @@ namespace NECS.ECS.ECSCore
                 this.AddComponent(typeof(T));
             }
         }
-
-        public void ExclusiveLockedOperation(Action operation) => this.entityComponents.ExclusiveLockedOperation(operation);
-
-        public void ReadLockedOperation(Action operation) => this.entityComponents.ReadLockedOperation(operation);
 
         public void AddComponentSilent(ECSComponent component)
         {
