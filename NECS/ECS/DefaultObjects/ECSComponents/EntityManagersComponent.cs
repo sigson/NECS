@@ -21,9 +21,9 @@ namespace NECS.ECS.DefaultsDB.ECSComponents
 
         IDictionary<Type, IEntityManager> managersStorage = new ConcurrentDictionary<Type, IEntityManager>();
 
-        public override void RemovingReaction(ECSEntity entity)
+        protected override void OnRemoved(ECSEntity entity)
         {
-            base.RemovingReaction(entity);
+            base.OnRemoved(entity);
             this.Keys.ToList().ForEach(x => this.Remove(x));
         }
 
