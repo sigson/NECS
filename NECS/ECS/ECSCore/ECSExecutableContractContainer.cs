@@ -26,13 +26,25 @@ namespace NECS.ECS.ECSCore
         /// <summary>
         /// key long - entityid
         /// </summary>
-        public IDictionary<long, List<Func<ECSEntity, bool>>> ContractConditions { get; set; } = new ConcurrentDictionary<long, List<Func<ECSEntity, bool>>>();
+        public IDictionary<long, List<Func<ECSEntity, bool>>> ContractConditions { get; set; } = null;
         /// <summary>
         /// key long - entityownerid
         ///long - componentTypeId
         ///bool - presence state
         /// </summary>
-        public IDictionary<long, Dictionary<long, bool>> EntityComponentPresenceSign { get; set; } = new Dictionary<long, Dictionary<long, bool>>();
+        public IDictionary<long, Dictionary<long, bool>> EntityComponentPresenceSign { get; set; } = null;
+
+        public List<long> NeededEntities {
+            get{
+                if(ContractConditions != null && EntityComponentPresenceSign != null)
+                {
+                    var allentities = ContractConditions.Keys.ToList();
+                    allentities.AddRange(this.EntityComponentPresenceSign.Keys);
+                    return allentities;
+                }
+                return null;
+            }
+        }
 
         public Action<ECSExecutableContractContainer, ECSEntity[]> ContractExecutable = (ECSExecutableContractContainer contract, ECSEntity[] entities) => {
             foreach (var entity in entities)
