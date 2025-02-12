@@ -208,6 +208,11 @@ namespace NECS
             return BitConverter.ToInt64(guid.ToByteArray(), 8);
         }
 
+        public static Type IdToECSType(this long id)
+        {
+            return NECS.ECS.ECSCore.EntitySerialization.TypeStorage[id];
+        }
+
         //public static T[] Concat<T>(this T[] x, T[] y)
         //{
         //    if (x == null) throw new ArgumentNullException("x");

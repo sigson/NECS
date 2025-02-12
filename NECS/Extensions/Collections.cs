@@ -1161,6 +1161,24 @@ namespace NECS.Extensions
             }
         }
 
+        public void ExecuteReadLockedContinuously(TKey key, Action<TKey,TValue> action, out RWLock.LockToken token)
+        {
+            if(this.TryGetLockedElement(key, out var value, out token, false))
+            {
+                action(key, value);
+                //token.Dispose();
+            }
+        }
+
+        public void ExecuteWriteLockedContinuously(TKey key, Action<TKey,TValue> action, out RWLock.LockToken token)
+        {
+            if(this.TryGetLockedElement(key, out var value, out token, true))
+            {
+                action(key, value);
+                //token.Dispose();
+            }
+        }
+
         public RWLock.LockToken LockStorage()
         {
             return this.GlobalLocker.WriteLock();

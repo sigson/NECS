@@ -636,7 +636,7 @@ namespace NECS.ECS.ECSCore
     public class UnserializedEntity
     {
         public ECSEntity entity { get; set; }
-        public ConcurrentDictionary<long, object> SerializationContainer { get; set; }
+        public LockedDictionary<long, object> SerializationContainer { get; set; }
 
         public void ReworkDictionary()
         {

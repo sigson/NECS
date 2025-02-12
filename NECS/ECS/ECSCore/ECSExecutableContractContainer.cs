@@ -23,13 +23,16 @@ namespace NECS.ECS.ECSCore
         public long Id { get; set; }
         [System.NonSerialized]
         public Type SystemType;
-        public IDictionary<long, Func<ECSEntity, bool>> ContractConditions { get; set; } = new ConcurrentDictionary<long, Func<ECSEntity, bool>>();
+        /// <summary>
+        /// key long - entityid
+        /// </summary>
+        public IDictionary<long, List<Func<ECSEntity, bool>>> ContractConditions { get; set; } = new ConcurrentDictionary<long, List<Func<ECSEntity, bool>>>();
         /// <summary>
         /// key long - entityownerid
         ///long - componentTypeId
         ///bool - presence state
         /// </summary>
-        public IDictionary<long, Dictionary<long, bool>> ComponentPresenceSign { get; set; } = new Dictionary<long, Dictionary<long, bool>>();
+        public IDictionary<long, Dictionary<long, bool>> EntityComponentPresenceSign { get; set; } = new Dictionary<long, Dictionary<long, bool>>();
 
         public Action<ECSExecutableContractContainer, ECSEntity[]> ContractExecutable = (ECSExecutableContractContainer contract, ECSEntity[] entities) => {
             foreach (var entity in entities)
@@ -83,54 +86,134 @@ namespace NECS.ECS.ECSCore
         {
 
         }
-
-        public bool TryExecuteContract(List<ECSEntity> contractEntities, bool ExecuteContract = true)
+        /// <summary>
+        /// contractEntities not null if it time depend contract
+        /// </summary>
+        /// <param name="ExecuteContract"></param>
+        /// <param name="contractEntities"></param>
+        /// <returns></returns>
+        public bool TryExecuteContract(bool ExecuteContract = true, List<long> contractEntities = null )
         {
             lock (ContractLocker)
             {
                 if (!ContractExecuted)
                 {
-                    var LockedPoints = new List<NECS.RWLock.ReadLockToken>();
-                    foreach (var entity in contractEntities)
+                    
+                    if(contractEntities == null)
                     {
-                        foreach (var presenceCondition in ComponentPresenceSign)
+                        var allentities = ContractConditions.Keys.ToList();
+                        allentities.AddRange(this.EntityComponentPresenceSign.Keys);
+                        if(GetContractLockers(allentities, this.ContractConditions, this.EntityComponentPresenceSign, false, out var lockers, out var executionEntities) && lockers != null)
                         {
-
-                            if (presenceCondition.Value(entity))
-                            {
-                                LockedPoints.Add(entity.entityComponents.StabilizationLocker.WriteLock());
-                            }
+                            if(ExecuteContract)
+                                ContractExecutable(this, executionEntities.ToArray());
+                            lockers.ForEach(x => x.Dispose());
+                            if(ExecuteContract)
+                                ContractExecuted = true;
+                            return true;
                         }
-                    }
-                    foreach (var entity in contractEntities)
-                    {
-                        foreach (var condition in ContractConditions)
-                        {
-                            if (condition.Value(entity))
-                            {
-                                LockedPoints.Add(entity.entityComponents.StabilizationLocker.WriteLock());
-                            }
-                        }
-                    }
-                    if (LockedPoints.Count == contractEntities.Count)
-                    {
-                        if(ExecuteContract)
-                        {
-                            ContractExecutable(contractEntities.ToArray());
-                        }
-                        LockedPoints.ForEach(locker => locker.Dispose());
-                        return true;
                     }
                     else
                     {
-                        LockedPoints.ForEach(locker => locker.Dispose());
-                        return false;
+                        var filledContractConditions = new Dictionary<long, List<Func<ECSEntity, bool>>>();
+                        var filledEntityComponentPresenceSign = new Dictionary<long, Dictionary<long, bool>>();
+                        foreach (var contractCond in this.ContractConditions)
+                        {
+                            foreach (var contractEntity in contractEntities)
+                            {
+                                filledContractConditions[contractEntity] = contractCond.Value;
+                            }
+                        }
+                        foreach (var presenceSign in this.EntityComponentPresenceSign)
+                        {
+                            foreach (var contractEntity in contractEntities)
+                            {
+                                filledEntityComponentPresenceSign[contractEntity] = presenceSign.Value;
+                            }
+                        }
+                        if(GetContractLockers(contractEntities, filledContractConditions, filledEntityComponentPresenceSign, true, out var lockers, out var executionEntities) && lockers != null)
+                        {
+                            if(ExecuteContract)
+                                ContractExecutable(this, executionEntities.ToArray());
+                            lockers.ForEach(x => x.Dispose());
+                            if(ExecuteContract)
+                                ContractExecuted = true;
+                            return true;
+                        }
                     }
+                    return false;
                 }
                 else
                 {
                     return false;
                 }
+            }
+        }
+
+        private bool GetContractLockers(List<long> contractEntities, IDictionary<long, List<Func<ECSEntity, bool>>> LocalContractConditions, IDictionary<long, Dictionary<long, bool>> LocalEntityComponentPresenceSign, bool partialEntityTargetListLockingAllowed, out List<RWLock.LockToken> lockTokens, out List<ECSEntity> executionEntities)
+        {
+            Dictionary<long, List<RWLock.LockToken>> Lockers = new Dictionary<long, List<RWLock.LockToken>>();
+            lockTokens = null;
+            executionEntities = null;
+            var localExecutionEntities = new List<ECSEntity>();
+            bool globalViolationSeizure = false;
+            foreach (var entityid in contractEntities)
+            {
+                ManagerScope.instance.entityManager.EntityStorage.ExecuteReadLockedContinuously(entityid, (entid, contentity) =>
+                {
+                    bool violationSeizure = false;
+                    Lockers.Add(entid, new List<RWLock.LockToken>());
+                    if(LocalEntityComponentPresenceSign.TryGetValue(entid, out var neededComponents))
+                    {
+                        foreach (var component in neededComponents)
+                        {
+                            if(component.Value)
+                                if(contentity.entityComponents.GetReadLockedComponent(component.Key.IdToECSType(), out var componentInstance, out var token))
+                                {
+                                    Lockers[entid].Add(token);
+                                    continue;
+                                }
+                            violationSeizure = true;
+                            globalViolationSeizure = true;
+                        }
+                    }
+
+                    if(LocalContractConditions.TryGetValue(entid, out var conditions))
+                    {
+                        foreach (var condition in conditions)
+                        {
+                            if(!condition(contentity))
+                            {
+                                violationSeizure = true;
+                                globalViolationSeizure = true;
+                            }
+                        }
+                    }
+
+                    if(violationSeizure)
+                    {
+                        Lockers[entid].ForEach(x => x.Dispose());
+                        Lockers.Remove(entid);
+                    }
+                    else
+                    {
+                        localExecutionEntities.Add(contentity);
+                    }
+                }, out var entitytoken);
+                if(entitytoken != null && Lockers.ContainsKey(entityid))
+                    Lockers[entityid].Add(entitytoken);
+
+            }
+            if(globalViolationSeizure && !partialEntityTargetListLockingAllowed)
+            {
+                Lockers.ForEach(x => x.Value.ForEach(y => y.Dispose()));
+                return !globalViolationSeizure;
+            }
+            else
+            {
+                lockTokens = Lockers.Values.SelectMany(x => x).ToList();
+                executionEntities = localExecutionEntities;
+                return true;
             }
         }
 
