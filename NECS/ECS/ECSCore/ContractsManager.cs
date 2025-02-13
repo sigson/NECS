@@ -39,10 +39,15 @@ namespace NECS.ECS.ECSCore
             foreach(ECSExecutableContractContainer system in AllSystems)
             {
                 system.Initialize();
-                if(system.TimeDependExecution)
-                    TimeDependContractEntityDatabase.TryAdd(system, new ConcurrentDictionary<long, int>());
-                
-                foreach(var CallbackData in system.ComponentsOnChangeCallbacks)
+                if (system.TimeDependExecution)
+                {
+                    if (system.ContractConditions != null || system.EntityComponentPresenceSign != null)
+                        TimeDependContractEntityDatabase.TryAdd(system, new ConcurrentDictionary<long, int>());
+                    else
+                        NLogger.Error($"System {system.GetType().Name} not initialized conditions.");
+                }
+
+                foreach (var CallbackData in system.ComponentsOnChangeCallbacks)
                 {
                     List<Action<ECSEntity, ECSComponent>> callBack;
                     if (ECSComponentManager.OnChangeCallbacksDB.TryGetValue(CallbackData.Key, out callBack))
@@ -64,7 +69,7 @@ namespace NECS.ECS.ECSCore
                 return;
             foreach(var SystemPair in TimeDependContractEntityDatabase)
             {
-                if (Interlocked.Equals(SystemPair.Key.TimeDependExecution, true) && Interlocked.Equals(SystemPair.Key.InWork, false) && SystemPair.Key.LastEndExecutionTimestamp + DateTimeExtensions.MillisecondToTicks
+                if (Interlocked.Equals(SystemPair.Key.TimeDependActive, true) && Interlocked.Equals(SystemPair.Key.InWork, false) && SystemPair.Key.LastEndExecutionTimestamp + DateTimeExtensions.MillisecondToTicks
                     (SystemPair.Key.DelayRunMilliseconds) < DateTime.Now.Ticks)
                 {
                     SystemPair.Key.InWork = true;

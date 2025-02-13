@@ -412,7 +412,8 @@ namespace NECS.ECS.ECSCore
             else
                 this.SerializationContainer[component.GetId()] = component;
             this.IdToTypeComponent.TryAdd(component.GetId(), component.GetTypeFast());
-            this.entity.manager.OnAddComponent(this.entity, component);
+            //this.entity.manager.OnAddComponent(this.entity, component);
+            ManagerScope.instance.entityManager.OnAddComponent(this.entity, component);
         }
 
         public bool ChangeComponent(ECSComponent component, bool silent = false, ECSEntity restoringOwner = null)
@@ -738,7 +739,8 @@ namespace NECS.ECS.ECSCore
                 {
                     component.Unregistered = false;
                     component.AddedReaction(entity);
-                    this.entity.manager.OnAddComponent(this.entity, component);
+                    //this.entity.manager.OnAddComponent(this.entity, component);
+                    ManagerScope.instance.entityManager.OnAddComponent(this.entity, component);
                 }
             }
             else
@@ -751,7 +753,8 @@ namespace NECS.ECS.ECSCore
                         {
                             component.Unregistered = false;
                             component.AddedReaction(entity);
-                            this.entity.manager.OnAddComponent(this.entity, component);
+                            //this.entity.manager.OnAddComponent(this.entity, component);
+                            ManagerScope.instance.entityManager.OnAddComponent(this.entity, component);
                         }
                     });
                 }

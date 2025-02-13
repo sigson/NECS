@@ -1577,10 +1577,10 @@ namespace NECS.Extensions
                 GatesCounter = gatesCounter;
             }
             _priorityOrder = new List<PriorityWrapper>();
-            if (_priorityOrder.Count == 0)
+            if (priorityOrder.Count() == 0)
                 throw new ArgumentException("Priority order must not be empty", nameof(priorityOrder));
-            if (_priorityOrder.Distinct().Count() != _priorityOrder.Count)
-                throw new ArgumentException("Priority order must contain unique keys", nameof(priorityOrder));
+            // if (priorityOrder.Distinct().Count() != _priorityOrder.Count)
+            //     throw new ArgumentException("Priority order must contain unique keys", nameof(priorityOrder));
 
             _eventLists = new Dictionary<TKey, SynchronizedList<ActionWrapper>>();
             foreach (var key in priorityOrder)

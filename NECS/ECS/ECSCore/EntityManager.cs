@@ -48,6 +48,8 @@ namespace NECS.ECS.ECSCore
 
         public void OnAddComponent(ECSEntity Entity, ECSComponent Component)
         {
+            if (Entity == null || Entity.manager == null)
+                return;
             TaskEx.RunAsync(() =>
             {
                 ManagerScope.instance.systemManager.OnEntityComponentAddedReaction(Entity, Component);
@@ -56,6 +58,8 @@ namespace NECS.ECS.ECSCore
 
         public void OnRemoveComponent(ECSEntity Entity, ECSComponent Component)
         {
+            if (Entity == null || Entity.manager == null)
+                return;
             TaskEx.RunAsync(() =>
             {
                 ManagerScope.instance.systemManager.OnEntityComponentRemovedReaction(Entity, Component);
