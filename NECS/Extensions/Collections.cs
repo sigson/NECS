@@ -928,9 +928,16 @@ namespace NECS.Extensions
             public TValue Value;
             public RWLock lockValue;
         }
+        private LockedDictionary<TKey, bool> KeysHoldingStorage = new LockedDictionary<TKey, bool>();
+        public bool HoldKeys = false;
         private readonly ConcurrentDictionary<TKey, LockedValue> dictionary = new ConcurrentDictionary<TKey, LockedValue>();
         public bool LockValue = false;
         private readonly RWLock GlobalLocker = new RWLock();
+
+        public LockedDictionary(bool preserveLockingKeys = false)
+        {
+            HoldKeys = preserveLockingKeys;
+        }
 
         #region Base functions
         private bool TryAddOrChange(TKey key, TValue value, out TValue oldValue, out RWLock.LockToken lockToken, bool lockedMode = false)
@@ -945,22 +952,56 @@ namespace NECS.Extensions
                 bool added = false;
                 //using(this.Remlocker.ReadLock())
                 {
+                    int raceChecker = 0;
+                    recheckRaceOfStates:
+                    bool noncontainsDetected = false;
                     if(!dictionary.ContainsKey(key))
                     {
+                        RWLock.LockToken holdToken = null;
+                        if(HoldKeys)
+                        {
+                            KeysHoldingStorage.TryAddChangeLockedElement(key, false, false, out holdToken);
+                        }
                         var newLockedValue = new LockedValue() { Value = value, lockValue = new RWLock() };
                         if(lockedMode) lockToken = LockValue ? newLockedValue.lockValue.WriteLock() : newLockedValue.lockValue.ReadLock();
-                        dictionary.TryAdd(key, newLockedValue);
-                        added = true;
-                        result = true;
-                        return result;
+                        if(raceChecker > 5)
+                            Monitor.Enter(dictionary);
+                        if(dictionary.TryAdd(key, newLockedValue))
+                        {
+                            added = true;
+                            result = true;
+                            if(raceChecker > 5)
+                                Monitor.Exit(dictionary);
+                            if(HoldKeys)
+                                holdToken.Dispose();
+                            return result;
+                        }
+                        else
+                        {
+                            noncontainsDetected = true;
+                        }
+                        if(HoldKeys && holdToken != null)
+                            holdToken.Dispose();
                     }
-                    if (dictionary.TryGetValue(key, out dvalue) && !added)
+                    if (dictionary.TryGetValue(key, out dvalue))
                     {
-                        if (LockValue)
+                        if(!added)
+                        {
+                            if (LockValue)
                             token = dvalue.lockValue.WriteLock();
                         else
                             token = dvalue.lockValue.ReadLock();
+                        }
                     }
+                    else if(noncontainsDetected)
+                    {
+                        ///we got a race of states when it was discovered that the element was present at the stage of trying to add it, but became absent at the stage of trying to get it. Based on the statistically small chance of such a situation, I repeat the check until the situation is resolved.
+                        ///
+                        raceChecker++;
+                        goto recheckRaceOfStates;
+                    }
+                    if(raceChecker > 5)
+                        Monitor.Exit(dictionary);
                 }
                 if(!added && dvalue != null)
                 {
@@ -1074,6 +1115,31 @@ namespace NECS.Extensions
             }
             lockToken = token;
             return result;
+        }
+
+        public bool HoldKey(TKey key, out RWLock.LockToken lockToken, bool holdMode = true)
+        {
+            lockToken = null;
+            if (HoldKeys)
+                return KeysHoldingStorage.TryAddChangeLockedElement(key, false, holdMode, out lockToken);
+            else
+                return false;
+        }
+
+        public bool ExecuteOnKeyHolded(TKey key, Action action)
+        {
+            if(HoldKey(key, out var lockToken))
+            {
+                action();
+                lockToken.Dispose();
+                return true;
+            }
+            return false;
+        }
+
+        public bool TryAddChangeLockedElement(TKey key, TValue value, bool writeLocked, out RWLock.LockToken lockToken)
+        {
+            return this.TryAddOrChange(key, value, out _, out lockToken, writeLocked);
         }
 
         public void ExecuteOnAddLocked(TKey key, TValue value, Action<TKey,TValue> action)

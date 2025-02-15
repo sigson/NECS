@@ -26,13 +26,13 @@ namespace NECS.ECS.ECSCore
         /// <summary>
         /// key long - entityid
         /// </summary>
-        public IDictionary<long, List<Func<ECSEntity, bool>>> ContractConditions { get; set; } = null;
+        public Dictionary<long, List<Func<ECSEntity, bool>>> ContractConditions { get; set; } = null;
         /// <summary>
         /// key long - entityownerid
         ///long - componentTypeId
         ///bool - presence state
         /// </summary>
-        public IDictionary<long, Dictionary<long, bool>> EntityComponentPresenceSign { get; set; } = null;
+        public Dictionary<long, Dictionary<long, bool>> EntityComponentPresenceSign { get; set; } = null;
 
         public List<long> NeededEntities {
             get{

@@ -22,7 +22,7 @@ namespace NECS.ECS.ECSCore
         private ECSEntity entity;
         public static Type StorageType;
         public int ChangedComponent => changedComponents.Count;
-        private readonly LockedDictionary<Type, ECSComponent> components = new LockedDictionary<Type, ECSComponent>();
+        private readonly LockedDictionary<Type, ECSComponent> components = new LockedDictionary<Type, ECSComponent>(true);
         private readonly IDictionary<Type, int> changedComponents = new ConcurrentDictionary<Type, int>();
         public readonly IDictionary<long, Type> IdToTypeComponent = new ConcurrentDictionary<long, Type>();
         public LockedDictionary<long, object> SerializationContainer = new LockedDictionary<long, object>();
@@ -780,6 +780,21 @@ namespace NECS.ECS.ECSCore
             {
                 component.Value.OnRemove();
             }
+        }
+
+        public bool ExecuteOnNotHasComponent(Type componentType, Action action)
+        {
+            ECSComponent component;
+            if (this.components.ExecuteOnKeyHolded(componentType, action))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        public bool HoldComponentAddition(Type componentType, out RWLock.LockToken token, bool holdMode = true)
+        {
+            return this.components.HoldKey(componentType, out token, holdMode);
         }
 
         public void ExecuteReadLockedComponent(Type componentType, Action<Type, ECSComponent> action)
