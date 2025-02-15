@@ -928,7 +928,7 @@ namespace NECS.Extensions
             public TValue Value;
             public RWLock lockValue;
         }
-        private LockedDictionary<TKey, bool> KeysHoldingStorage = new LockedDictionary<TKey, bool>();
+        private LockedDictionary<TKey, bool> KeysHoldingStorage = null;
         public bool HoldKeys = false;
         private readonly ConcurrentDictionary<TKey, LockedValue> dictionary = new ConcurrentDictionary<TKey, LockedValue>();
         public bool LockValue = false;
@@ -937,10 +937,12 @@ namespace NECS.Extensions
         public LockedDictionary(bool preserveLockingKeys = false)
         {
             HoldKeys = preserveLockingKeys;
+            if(HoldKeys)
+                KeysHoldingStorage = new LockedDictionary<TKey, bool>();
         }
 
         #region Base functions
-        private bool TryAddOrChange(TKey key, TValue value, out TValue oldValue, out RWLock.LockToken lockToken, bool lockedMode = false)
+        private bool TryAddOrChange(TKey key, TValue value, out TValue oldValue, out RWLock.LockToken lockToken, bool lockedMode = false, bool? overrideLockingMode = false)
         {
             var result = false;
             lockToken = null;
@@ -960,10 +962,10 @@ namespace NECS.Extensions
                         RWLock.LockToken holdToken = null;
                         if(HoldKeys)
                         {
-                            KeysHoldingStorage.TryAddChangeLockedElement(key, false, false, out holdToken);
+                            KeysHoldingStorage.TryAddChangeLockedElement(key, false, true, out holdToken, false);
                         }
                         var newLockedValue = new LockedValue() { Value = value, lockValue = new RWLock() };
-                        if(lockedMode) lockToken = LockValue ? newLockedValue.lockValue.WriteLock() : newLockedValue.lockValue.ReadLock();
+                        if(lockedMode) lockToken = (overrideLockingMode != null ? (bool)overrideLockingMode : LockValue) ? newLockedValue.lockValue.WriteLock() : newLockedValue.lockValue.ReadLock();
                         if(raceChecker > 5)
                             Monitor.Enter(dictionary);
                         if(dictionary.TryAdd(key, newLockedValue))
@@ -987,7 +989,7 @@ namespace NECS.Extensions
                     {
                         if(!added)
                         {
-                            if (LockValue)
+                            if (overrideLockingMode != null ? (bool)overrideLockingMode : LockValue)
                             token = dvalue.lockValue.WriteLock();
                         else
                             token = dvalue.lockValue.ReadLock();
@@ -1121,7 +1123,7 @@ namespace NECS.Extensions
         {
             lockToken = null;
             if (HoldKeys)
-                return KeysHoldingStorage.TryAddChangeLockedElement(key, false, holdMode, out lockToken);
+                return KeysHoldingStorage.TryAddChangeLockedElement(key, false, holdMode, out lockToken, true);
             else
                 return false;
         }
@@ -1137,9 +1139,9 @@ namespace NECS.Extensions
             return false;
         }
 
-        public bool TryAddChangeLockedElement(TKey key, TValue value, bool writeLocked, out RWLock.LockToken lockToken)
+        public bool TryAddChangeLockedElement(TKey key, TValue value, bool writeLocked, out RWLock.LockToken lockToken, bool LockingMode = false)
         {
-            return this.TryAddOrChange(key, value, out _, out lockToken, writeLocked);
+            return this.TryAddOrChange(key, value, out _, out lockToken, writeLocked, LockingMode);
         }
 
         public void ExecuteOnAddLocked(TKey key, TValue value, Action<TKey,TValue> action)
