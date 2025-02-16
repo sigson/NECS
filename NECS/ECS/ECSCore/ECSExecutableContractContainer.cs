@@ -22,7 +22,7 @@ namespace NECS.ECS.ECSCore
     {
         public long Id { get; set; }
         [System.NonSerialized]
-        public Type SystemType;
+        public Type SystemType = null;
         /// <summary>
         /// key long - entityid
         /// </summary>
@@ -63,6 +63,8 @@ namespace NECS.ECS.ECSCore
         /// Set FALSE if contract is time depend
         /// </summary>
         public bool RemoveAfterExecution { get; set; } = true;
+        public long MaxTries { get; set; } = long.MaxValue;
+        public long NowTried { get; set; } = 0;
         public bool TimeDependActive { get; set; } = true;
         public bool InWork { get; set; }
         public long LastEndExecutionTimestamp { get; set; }
@@ -90,6 +92,18 @@ namespace NECS.ECS.ECSCore
         /// </summary>
         public IDictionary<long, List<Action<ECSEntity, ECSComponent>>> ComponentsOnChangeCallbacks = new ConcurrentDictionary<long, List<Action<ECSEntity, ECSComponent>>>();//id of component and func
 
+        public ECSExecutableContractContainer()
+        {
+            if(this.GetType() == typeof(ECSExecutableContractContainer))
+            {
+                this.MaxTries = 1;
+            }
+            else
+            {
+                this.RemoveAfterExecution = false;
+            }
+        }
+
         /// <summary>
         /// Methor running before ECS system initialliation
         /// </summary>
@@ -108,6 +122,7 @@ namespace NECS.ECS.ECSCore
         {
             lock (ContractLocker)
             {
+                NowTried++;
                 if (!ContractExecuted)
                 {
                     
@@ -184,6 +199,19 @@ namespace NECS.ECS.ECSCore
                                 {
                                     Lockers[entid].Add(token);
                                     continue;
+                                }
+                            else
+                                if(contentity.entityComponents.HoldComponentAddition(component.Key.IdToECSType(), out token))
+                                {
+                                    if (!contentity.entityComponents.HasComponent(component.Key.IdToECSType()))
+                                    {
+                                        Lockers[entid].Add(token);
+                                        continue;
+                                    }
+                                    else
+                                    {
+                                        token.Dispose();
+                                    }
                                 }
                             violationSeizure = true;
                             globalViolationSeizure = true;

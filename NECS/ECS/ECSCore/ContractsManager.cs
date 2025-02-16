@@ -41,10 +41,10 @@ namespace NECS.ECS.ECSCore
                 system.Initialize();
                 if (system.TimeDependExecution)
                 {
-                    if (system.ContractConditions != null || system.EntityComponentPresenceSign != null)
+                    if (system.ContractConditions != null && system.EntityComponentPresenceSign != null)
                         TimeDependContractEntityDatabase.TryAdd(system, new ConcurrentDictionary<long, int>());
                     else
-                        NLogger.Error($"System {system.GetType().Name} not initialized conditions.");
+                        NLogger.Error($"System {system.GetType().Name} has not initialized conditions.");
                 }
 
                 foreach (var CallbackData in system.ComponentsOnChangeCallbacks)
@@ -108,6 +108,10 @@ namespace NECS.ECS.ECSCore
                     {
                         if(contract.RemoveAfterExecution)
                             RemoveContract(contract);
+                    }
+                    if(contract.NowTried >= contract.MaxTries)
+                    {
+                        RemoveContract(contract);
                     }
                 }
             }
