@@ -337,17 +337,17 @@ namespace NECS.ECS.ECSCore
         {
             bool added = false;
             bool changed = false;
-            components.ExecuteOnAddOrChangeLocked(comType, component, (key, component) => {
-                AddComponentProcess(comType, component, restoringMode);
+            components.ExecuteOnAddOrChangeLocked(comType, component, (key, newcomponent) => {
+                AddComponentProcess(comType, newcomponent, restoringMode);
                     added = true;
-            }, (key, component, oldcomponent) => {
-                changed = ChangeComponentProcess(component, silent, restoringMode ? this.entity : null);
+            }, (key, newcomponent, oldcomponent) => {
+                changed = ChangeComponentProcess(newcomponent, silent, restoringMode ? this.entity : null);
                 if (restoringMode)
 				{
-					if (component is DBComponent dBComponent)
+					if (newcomponent is DBComponent dBComponent)
                     {
                         this.components.UnsafeChange(key, oldcomponent);
-                        (oldcomponent as DBComponent).serializedDB = (component as DBComponent).serializedDB;
+                        (oldcomponent as DBComponent).serializedDB = (newcomponent as DBComponent).serializedDB;
                     }
 				}
             });
@@ -378,9 +378,9 @@ namespace NECS.ECS.ECSCore
             bool added = false;
             if (!this.components.Keys.Contains(comType))
             {
-                components.ExecuteOnAddLocked(comType, component, (key, component) =>
+                components.ExecuteOnAddLocked(comType, component, (key, newcomponent) =>
                 {
-                    AddComponentProcess(comType, component, restoringMode);
+                    AddComponentProcess(comType, newcomponent, restoringMode);
                     added = true;
                 });
             }
@@ -419,9 +419,9 @@ namespace NECS.ECS.ECSCore
         public bool ChangeComponent(ECSComponent component, bool silent = false, ECSEntity restoringOwner = null)
         {
             bool changed = false;
-            components.ExecuteOnChangeLocked(component.GetTypeFast(), component, (key, component, oldcomponent) =>
+            components.ExecuteOnChangeLocked(component.GetTypeFast(), component, (key, chcomponent, oldcomponent) =>
                 {
-                    changed = ChangeComponentProcess(component, silent, restoringOwner);
+                    changed = ChangeComponentProcess(chcomponent, silent, restoringOwner);
                 }
             );
             if (!silent && changed)
@@ -480,9 +480,9 @@ namespace NECS.ECS.ECSCore
         public bool MarkComponentChanged(ECSComponent component, bool serializationSilent = false, bool eventSilent = false)
         {
             bool changed = false;
-            components.ExecuteOnChangeLocked(component.GetType(), component, (key, component, oldcomponent) =>
+            components.ExecuteOnChangeLocked(component.GetType(), component, (key, chcomponent, oldcomponent) =>
                 {
-                    Type componentClass = component.GetTypeFast();
+                    Type componentClass = chcomponent.GetTypeFast();
                     if (!serializationSilent)
                     {
                         changedComponents[componentClass] = 1;

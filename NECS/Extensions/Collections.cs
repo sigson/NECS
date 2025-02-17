@@ -965,7 +965,17 @@ namespace NECS.Extensions
                             KeysHoldingStorage.TryAddChangeLockedElement(key, false, true, out holdToken, false);
                         }
                         var newLockedValue = new LockedValue() { Value = value, lockValue = new RWLock() };
-                        if(lockedMode) lockToken = (overrideLockingMode != null ? (bool)overrideLockingMode : LockValue) ? newLockedValue.lockValue.WriteLock() : newLockedValue.lockValue.ReadLock();
+                        if(lockedMode) 
+                        {
+                            if((overrideLockingMode != null ? (bool)overrideLockingMode : LockValue))
+                            {
+                                lockToken = newLockedValue.lockValue.WriteLock();
+                            }
+                            else 
+                            {
+                                lockToken = newLockedValue.lockValue.ReadLock();
+                            }
+                        }
                         if(raceChecker > 5)
                             Monitor.Enter(dictionary);
                         if(dictionary.TryAdd(key, newLockedValue))
