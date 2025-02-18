@@ -81,15 +81,15 @@ namespace NECS.Harness.Services
 
                     #if GODOT && !GODOT4_0_OR_GREATER
                     var file = new Godot.File();
-                    file.Open(Path.Combine(gamedatapath, "zippedconfig.zip"), Godot.File.ModeFlags.Write);
+                    file.Open(PathEx.Combine(gamedatapath, "zippedconfig.zip"), Godot.File.ModeFlags.Write);
                     file.StoreBuffer(loadedConfigFile.ToArray());
                     file.Close();
                     file.Dispose();
                     #else
-                    File.WriteAllBytes(Path.Combine(gamedatapath, "zippedconfig.zip"), loadedConfigFile.ToArray());
+                    File.WriteAllBytes(PathEx.Combine(gamedatapath, "zippedconfig.zip"), loadedConfigFile.ToArray());
                     #endif
 
-                    var unzipFolder = Path.Combine(gamedatapath, "Unzipped");
+                    var unzipFolder = PathEx.Combine(gamedatapath, "Unzipped");
                     if (DirectoryAdapter.Exists(unzipFolder))
                         DirectoryAdapter.Delete(unzipFolder, true);
                     DirectoryAdapter.CreateDirectory(unzipFolder);
@@ -103,17 +103,17 @@ namespace NECS.Harness.Services
                     #if GODOT && !GODOT4_0_OR_GREATER
                     var file = new Godot.File();
 
-                    if(!file.FileExists(Path.Combine(gameConfDirectory, "baseconfig.json")))
+                    if(!file.FileExists(PathEx.Combine(gameConfDirectory, "baseconfig.json")))
                     {
-                        file.Open(Path.Combine(gameConfDirectory, "baseconfig.json"), Godot.File.ModeFlags.Write);
+                        file.Open(PathEx.Combine(gameConfDirectory, "baseconfig.json"), Godot.File.ModeFlags.Write);
                         file.StoreString(JsonUtil.JsonPrettify(GlobalProgramState.instance.BaseConfigDefault));
                         file.Close();
                     }
                     if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
                     {
-                        if(!file.FileExists(Path.Combine(gameConfDirectory, "loginconfig.json")))
+                        if(!file.FileExists(PathEx.Combine(gameConfDirectory, "loginconfig.json")))
                         {
-                            file.Open(Path.Combine(gameConfDirectory, "loginconfig.json"), Godot.File.ModeFlags.Write);
+                            file.Open(PathEx.Combine(gameConfDirectory, "loginconfig.json"), Godot.File.ModeFlags.Write);
                             file.StoreString(JsonUtil.JsonPrettify(GlobalProgramState.instance.BaseLoginConfig));
                             file.Close();
                         }
@@ -121,15 +121,15 @@ namespace NECS.Harness.Services
                     file.Dispose();
                     #else
 
-                    if(!File.Exists(Path.Combine(gameConfDirectory, "baseconfig.json")))
+                    if(!File.Exists(PathEx.Combine(gameConfDirectory, "baseconfig.json")))
                     {
-                        File.WriteAllText(Path.Combine(gameConfDirectory, "baseconfig.json"), JsonUtil.JsonPrettify(GlobalProgramState.instance.BaseConfigDefault));
+                        File.WriteAllText(PathEx.Combine(gameConfDirectory, "baseconfig.json"), JsonUtil.JsonPrettify(GlobalProgramState.instance.BaseConfigDefault));
                     }
                     if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
                     {
-                        if (!File.Exists(Path.Combine(gameConfDirectory, "loginconfig.json")))
+                        if (!File.Exists(PathEx.Combine(gameConfDirectory, "loginconfig.json")))
                         {
-                            File.WriteAllText(Path.Combine(gameConfDirectory, "loginconfig.json"), JsonUtil.JsonPrettify(GlobalProgramState.instance.BaseLoginConfig));
+                            File.WriteAllText(PathEx.Combine(gameConfDirectory, "loginconfig.json"), JsonUtil.JsonPrettify(GlobalProgramState.instance.BaseLoginConfig));
                         }
                     }
                     #endif
@@ -140,20 +140,20 @@ namespace NECS.Harness.Services
                 List<string> LibFiles = new List<string>();
                 foreach (var file in GetRecursFiles(gameConfDirectory))
                 {
-                    var fileextension = Path.GetExtension(file);
+                    var fileextension = PathEx.GetExtension(file);
                     if (fileextension.Contains(".yml") || fileextension.Contains(".json") || fileextension.Contains(".yaml"))
                     {
                         if (nowLib == "")
                         {
-                            nowLib = Path.GetDirectoryName(file).FixPath();
+                            nowLib = PathEx.GetDirectoryName(file).FixPath();
                         }
-                        if (nowLib != Path.GetDirectoryName(file).FixPath())
+                        if (nowLib != PathEx.GetDirectoryName(file).FixPath())
                         {
                             Libs.Add(nowLib, LibFiles);
                             LibFiles = new List<string>();
-                            nowLib = Path.GetDirectoryName(file).FixPath();
+                            nowLib = PathEx.GetDirectoryName(file).FixPath();
                         }
-                        if (nowLib == Path.GetDirectoryName(file).FixPath())
+                        if (nowLib == PathEx.GetDirectoryName(file).FixPath())
                         {
                             LibFiles.Add(file.Replace("\\", GlobalProgramState.instance.PathSystemSeparator).Replace("/", GlobalProgramState.instance.PathSystemSeparator));
                         }
@@ -190,7 +190,7 @@ namespace NECS.Harness.Services
                         System.IO.MemoryStream mStream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonText));
                         var reader = new JsonTextReader(new StreamReader(mStream));
                         var jObject = JObject.Load(reader);
-                        switch (Path.GetFileNameWithoutExtension(file))
+                        switch (PathEx.GetFileNameWithoutExtension(file))
                         {
                             default:
                                 nowObject.Deserialized = jObject;
@@ -203,7 +203,7 @@ namespace NECS.Harness.Services
                         {
                             if(nowLib == gameConfDirectory)
                             {
-                                nowObject.Path = file.Replace(gameConfDirectory, "").Replace(Path.GetFileName(file), "").Substring(1).Replace(GlobalProgramState.instance.PathSystemSeparator, GlobalProgramState.instance.PathSeparator) + Path.GetFileNameWithoutExtension(file);
+                                nowObject.Path = file.Replace(gameConfDirectory, "").Replace(PathEx.GetFileName(file), "").Substring(1).Replace(GlobalProgramState.instance.PathSystemSeparator, GlobalProgramState.instance.PathSeparator) + PathEx.GetFileNameWithoutExtension(file);
                             }
                             else
                                 nowObject.Path = nowLib.Replace(gameConfDirectory, "").Substring(1).Replace(GlobalProgramState.instance.PathSystemSeparator, GlobalProgramState.instance.PathSeparator);
@@ -218,7 +218,7 @@ namespace NECS.Harness.Services
                         }
                         if(libfiles.Value.Count() > 1)
                         {
-                            nowObject.Path = file.Replace(gameConfDirectory, "").Replace(Path.GetFileName(file), "").Substring(1).Replace(GlobalProgramState.instance.PathSystemSeparator, GlobalProgramState.instance.PathSeparator) + Path.GetFileNameWithoutExtension(file);
+                            nowObject.Path = file.Replace(gameConfDirectory, "").Replace(PathEx.GetFileName(file), "").Substring(1).Replace(GlobalProgramState.instance.PathSystemSeparator, GlobalProgramState.instance.PathSeparator) + PathEx.GetFileNameWithoutExtension(file);
                         }
                         nowObject.LibTree = new Lib() { LibName = libname, Path = nowObject.Path };
                         nowObject.RealPath = file;
@@ -246,8 +246,8 @@ namespace NECS.Harness.Services
                     #endif
                         #region prepareZipTemp
 
-                        var ziptempfolder = Path.Combine(GlobalProgramState.instance.GameDataDir, "ZipTemp");
-                        var ziptempgamedir = Path.Combine(ziptempfolder, GlobalProgramState.instance.GameConfigDir.Split(GlobalProgramState.instance.PathSystemSeparator[0]).Last());
+                        var ziptempfolder = PathEx.Combine(GlobalProgramState.instance.GameDataDir, "ZipTemp");
+                        var ziptempgamedir = PathEx.Combine(ziptempfolder, GlobalProgramState.instance.GameConfigDir.Split(GlobalProgramState.instance.PathSystemSeparator[0]).Last());
 
                         if (DirectoryAdapter.Exists(ziptempfolder))
                             DirectoryAdapter.Delete(ziptempfolder, true);
@@ -257,16 +257,16 @@ namespace NECS.Harness.Services
                         {
                             DirectoryAdapter.CreateDirectory(ziptempfolder);
                         }
-                        ZipExt.CompressDirectory(ziptempfolder, Path.Combine(GlobalProgramState.instance.GameDataDir, "zippedconfig.zip"), (prog) => { });
+                        ZipExt.CompressDirectory(ziptempfolder, PathEx.Combine(GlobalProgramState.instance.GameDataDir, "zippedconfig.zip"), (prog) => { });
                     }
                     #if GODOT && !GODOT4_0_OR_GREATER
                     file = new Godot.File();
-                    file.Open(Path.Combine(GlobalProgramState.instance.GameDataDir, "zippedconfig.zip"), Godot.File.ModeFlags.Read);
+                    file.Open(PathEx.Combine(GlobalProgramState.instance.GameDataDir, "zippedconfig.zip"), Godot.File.ModeFlags.Read);
                     Byte[] bytes = file.GetBuffer(Convert.ToInt64(file.GetLen()));
                     file.Close();
                     file.Dispose();
                     #else
-                    Byte[] bytes = File.ReadAllBytes(Path.Combine(GlobalProgramState.instance.GameDataDir, "zippedconfig.zip"));
+                    Byte[] bytes = File.ReadAllBytes(PathEx.Combine(GlobalProgramState.instance.GameDataDir, "zippedconfig.zip"));
                     #endif
                     using (MD5CryptoServiceProvider CSP = new MD5CryptoServiceProvider())
                     {
@@ -405,7 +405,7 @@ namespace NECS.Harness.Services
                 if (Defines.HiddenKeyNotFoundLog)
                     NLogger.LogError(e);
             }
-            return ls;
+            return ls.ToHashSet().ToList();
         }
 
         public override void InitializeProcess()
@@ -418,9 +418,9 @@ namespace NECS.Harness.Services
                 #if GODOT && !GODOT4_0_OR_GREATER
                 var file = new Godot.File();
 
-                if (file.FileExists(Path.Combine(DirectoryAdapter.GetParent(GlobalProgramState.instance.GameConfigDir), "zippedconfig.zip")))
+                if (file.FileExists(PathEx.Combine(DirectoryAdapter.GetParent(GlobalProgramState.instance.GameConfigDir), "zippedconfig.zip")))
                 {
-                    file.Open(Path.Combine(DirectoryAdapter.GetParent(GlobalProgramState.instance.GameConfigDir), "zippedconfig.zip"), Godot.File.ModeFlags.Read);
+                    file.Open(PathEx.Combine(DirectoryAdapter.GetParent(GlobalProgramState.instance.GameConfigDir), "zippedconfig.zip"), Godot.File.ModeFlags.Read);
 
                     configFile = file.GetBuffer(Convert.ToInt64(file.GetLen()));
                     hashConfig = BitConverter.ToInt64(MD5.Create().ComputeHash(configFile), 0);
@@ -429,9 +429,9 @@ namespace NECS.Harness.Services
                 }
                 #else
 
-                if (File.Exists(Path.Combine(Directory.GetParent(GlobalProgramState.instance.GameConfigDir).FullName, "zippedconfig.zip")))
+                if (File.Exists(PathEx.Combine(Directory.GetParent(GlobalProgramState.instance.GameConfigDir).FullName, "zippedconfig.zip")))
                 {
-                    configFile = File.ReadAllBytes(Path.Combine(Directory.GetParent(GlobalProgramState.instance.GameConfigDir).FullName, "zippedconfig.zip"));
+                    configFile = File.ReadAllBytes(PathEx.Combine(Directory.GetParent(GlobalProgramState.instance.GameConfigDir).FullName, "zippedconfig.zip"));
                     hashConfig = BitConverter.ToInt64(MD5.Create().ComputeHash(configFile), 0);
                 }
                 #endif
@@ -489,7 +489,7 @@ namespace NECS.Harness.Services
 
         public void UpdateOnDisk()
         {
-            var fileextension = System.IO.Path.GetExtension(RealPath);
+            var fileextension = PathEx.GetExtension(RealPath);
             if (fileextension.Contains(".yml") || fileextension.Contains(".yaml"))
             {
                 //var input = new StreamReader(file);

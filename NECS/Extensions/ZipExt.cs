@@ -21,7 +21,7 @@ namespace NECS.Extensions
                 zipStream.Write(BitConverter.GetBytes(c), 0, sizeof(char));
 
             //Compress file content
-            byte[] bytes = File.ReadAllBytes(Path.Combine(sDir, sRelativePath));
+            byte[] bytes = FileAdapter.ReadAllBytes(PathEx.Combine(sDir, sRelativePath));
             zipStream.Write(BitConverter.GetBytes(bytes.Length), 0, sizeof(int));
             zipStream.Write(bytes, 0, bytes.Length);
         }
@@ -55,24 +55,28 @@ namespace NECS.Extensions
             bytes = new byte[iFileLen];
             zipStream.Read(bytes, 0, bytes.Length);
 
-            string sFilePath = Path.Combine(sDir, sFileName);
-            string sFinalDir = Path.GetDirectoryName(sFilePath);
-            if (!Directory.Exists(sFinalDir))
-                Directory.CreateDirectory(sFinalDir);
+            string sFilePath = PathEx.Combine(sDir, sFileName);
+            string sFinalDir = PathEx.GetDirectoryName(sFilePath);
+            if (!DirectoryAdapter.Exists(sFinalDir))
+                DirectoryAdapter.CreateDirectory(sFinalDir);
 
-            using (FileStream outFile = new FileStream(sFilePath, FileMode.Create, FileAccess.Write, FileShare.None))
-                outFile.Write(bytes, 0, iFileLen);
+            // using (FileStream outFile = new FileStream(sFilePath, FileMode.Create, FileAccess.Write, FileShare.None))
+            //     outFile.Write(bytes, 0, iFileLen);
+            FileAdapter.WriteAllBytes(sFilePath, bytes);
 
             return true;
         }
 
         public static void CompressDirectory(string sInDir, string sOutFile, ProgressDelegate progress)
         {
-            string[] sFiles = Directory.GetFiles(sInDir, "*.*", SearchOption.AllDirectories);
-            int iDirLen = sInDir[sInDir.Length - 1] == Path.DirectorySeparatorChar ? sInDir.Length : sInDir.Length + 1;
+            string[] sFiles = DirectoryAdapter.GetFiles(sInDir);
+            int iDirLen = sInDir[sInDir.Length - 1] == PathEx.DirectorySeparatorChar ? sInDir.Length : sInDir.Length + 1;
 
-            using (FileStream outFile = new FileStream(sOutFile, FileMode.Create, FileAccess.Write, FileShare.None))
-            using (GZipStream str = new GZipStream(outFile, CompressionMode.Compress))
+            
+            using (MemoryStream outFile = new MemoryStream())
+            //using (FileStream outFile = new FileStream(sOutFile, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                using (GZipStream str = new GZipStream(outFile, CompressionMode.Compress))
                 foreach (string sFilePath in sFiles)
                 {
                     string sRelativePath = sFilePath.Substring(iDirLen);
@@ -80,6 +84,8 @@ namespace NECS.Extensions
                         progress(sRelativePath);
                     CompressFile(sInDir, sRelativePath, str);
                 }
+                FileAdapter.WriteAllBytes(sOutFile, outFile.ToArray());
+            }
         }
 
         public static void DecompressToDirectory(string sCompressedFile, string sDir, ProgressDelegate progress)

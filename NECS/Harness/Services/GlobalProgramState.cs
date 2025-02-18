@@ -35,13 +35,13 @@ namespace NECS.Harness.Services
             get
             {
 #if UNITY_5_3_OR_NEWER
-                return Path.Combine(Path.Combine(persistentDataPath, "GameData"), "GameConfig");
+                return PathEx.Combine(PathEx.Combine(persistentDataPath, "GameData"), "GameConfig");
 #endif
 #if NET && !GODOT
-                return Path.Combine(Path.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "GameData"), "GameConfig");
+                return PathEx.Combine(PathEx.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "GameData"), "GameConfig");
 #endif
 #if GODOT
-                return Path.Combine(Path.Combine(persistentDataPath, "GameData").Replace("\\", "/"), "GameConfig").Replace("\\", "/");
+                return PathEx.Combine(PathEx.Combine(persistentDataPath, "GameData").Replace("\\", "/"), "GameConfig").Replace("\\", "/");
 #endif
             }
         }
@@ -51,13 +51,13 @@ namespace NECS.Harness.Services
             get
             {
 #if UNITY_5_3_OR_NEWER
-                return Path.Combine(streamingAssetsPath, "GameData");
+                return PathEx.Combine(streamingAssetsPath, "GameData");
 #endif
 #if NET && !GODOT
-                return Path.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "GameData");
+                return PathEx.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "GameData");
 #endif
 #if GODOT
-                return Path.Combine(streamingAssetsPath, "GameData").Replace("\\", "/");
+                return PathEx.Combine(streamingAssetsPath, "GameData").Replace("\\", "/");
 #endif
             }
         }
@@ -67,13 +67,13 @@ namespace NECS.Harness.Services
             get
             {
 #if UNITY_5_3_OR_NEWER
-                return Path.Combine(Path.Combine(streamingAssetsPath, "GameData"), "Config");
+                return PathEx.Combine(PathEx.Combine(streamingAssetsPath, "GameData"), "Config");
 #endif
 #if NET && !GODOT
-                return Path.Combine(Path.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "GameData"), "Config");
+                return PathEx.Combine(PathEx.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "GameData"), "Config");
 #endif
 #if GODOT
-                return Path.Combine(Path.Combine(streamingAssetsPath, "GameData").Replace("\\", "/"), "Config").Replace("\\", "/");
+                return PathEx.Combine(PathEx.Combine(streamingAssetsPath, "GameData").Replace("\\", "/"), "Config").Replace("\\", "/");
 #endif
             }
         }

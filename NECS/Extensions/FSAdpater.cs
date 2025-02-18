@@ -3,11 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using NECS;
 
 public class DirectoryAdapter
     {
         #if GODOT
-        private static Godot.Directory _godotDirectory = new Godot.Directory();
+        //private static Godot.Directory _godotDirectory = new Godot.Directory();
         #endif
 
         public static bool Exists(string path)
@@ -15,21 +16,37 @@ public class DirectoryAdapter
             #if NET
                 return Directory.Exists(path);
             #elif GODOT
-                return _godotDirectory.DirExists(path);
+            using(var dir = new Godot.Directory())
+                return dir.DirExists(path);
             #elif UNITY
                 return System.IO.Directory.Exists(path);
             #endif
         }
 
-        public static DirectoryInfo CreateDirectory(string path)
+        public static bool IsDirectory(string path)
+        {
+            #if GODOT
+            using (var dir = new Godot.Directory())
+                return dir.DirExists(path);
+            #elif NET
+                return System.IO.Directory.Exists(path);
+            #elif UNITY
+                return System.IO.Directory.Exists(path);
+            #endif
+        }
+
+        public static DirectoryInfo CreateDirectory(string path, bool recursive = true)
         {
             #if NET
                 return Directory.CreateDirectory(path);
             #elif GODOT
-                var error = _godotDirectory.MakeDirRecursive(path);
+            using(var dir = new Godot.Directory())
+            {
+                var error = recursive ? dir.MakeDirRecursive(path) : dir.MakeDir(path); 
                 if (error != Godot.Error.Ok)
                     throw new IOException($"Failed to create directory: {error}");
                 return new DirectoryInfo(path);
+            }
             #elif UNITY
                 return System.IO.Directory.CreateDirectory(path);
             #endif
@@ -40,9 +57,12 @@ public class DirectoryAdapter
             #if NET
                 Directory.Delete(path);
             #elif GODOT
-                var error = _godotDirectory.Remove(path);
+            using(var dir = new Godot.Directory())
+            {
+                var error = dir.Remove(path);
                 if (error != Godot.Error.Ok)
                     throw new IOException($"Failed to delete directory: {error}");
+            }
             #elif UNITY
                 System.IO.Directory.Delete(path);
             #endif
@@ -55,7 +75,7 @@ public class DirectoryAdapter
             #elif GODOT
                 if (recursive)
                 {
-                    DeleteDirectoryRecursive(path);
+                    RecursiveDelete(path);
                 }
                 else
                 {
@@ -69,8 +89,10 @@ public class DirectoryAdapter
         public static string[] GetFiles(string path)
         {
             #if NET
-                return Directory.GetFiles(path);
+                return Directory.GetFiles(path, "*.*", SearchOption.AllDirectories);
             #elif GODOT
+            using(var _godotDirectory = new Godot.Directory())
+            {
                 var files = new List<string>();
                 var error = _godotDirectory.Open(path.FixPath());
                 if (error != Godot.Error.Ok)
@@ -82,14 +104,15 @@ public class DirectoryAdapter
                 {
                     if (!_godotDirectory.CurrentIsDir())
                     {
-                        files.Add(Path.Combine(path, fileName).FixPath());
+                        files.Add(PathEx.Combine(path, fileName).FixPath());
                     }
                     fileName = _godotDirectory.GetNext();
                 }
                 _godotDirectory.ListDirEnd();
                 return files.ToArray();
+            }
             #elif UNITY
-                return System.IO.Directory.GetFiles(path);
+                return System.IO.Directory.GetFiles(path, "*.*", SearchOption.AllDirectories);
             #endif
         }
 
@@ -98,6 +121,8 @@ public class DirectoryAdapter
             #if NET
                 return Directory.GetDirectories(path);
             #elif GODOT
+            using(var _godotDirectory = new Godot.Directory())
+            {
                 var directories = new List<string>();
                 var error = _godotDirectory.Open(path.FixPath());
                 if (error != Godot.Error.Ok)
@@ -109,12 +134,13 @@ public class DirectoryAdapter
                 {
                     if (_godotDirectory.CurrentIsDir())
                     {
-                        directories.Add(Path.Combine(path, dirName).FixPath());
+                        directories.Add(PathEx.Combine(path, dirName).FixPath());
                     }
                     dirName = _godotDirectory.GetNext();
                 }
                 _godotDirectory.ListDirEnd();
                 return directories.ToArray();
+            }
             #elif UNITY
                 return System.IO.Directory.GetDirectories(path);
             #endif
@@ -125,7 +151,7 @@ public class DirectoryAdapter
             #if NET
                 return Directory.GetParent(path)?.FullName;
             #elif GODOT
-                return System.IO.Path.GetDirectoryName(path);
+                return PathEx.GetDirectoryName(path);
             #elif UNITY
                 return System.IO.Directory.GetParent(path)?.FullName;
             #endif
@@ -136,6 +162,8 @@ public class DirectoryAdapter
             #if NET
                 return Directory.EnumerateDirectories(path);
             #elif GODOT
+            using(var _godotDirectory = new Godot.Directory())
+            {
                 var directories = new List<string>();
                 var error = _godotDirectory.Open(path);
                 if (error != Godot.Error.Ok)
@@ -147,12 +175,14 @@ public class DirectoryAdapter
                 {
                     if (_godotDirectory.CurrentIsDir())
                     {
-                        directories.Add(Path.Combine(path, dirName));
+                        directories.Add(PathEx.Combine(path, dirName));
                     }
                     dirName = _godotDirectory.GetNext();
                 }
                 _godotDirectory.ListDirEnd();
                 return directories;
+            }
+                
             #elif UNITY
                 return System.IO.Directory.EnumerateDirectories(path);
             #endif
@@ -164,52 +194,150 @@ public class DirectoryAdapter
                 Directory.Move(sourceDirName, destDirName);
             #elif GODOT
                 // Godot doesn't have a direct move directory method, so we implement it
-                if (!Exists(sourceDirName))
-                    throw new DirectoryNotFoundException($"Source directory not found: {sourceDirName}");
-                if (Exists(destDirName))
-                    throw new IOException($"Destination directory already exists: {destDirName}");
+                using(var _godotDirectory = new Godot.Directory())
+                {
+                    if (!Exists(sourceDirName))
+                        throw new DirectoryNotFoundException($"Source directory not found: {sourceDirName}");
+                    if (Exists(destDirName))
+                        throw new IOException($"Destination directory already exists: {destDirName}");
 
-                var error = _godotDirectory.Open(System.IO.Path.GetDirectoryName(sourceDirName));
-                if (error != Godot.Error.Ok)
-                    throw new IOException($"Failed to open source directory: {error}");
+                    var error = _godotDirectory.Open(PathEx.GetDirectoryName(sourceDirName));
+                    if (error != Godot.Error.Ok)
+                        throw new IOException($"Failed to open source directory: {error}");
 
-                error = _godotDirectory.Rename(sourceDirName, destDirName);
-                if (error != Godot.Error.Ok)
-                    throw new IOException($"Failed to move directory: {error}");
+                    error = _godotDirectory.Rename(sourceDirName, destDirName);
+                    if (error != Godot.Error.Ok)
+                        throw new IOException($"Failed to move directory: {error}");
+                }
+                
             #elif UNITY
                 System.IO.Directory.Move(sourceDirName, destDirName);
             #endif
         }
 
         #if GODOT
+        /// <summary>
+        /// NOT WORKING, OBSOLETE
+        /// </summary>
+        /// <param name="path"></param>
+        /// <exception cref="IOException"></exception>
         private static void DeleteDirectoryRecursive(string path)
         {
-            var error = _godotDirectory.Open(path);
-            if (error != Godot.Error.Ok)
-                throw new IOException($"Failed to open directory: {error}");
-
-            _godotDirectory.ListDirBegin(true);
-            string fileName = _godotDirectory.GetNext();
-            while (fileName != "")
+            using(var _godotDirectory = new Godot.Directory())
             {
-                string fullPath = Path.Combine(path, fileName);
-                if (_godotDirectory.CurrentIsDir())
+                var error = _godotDirectory.Open(path);
+                if (error != Godot.Error.Ok)
+                    throw new IOException($"Failed to open directory: {error}");
+
+                _godotDirectory.ListDirBegin(true);
+                string fileName = _godotDirectory.GetNext();
+                while (fileName != "")
                 {
-                    DeleteDirectoryRecursive(fullPath);
+                    string fullPath = PathEx.Combine(path, fileName);
+                    if (_godotDirectory.CurrentIsDir())
+                    {
+                        DeleteDirectoryRecursive(fullPath);
+                    }
+                    else
+                    {
+                        error = _godotDirectory.Remove(fullPath);
+                        if (error != Godot.Error.Ok)
+                            throw new IOException($"Failed to delete file: {error}");
+                    }
+                    fileName = _godotDirectory.GetNext();
+                }
+                _godotDirectory.ListDirEnd();
+                
+                error = _godotDirectory.Remove(path);
+                if (error != Godot.Error.Ok)
+                    throw new IOException($"Failed to delete directory: {error}");
+            }
+            
+        }
+
+        public static void RecursiveCopy(string sourceFolder, string targetFolder)
+        {
+            if (!Exists(sourceFolder))
+            {
+                Godot.GD.PrintErr("Source directory does not exist: " + sourceFolder);
+                return;
+            }
+
+            if (!Exists(targetFolder))
+            {
+                CreateDirectory(targetFolder);
+            }
+
+            var sourceDir = new Godot.Directory();
+            if (sourceDir.Open(sourceFolder) != Godot.Error.Ok)
+            {
+                Godot.GD.PrintErr("Failed to open source directory: " + sourceFolder);
+                return;
+            }
+
+            sourceDir.ListDirBegin();
+
+            string fileName;
+            while ((fileName = sourceDir.GetNext()) != "")
+            {
+                if (fileName == "." || fileName == "..")
+                    continue;
+
+                string sourcePath = sourceFolder + "/" + fileName;
+                string targetPath = targetFolder + "/" + fileName;
+
+                if (IsDirectory(sourcePath))
+                {
+                    RecursiveCopy(sourcePath, targetPath);
                 }
                 else
                 {
-                    error = _godotDirectory.Remove(fullPath);
-                    if (error != Godot.Error.Ok)
-                        throw new IOException($"Failed to delete file: {error}");
+                    FileAdapter.Copy(sourcePath, targetPath);
                 }
-                fileName = _godotDirectory.GetNext();
             }
-            _godotDirectory.ListDirEnd();
             
-            error = _godotDirectory.Remove(path);
-            if (error != Godot.Error.Ok)
-                throw new IOException($"Failed to delete directory: {error}");
+            sourceDir.ListDirEnd();
+        }
+
+        private static void RecursiveDelete(string folderPath)
+        {
+            if (!DirectoryAdapter.Exists(folderPath))
+            {
+                Godot.GD.PrintErr("Directory does not exist: " + folderPath);
+                return;
+            }
+
+            var dir = new Godot.Directory();
+            if (dir.Open(folderPath) != Godot.Error.Ok)
+            {
+                Godot.GD.PrintErr("Failed to open directory: " + folderPath);
+                return;
+            }
+
+            dir.ListDirBegin();
+
+            string fileName;
+            while ((fileName = dir.GetNext()) != "")
+            {
+                if (fileName == "." || fileName == "..")
+                    continue;
+
+                string currentPath = folderPath + "/" + fileName;
+
+                if (IsDirectory(currentPath))
+                {
+                    RecursiveDelete(currentPath);
+                }
+                else
+                {
+                    FileAdapter.Delete(currentPath);
+                }
+            }
+
+            dir.ListDirEnd();
+
+            dir.Remove(folderPath);
+            Godot.GD.Print("Deleted: " + folderPath);
         }
         #endif
     }
@@ -290,7 +418,10 @@ public class FileAdapter
             var file = new Godot.File();
             if (file.FileExists(path))
             {
-                new Godot.Directory().Remove(path);
+                using(var dir = new Godot.Directory())
+                {
+                    dir.Remove(path);
+                }
                 Godot.GD.Print("Deleted file: " + path);
             }
             file.Dispose();
@@ -427,6 +558,39 @@ public class FileAdapter
             UnityEngine.Windows.File.Move(sourceFileName, destFileName);
         #endif
     }
+    #if GODOT
+    public static void AppendText(string path, string content)
+    {
+        var file = new Godot.File();
+        if (file.Open(path, Godot.File.ModeFlags.ReadWrite) != Godot.Error.Ok)
+        {
+            Godot.GD.PrintErr("Failed to open file for appending: " + path);
+            return;
+        }
+
+        // Move the cursor to the end of the file
+        file.SeekEnd();
+        file.StoreString(content);
+        file.Close();
+        file.Dispose();
+    }
+
+    public static void AppendBytes(string path, byte[] content)
+    {
+        var file = new Godot.File();
+        if (file.Open(path, Godot.File.ModeFlags.ReadWrite) != Godot.Error.Ok)
+        {
+            Godot.GD.PrintErr("Failed to open file for appending: " + path);
+            return;
+        }
+
+        // Move the cursor to the end of the file
+        file.SeekEnd();
+        file.StoreBuffer(content);
+        file.Close();
+        file.Dispose();
+    }
+    #endif
 
     public static DateTime GetLastWriteTime(string path)
     {
