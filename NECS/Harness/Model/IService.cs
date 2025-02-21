@@ -170,7 +170,7 @@ public abstract
                         }
                     }));
                     countTries++;
-                    if (countTries > 100)
+                    if (countTries > 150)
                     {
                         string notInitializedServices = "\n";
                         AllServiceList.Where(x => !servicesPostInitialized.Contains(x)).ToList().ToList().ForEach(x => notInitializedServices += x.GetType().ToString() + "\n");

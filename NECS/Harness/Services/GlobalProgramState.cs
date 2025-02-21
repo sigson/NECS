@@ -93,8 +93,42 @@ namespace NECS.Harness.Services
                 #endif
             }
         }
-        public string PathSeparator = "\\";
-        public string PathAltSeparator = "/";
+
+        private string _pathSeparator = "";
+        public string PathSeparator {
+            get{
+                if(_pathSeparator == "")
+                {
+                    #if GODOT
+                    return "/";
+                    #else
+                    return Path.DirectorySeparatorChar.ToString();
+                    #endif
+                }
+                return _pathSeparator;
+            }
+            set{
+                _pathSeparator = value;
+            }
+        }//"\\";
+        private string _pathAltSeparator = "";
+        public string PathAltSeparator
+        {
+            get{
+                if(_pathAltSeparator == "")
+                {
+                    #if GODOT
+                    return "\\";
+                    #else
+                    return Path.AltDirectorySeparatorChar.ToString();
+                    #endif
+                }
+                return _pathAltSeparator;
+            }
+            set{
+                _pathAltSeparator = value;
+            }
+        }//"/";
 
         public ProgramTypeEnum ProgramType;
         public enum ProgramTypeEnum

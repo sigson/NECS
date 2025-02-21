@@ -50,16 +50,17 @@ namespace NECS.Core.Logging
 
         public static void DumpLogStack(string logstack, string file, bool clear = true)
         {
-            if(System.IO.File.Exists(file))
+            if(FileAdapter.Exists(file))
             {
-                System.IO.File.Delete(file);
-                System.IO.File.Create(file).Dispose();
+                FileAdapter.Delete(file);
+                FileAdapter.WriteAllText(file, "");
             }
             if(logs_stack.TryGetValue(logstack, out var logs))
             {
                 foreach (var log in logs)
                 {
-                    System.IO.File.AppendAllText(file, log + "\n");
+                    var previousLogs = FileAdapter.ReadAllText(file);
+                    FileAdapter.WriteAllText(file, previousLogs + log + "\n");
                 }
             }
         }
