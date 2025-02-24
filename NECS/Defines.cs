@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NECS;
 
 public static class Defines
 {
@@ -16,4 +17,5 @@ public static class Defines
     public static bool HiddenKeyNotFoundLog = false;
     public static bool IgnoreNonDangerousExceptions = true;
     public static bool AOTMode = false;
+    public static int TimerMinimumMSTick = 15;
 }
