@@ -4,6 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Net;
 using System.Net.Sockets;
+using NECS.Core.Logging;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace BitNet
 {
@@ -24,16 +27,65 @@ namespace BitNet
 
 		public void connect(IPEndPoint remote_endpoint)
 		{
-			this.client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            this.client.NoDelay = true;
+			ConnectAsync(remote_endpoint, 1000)
+            .GetAwaiter()
+            .GetResult();
+		}
 
-			SocketAsyncEventArgs event_arg = new SocketAsyncEventArgs();
-			event_arg.Completed += on_connect_completed;
-			event_arg.RemoteEndPoint = remote_endpoint;
-			bool pending = this.client.ConnectAsync(event_arg);
-			if (!pending)
+		private async Task ConnectAsync(IPEndPoint remoteEndpoint, int timeoutMilliseconds = 5000)
+		{
+			this.client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+			this.client.NoDelay = true;
+
+			using (var cts = new CancellationTokenSource(timeoutMilliseconds))
 			{
-				on_connect_completed(null, event_arg);
+				try
+				{
+					SocketAsyncEventArgs eventArgs = new SocketAsyncEventArgs();
+					eventArgs.Completed += on_connect_completed;
+					eventArgs.RemoteEndPoint = remoteEndpoint;
+
+					var tcs = new TaskCompletionSource<bool>();
+
+					eventArgs.UserToken = tcs;
+					eventArgs.Completed += (sender, args) =>
+					{
+						var completionSource = (TaskCompletionSource<bool>)args.UserToken;
+						if (args.SocketError == SocketError.Success)
+							completionSource.SetResult(true);
+						else
+							completionSource.SetException(new SocketException((int)args.SocketError));
+					};
+
+					bool pending = this.client.ConnectAsync(eventArgs);
+					if (!pending)
+					{
+						if (eventArgs.SocketError != SocketError.Success)
+						{
+							//throw new SocketException((int)eventArgs.SocketError);
+							on_connect_completed(null, eventArgs);
+						}
+					}
+
+					await Task.WhenAny(tcs.Task, Task.Delay(timeoutMilliseconds, cts.Token));
+
+					if (!tcs.Task.IsCompleted)
+					{
+						this.client.Close();
+						throw new TimeoutException($"Connection to {remoteEndpoint} timed out after {timeoutMilliseconds}ms");
+					}
+
+					await tcs.Task;
+				}
+				catch (Exception ex)
+				{
+					this.client?.Close();
+					throw;
+				}
+				finally
+				{
+					cts.Cancel();
+				}
 			}
 		}
 
@@ -54,7 +106,7 @@ namespace BitNet
 			else
 			{
 				// failed.
-				Console.WriteLine(string.Format("Failed to connect. {0}", e.SocketError));
+				NLogger.Error(string.Format("Failed to connect. {0}", e.SocketError));
 			}
 		}
 	}

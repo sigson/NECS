@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using NECS;
 
 namespace BitNet
 {
     class CHeartbeatSender
     {
         CUserToken server;
-        Timer timer_heartbeat;
+        TimerCompat timer_heartbeat;
         uint interval;
 
         float elapsed_time;
@@ -19,11 +20,11 @@ namespace BitNet
         {
             this.server = server;
             this.interval = interval;
-            this.timer_heartbeat = new Timer(this.on_timer, null, Timeout.Infinite, this.interval * 1000);
+            this.timer_heartbeat = new TimerCompat((int)(this.interval * 1000), this.on_timer, true);
         }
 
 
-        void on_timer(object state)
+        void on_timer(object state, EventArgs args)
         {
             send();
         }
@@ -52,14 +53,14 @@ namespace BitNet
         public void stop()
         {
             this.elapsed_time = 0;
-            this.timer_heartbeat.Change(Timeout.Infinite, Timeout.Infinite);
+            this.timer_heartbeat.Stop();
         }
 
 
         public void play()
         {
             this.elapsed_time = 0;
-            this.timer_heartbeat.Change(0, this.interval * 1000);
+            this.timer_heartbeat.Resume();
         }
     }
 }

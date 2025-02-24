@@ -27,7 +27,7 @@ namespace NECS.Network.NetworkModels.TCP
 
         public bool SocketClosed;
         public int errorCount;//after no error - clear
-        public Timer heartBeat;
+        public TimerCompat heartBeat;
         long pingId = 0;
         long lastResponsesPingId = 0;
 

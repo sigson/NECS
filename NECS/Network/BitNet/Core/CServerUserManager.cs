@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using NECS;
 
 namespace BitNet
 {
@@ -11,7 +12,7 @@ namespace BitNet
         object cs_user;
         List<CUserToken> users;
 
-        Timer timer_heartbeat;
+        TimerCompat timer_heartbeat;
         long heartbeat_duration;
 
 
@@ -25,7 +26,7 @@ namespace BitNet
         public void start_heartbeat_checking(uint check_interval_sec, uint allow_duration_sec)
         {
             this.heartbeat_duration = allow_duration_sec * 10000000;
-            this.timer_heartbeat = new Timer(check_heartbeat, null, 1000 * check_interval_sec, 1000 * check_interval_sec);
+            this.timer_heartbeat = new TimerCompat(1000 * (int)check_interval_sec,check_heartbeat, true);
         }
 
 
@@ -68,7 +69,7 @@ namespace BitNet
         }
 
 
-        void check_heartbeat(object state)
+        void check_heartbeat(object state, EventArgs args)
         {
             long allowed_time = DateTime.Now.Ticks - this.heartbeat_duration;
 

@@ -8,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -462,6 +463,15 @@ namespace NECS
             asyncUpd();
 #endif
         }
+
+        public static void Delay(double milliseconds)
+        {
+            var endTime = DateTime.Now.AddMilliseconds(milliseconds);
+            while (DateTime.Now < endTime)
+            {
+                Task.Yield();
+            }
+        }
     }
 
     public static class Reflection
@@ -856,7 +866,7 @@ namespace NECS
             return days + 1;
         }
     }
-    public class TimerEx : System.Timers.Timer
+    public class TimerEx : TimerCompat
     {
         private long TimerStart = 0;
         private long TimerPaused = 0;
@@ -882,28 +892,38 @@ namespace NECS
             }
         }
 
+        public bool AutoReset { get => this.timerData.AutoReset; set => this.timerData.AutoReset = value; }
+        public EventHandler Elapsed { get => this.timerData.Elapsed;  set => this.timerData.Elapsed = value; }
+
         public TimerEx() : base()
         {
-            this.Elapsed += (async (sender, e) => { 
-                if(base.AutoReset)
+            this.timerData.Elapsed += (async (sender, e) => { 
+                if(base.timerData.AutoReset)
                     this.Interval = this.baseInterval; 
                 TimerStart = TimerDateTime.DateTimeNowTicks; TimerPaused = 0;});
             //base.AutoReset = true;
-            base.Disposed += new EventHandler(this.OnDisposeTimer);
-            this.Disposed += new EventHandler(this.OnDisposeTimer);
+            this.timerData.Disposed += new EventHandler(this.OnDisposeTimer);
+        }
+
+        public TimerEx(TimerCompat.TimerInstance timerInstance) : base(timerInstance)
+        {
+            this.timerData.Elapsed += (async (sender, e) => { 
+                if(base.timerData.AutoReset)
+                    this.Interval = this.baseInterval; 
+                TimerStart = TimerDateTime.DateTimeNowTicks; TimerPaused = 0;});
+            this.timerData.Disposed += new EventHandler(this.OnDisposeTimer);
         }
 
         public TimerEx(TimerEx oldTimer) : base()
         {
-            this.Elapsed += (async (sender, e) => {
-                if (!base.AutoReset)
+            this.timerData.Elapsed += (async (sender, e) => {
+                if (!base.timerData.AutoReset)
                     this.Interval = this.baseInterval; 
                 TimerStart = TimerDateTime.DateTimeNowTicks; TimerPaused = 0; });
             Interval = oldTimer.Interval;
 			inited = true;
             //base.AutoReset = true;
-            base.Disposed += new EventHandler(this.OnDisposeTimer);
-            this.Disposed += new EventHandler(this.OnDisposeTimer);
+            this.timerData.Disposed += new EventHandler(this.OnDisposeTimer);
         }
 
         public void OnDisposeTimer(object sender, EventArgs args)
@@ -924,7 +944,7 @@ namespace NECS
             base.Stop();
         }
 
-        public void Pause()
+        public new void Pause()
         {
             if(this.Enabled)
             {
@@ -933,7 +953,7 @@ namespace NECS
             }
         }
 
-        public void Resume()
+        public new void Resume()
         {
             if(TimerPaused != 0 && !this.Enabled)
             {
@@ -961,31 +981,7 @@ namespace NECS
         }
     }
 
-    public class TimerDateTime
-    {
-        public static long DateTimeNowTicks
-        {
-            get
-            {
-                if(TickUpdate == null)
-                {
-                    TickUpdate = new System.Timers.Timer(1);
-                    TickUpdate.Elapsed += UpdateTicks;
-                    TickUpdate.AutoReset = true;
-                    TickUpdate.Enabled = true;
-                    Ticks = DateTime.Now.Ticks;
-                }
-                return Ticks;
-            }
-        }
-        private static long Ticks;
-        private static System.Timers.Timer TickUpdate = null;
-
-        private static void UpdateTicks(Object source, ElapsedEventArgs e)
-        {
-            Ticks += DateTimeExtensions.MillisecondToTicks(1);
-        }
-    }
+    
 
     public static class PathEx
     {
@@ -1117,6 +1113,269 @@ namespace NECS
         public static bool IsPathRooted(string path)
         {
             return System.IO.Path.IsPathRooted(path);
+        }
+    }
+
+
+
+
+    public class TimerCompat : IDisposable
+    {
+        public static int baseTick => Defines.TimerMinimumMSTick;
+        public double Interval
+        {
+            get{
+                return timerData.MSInterval;
+            }
+            set{
+                timerData.MSInterval = Convert.ToInt64(value);
+            }
+        }
+
+        public class TimerInstance
+        {
+            public bool IsEnabled { get; set; }
+            public long MSInterval { get => Convert.ToInt64((double)TicksInterval * 0.0001f); set => TicksInterval = value * 10000; }
+            public long RemainingMS { get => Convert.ToInt64((double)RemainingTicks * 0.0001f); set => RemainingTicks = value * 10000; }
+            public long TicksInterval;
+            public long RemainingTicks;
+
+            public EventHandler Elapsed { get; set; }= (sender, e) => { };
+            public  EventHandler Disposed { get; set; }= (sender, e) => { };
+            public bool AutoReset { get; set; }
+            public bool IsPaused { get; set; }
+            public bool IsAsync { get; set; } = true;
+        }
+
+        public class TimerDateTime
+        {
+            public static long DateTimeNowTicks
+            {
+                get
+                {
+                    return Ticks;
+                }
+                set => Ticks = value;
+            }
+            private static long Ticks;
+
+            public static void UpdateTicks()
+            {
+                Ticks += DateTimeExtensions.MillisecondToTicks(Defines.TimerMinimumMSTick);
+            }
+        }
+
+        private class GlobalTimerManager : IDisposable
+        {
+            public static readonly GlobalTimerManager Instance = new GlobalTimerManager();
+            private readonly Thread _timerThread;
+            private volatile bool _isRunning;
+            private readonly HashSet<TimerInstance> _timers = new HashSet<TimerInstance>();
+            private long _currentTicks;
+
+            private GlobalTimerManager()
+            {
+                _isRunning = true;
+                _timerThread = new Thread(TimerLoop)
+                {
+                    IsBackground = true,
+                    Name = "GlobalTimerThread",
+                    Priority = ThreadPriority.AboveNormal
+                };
+                _timerThread.Start();
+            }
+
+            private void TimerLoop()
+            {
+                TimerDateTime.DateTimeNowTicks = DateTime.Now.Ticks;
+                long offset = 0;
+                long externalTimeCache = TimerDateTime.DateTimeNowTicks;
+                Stopwatch externalStopwatch = new Stopwatch();
+                Stopwatch internalStopwatch = new Stopwatch();
+                while (_isRunning)
+                {
+                    internalStopwatch.Start();
+                    try
+                    {
+                        lock (_timers)
+                        {
+                            //var timersToProcess = _timers.ToList();
+                            foreach (var timer in _timers)
+                            {
+                                if (timer.IsEnabled && !timer.IsPaused)
+                                {
+                                    timer.RemainingTicks-=TimerDateTime.DateTimeNowTicks - externalTimeCache + offset;
+                                    if (timer.RemainingTicks <= 0)
+                                    {
+                                        try
+                                        {
+                                            if(timer.IsAsync)
+                                                TaskEx.RunAsync(() => timer.Elapsed?.Invoke(timer, EventArgs.Empty));
+                                            else
+                                                timer.Elapsed?.Invoke(timer, EventArgs.Empty);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Console.WriteLine($"Timer callback error: {ex.Message}");
+                                        }
+
+                                        if (timer.AutoReset)
+                                        {
+                                            timer.RemainingMS = timer.MSInterval;
+                                        }
+                                        else
+                                        {
+                                            timer.IsEnabled = false;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        internalStopwatch.Stop();
+                        if(internalStopwatch.ElapsedMilliseconds < 100)//NOT DEBUGGED
+                            TimerDateTime.DateTimeNowTicks += (internalStopwatch.ElapsedTicks / 100);
+                        internalStopwatch.Reset();
+                        externalTimeCache = TimerDateTime.DateTimeNowTicks;
+                        externalStopwatch.Start();
+                        Thread.Sleep(baseTick);
+                        externalStopwatch.Stop();
+                        if(externalStopwatch.ElapsedMilliseconds < baseTick + 100)//NOT DEBUGGED
+                        {
+                            TimerDateTime.DateTimeNowTicks += (externalStopwatch.ElapsedTicks / 100);
+                        }
+                        else
+                            TimerDateTime.UpdateTicks();
+                        externalStopwatch.Reset();
+                    }
+                }
+            }
+
+            internal void RegisterTimer(TimerInstance timer)
+            {
+                lock (_timers)
+                {
+                    _timers.Add(timer);
+                }
+            }
+
+            internal void UnregisterTimer(TimerInstance timer)
+            {
+                lock (_timers)
+                {
+                    _timers.Remove(timer);
+                }
+            }
+
+            public void Dispose()
+            {
+                _isRunning = false;
+                _timerThread?.Join();
+            }
+        }
+
+        public readonly TimerInstance timerData = new TimerInstance();
+        private static GlobalTimerManager Manager => GlobalTimerManager.Instance;
+
+        public bool Enabled => timerData.IsEnabled;
+        public bool IsPaused => timerData.IsPaused;
+
+        bool registered = false;
+
+        public TimerCompat()
+        {
+
+        }
+
+        public TimerCompat(TimerInstance timerInstance)
+        {
+            timerData = timerInstance;
+            Manager.RegisterTimer(timerData);
+            registered = true;
+        }
+
+        public TimerCompat(int intervalMs, EventHandler callback, bool loop = false, bool asyncRun = true)
+        {
+            if (intervalMs < 2) intervalMs = 2;
+            timerData = new TimerInstance
+            {
+                IsEnabled = false,
+                MSInterval = intervalMs,
+                RemainingMS = intervalMs,
+                Elapsed = callback,
+                AutoReset = loop,
+                IsPaused = false,
+                IsAsync = asyncRun
+            };
+            Manager.RegisterTimer(timerData);
+            registered = true;
+        }
+
+        public void Start()
+        {
+            if(!registered)
+            {
+                Manager.RegisterTimer(timerData);
+                registered = true;
+            }
+            timerData.IsEnabled = true;
+            timerData.IsPaused = false;
+            if (timerData.RemainingMS <= 0)
+            {
+                timerData.RemainingMS = timerData.MSInterval;
+            }
+        }
+
+        public void Pause()
+        {
+            if(!registered)
+            {
+                Manager.RegisterTimer(timerData);
+                registered = true;
+            }
+            timerData.IsPaused = true;
+        }
+
+        public void Resume()
+        {
+            if(!registered)
+            {
+                Manager.RegisterTimer(timerData);
+                registered = true;
+            }
+            if (timerData.RemainingMS > 0)
+            {
+                timerData.IsPaused = false;
+                timerData.IsEnabled = true;
+            }
+        }
+
+        public void Stop()
+        {
+            if(!registered)
+            {
+                Manager.RegisterTimer(timerData);
+                registered = true;
+            }
+            timerData.IsEnabled = false;
+            timerData.IsPaused = false;
+            timerData.RemainingMS = timerData.MSInterval;
+        }
+
+        public TimeSpan GetRemainingTime()
+        {
+            return TimeSpan.FromMilliseconds(timerData.RemainingMS * 5);
+        }
+
+        public void Dispose()
+        {
+            if(registered)
+            {
+                Manager.UnregisterTimer(timerData);
+            }
+            timerData.Disposed?.Invoke(this, EventArgs.Empty);
         }
     }
 }

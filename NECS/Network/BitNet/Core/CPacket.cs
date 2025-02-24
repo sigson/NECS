@@ -148,7 +148,8 @@ namespace BitNet
 
 		public void push(byte data)
 		{
-			byte[] temp_buffer = BitConverter.GetBytes(data);
+			byte[] temp_buffer = new byte[1];//BitConverter.GetBytes(data);
+			temp_buffer[0] = data;
 			temp_buffer.CopyTo(this.buffer, this.position);
 			this.position += sizeof(byte);
 		}

@@ -66,6 +66,7 @@ namespace NECS.ECS.ECSCore
         public long MaxTries { get; set; } = long.MaxValue;
         public long NowTried { get; set; } = 0;
         public bool TimeDependActive { get; set; } = true;
+        public bool AsyncExecution { get; set; } = true;
         public bool InWork { get; set; }
         public long LastEndExecutionTimestamp { get; set; }
         public long DelayRunMilliseconds { get; set; }
@@ -125,7 +126,6 @@ namespace NECS.ECS.ECSCore
                 NowTried++;
                 if (!ContractExecuted)
                 {
-                    
                     if(contractEntities == null)
                     {
                         var allentities = ContractConditions.Keys.ToList();
@@ -133,7 +133,23 @@ namespace NECS.ECS.ECSCore
                         if(GetContractLockers(allentities, this.ContractConditions, this.EntityComponentPresenceSign, false, out var lockers, out var executionEntities) && lockers != null)
                         {
                             if(ExecuteContract)
-                                ContractExecutable(this, executionEntities.ToArray());
+                            {
+                                this.InWork = true;
+                                if(AsyncExecution)
+                                {
+                                    TaskEx.RunAsync(() => {
+                                        ContractExecutable(this, executionEntities.ToArray());
+                                        this.LastEndExecutionTimestamp = DateTime.Now.Ticks;
+                                        this.InWork = false;
+                                    });
+                                }
+                                else
+                                {
+                                    ContractExecutable(this, executionEntities.ToArray());
+                                    this.LastEndExecutionTimestamp = DateTime.Now.Ticks;
+                                    this.InWork = false;
+                                }
+                            }
                             lockers.ForEach(x => x.Dispose());
                             if(ExecuteContract)
                                 ContractExecuted = true;

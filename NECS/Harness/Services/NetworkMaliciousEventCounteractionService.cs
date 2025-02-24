@@ -57,7 +57,7 @@ namespace NECS.Harness.Services
                 AutoReset = true,
                 Interval = MaliciousScoreDecreaseIntervalInSec * 1000
             };
-            maliciousTimerInstance.Elapsed += async (sender, e) => await Task.Run(() => MaliciousScoreDecrease());
+            maliciousTimerInstance.Elapsed += (sender, e) => MaliciousScoreDecrease();
             maliciousTimerInstance.Start();
         }
 

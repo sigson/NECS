@@ -105,6 +105,7 @@ namespace NECS.Harness.Services
 
         public void OnConnected(SocketAdapter socketAdapter)
         {
+            stopDisconnectConnecting = false;
             SocketAdapters[socketAdapter.Id] = socketAdapter;
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {
@@ -127,6 +128,7 @@ namespace NECS.Harness.Services
             Connected = true;
         }
 
+        private bool stopDisconnectConnecting = false;
         public void OnDisconnected(SocketAdapter socketAdapter)
         {
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
@@ -145,20 +147,23 @@ namespace NECS.Harness.Services
             }
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
             {
-                TaskEx.RunAsync(() =>
+                stopDisconnectConnecting = false;
+                var timer = new TimerEx();
+                timer.Elapsed += (sender, e) =>
                 {
-                    bool stop_check = false;
-                    while (!stop_check)
+                    if (stopDisconnectConnecting)
                     {
-                        Task.Delay(1000).Wait();
-                        if (Defines.LowLevelNetworkEventsLogging)
-                        {
-                            NLogger.LogNetwork($"Disconnected from server {socketAdapter.Address}:{socketAdapter.Port} try to connect");
-                        }
-                        // Try to connect again
-                        socketAdapter.Connect();
+                        timer.Stop();
+                        return;
                     }
-                });
+                    if (Defines.LowLevelNetworkEventsLogging)
+                    {
+                        NLogger.LogNetwork($"Disconnected from server {socketAdapter.Address}:{socketAdapter.Port} try to connect");
+                    }
+                    socketAdapter.Connect();
+                };
+                timer.Interval = 1000;
+                timer.Start();
                 OnDisconnectExternal.Invoke(socketAdapter);
             }
         }

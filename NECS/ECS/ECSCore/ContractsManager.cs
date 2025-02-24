@@ -63,30 +63,17 @@ namespace NECS.ECS.ECSCore
             }
         }
 
-        public void RunTimeDependContracts(bool Syncronizable)
+        public void RunTimeDependContracts()
         {
             if (LockSystems)
                 return;
             foreach(var SystemPair in TimeDependContractEntityDatabase)
             {
-                if (Interlocked.Equals(SystemPair.Key.TimeDependActive, true) && Interlocked.Equals(SystemPair.Key.InWork, false) && SystemPair.Key.LastEndExecutionTimestamp + DateTimeExtensions.MillisecondToTicks
+                if (SystemPair.Key.TimeDependActive && !SystemPair.Key.InWork && SystemPair.Key.LastEndExecutionTimestamp + DateTimeExtensions.MillisecondToTicks
                     (SystemPair.Key.DelayRunMilliseconds) < DateTime.Now.Ticks)
                 {
-                    SystemPair.Key.InWork = true;
-                    if(Syncronizable)
-                    {
-                        //SystemPair.Key.Run(TimeDependContractEntityDatabase[SystemPair.Key].Keys.ToArray());
-                        TryExecuteContracts(new List<ECSExecutableContractContainer> { SystemPair.Key }, TimeDependContractEntityDatabase[SystemPair.Key].Keys.ToList());
-                    }
-                    else
-                    {
-                        TaskEx.RunAsync(() =>
-                        {
-                            //SystemPair.Key.Run(TimeDependContractEntityDatabase[SystemPair.Key].Keys.ToArray());
-                            TryExecuteContracts(new List<ECSExecutableContractContainer> { SystemPair.Key }, TimeDependContractEntityDatabase[SystemPair.Key].Keys.ToList());
-                        });
-                    }
-                }   
+                    TryExecuteContracts(new List<ECSExecutableContractContainer> { SystemPair.Key }, TimeDependContractEntityDatabase[SystemPair.Key].Keys.ToList());
+                }
             }
         }
 

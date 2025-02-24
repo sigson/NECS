@@ -52,18 +52,8 @@ public
             systemManager = new ECSContractsManager();
             systemManager.InitializeSystems();
             eventManager.InitializeEventManager();
-            TaskEx.RunAsync(() =>
-            {
-                while (true)
-                {
-                    systemManager.RunTimeDependContracts(false);
-                    TaskEx.RunAsync(() =>
-                    {
-                        systemManager.RunTimeDependContracts(true);
-                    });
-                    Task.Delay(5).Wait();
-                }
-            });
+            var timer = new TimerCompat(5, (obj, arg) => systemManager.RunTimeDependContracts(), true);
+            timer.Start();
         }
 
         public override void InitializeProcess()
