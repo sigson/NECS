@@ -929,7 +929,9 @@ namespace NECS.Extensions
             public RWLock lockValue;
         }
         private LockedDictionary<TKey, bool> KeysHoldingStorage = null;
+        private ConcurrentDictionary<TKey, bool> KeysHoldingLockdownCache = new ConcurrentDictionary<TKey, bool>();
         public bool HoldKeys = false;
+        public bool HoldKeyStorage = false;
         private readonly ConcurrentDictionary<TKey, LockedValue> dictionary = new ConcurrentDictionary<TKey, LockedValue>();
         public bool LockValue = false;
         private readonly RWLock GlobalLocker = new RWLock();
@@ -938,7 +940,10 @@ namespace NECS.Extensions
         {
             HoldKeys = preserveLockingKeys;
             if(HoldKeys)
+            {
                 KeysHoldingStorage = new LockedDictionary<TKey, bool>();
+                KeysHoldingStorage.HoldKeyStorage = true;
+            }
         }
 
         #region Base functions
@@ -962,7 +967,13 @@ namespace NECS.Extensions
                         RWLock.LockToken holdToken = null;
                         if(HoldKeys)
                         {
-                            KeysHoldingStorage.TryAddChangeLockedElement(key, false, true, out holdToken, false);
+                            recheckHolded:
+                            KeysHoldingStorage.TryAddChangeLockedElement(key, false, true, out holdToken, true);
+                            if(KeysHoldingLockdownCache.ContainsKey(key))
+                            {
+                                holdToken.Dispose();
+                                goto recheckHolded;
+                            }
                         }
                         var newLockedValue = new LockedValue() { Value = value, lockValue = new RWLock() };
                         if(lockedMode) 
@@ -997,12 +1008,16 @@ namespace NECS.Extensions
                     }
                     if (dictionary.TryGetValue(key, out dvalue))
                     {
-                        if(!added)
+                        if (!added)
                         {
-                            if (overrideLockingMode != null ? (bool)overrideLockingMode : LockValue)
-                            token = dvalue.lockValue.WriteLock();
-                        else
-                            token = dvalue.lockValue.ReadLock();
+                            if((overrideLockingMode != null ? (bool)overrideLockingMode : LockValue))
+                            {
+                                token = dvalue.lockValue.WriteLock();
+                            }
+                            else 
+                            {
+                                token = dvalue.lockValue.ReadLock();
+                            }
                         }
                     }
                     else if(noncontainsDetected)
@@ -1133,7 +1148,21 @@ namespace NECS.Extensions
         {
             lockToken = null;
             if (HoldKeys)
-                return KeysHoldingStorage.TryAddChangeLockedElement(key, false, holdMode, out lockToken, true);
+            {
+                KeysHoldingStorage.TryAddChangeLockedElement(key, false, holdMode, out var wrlockToken, true);
+                if(wrlockToken != null && !this.ContainsKey(key))
+                {
+                    if(KeysHoldingLockdownCache.TryAdd(key, false))
+                    {
+                        wrlockToken.Dispose();
+                        KeysHoldingStorage.TryAddChangeLockedElement(key, false, holdMode, out lockToken);
+                        KeysHoldingLockdownCache.Remove(key, out _);
+                        return true;
+                    }
+                    wrlockToken.Dispose();
+                }
+                return false;
+            }
             else
                 return false;
         }

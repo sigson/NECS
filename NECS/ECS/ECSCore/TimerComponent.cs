@@ -79,7 +79,7 @@ namespace NECS.ECS.ECSCore
             {
                 onStart(ownerEntity, this);
             }
-            componentTimer.Elapsed += async (sender, e) => await Task.Run(()=>TimerEnd());
+            componentTimer.Elapsed += async (sender, e) => TaskEx.RunAsync(() => TimerEnd());
             componentTimer.AutoReset = loop;
             componentTimer.Start();
             return this;

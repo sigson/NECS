@@ -1,5 +1,6 @@
 ﻿using NECS.Core.Logging;
 using NECS.ECS.Types.AtomicType;
+using NECS.Extensions;
 using NECS.GameEngineAPI;
 using NECS.Harness.Model;
 using NECS.Harness.Services;
@@ -229,6 +230,8 @@ namespace NECS
     {
         public abstract class LockToken : IDisposable
         {
+            //public SynchronizedList<string> exitLockLog = new SynchronizedList<string>();
+            protected bool TokenMockLock = false;
             public abstract void ExitLock();
             public void Dispose() => ExitLock();
         }
@@ -244,10 +247,48 @@ namespace NECS
                         NLogger.Error("HALT! DEADLOCK ESCAPE! You tried to enter write lock while read lock is held!");
                     return;
                 }
-                if (!this.lockobj.IsWriteLockHeld)
-                    lockobj.EnterWriteLock();
+                if (!this.lockobj.IsWriteLockHeld || this.lockobj.RecursionPolicy == LockRecursionPolicy.SupportsRecursion)
+                {
+                    try
+                    {
+                        lockobj.EnterWriteLock();
+                    }
+                    catch (Exception e)
+                    {
+                        if (!Defines.IgnoreNonDangerousExceptions)
+                            NLogger.Error(e);
+                    }
+                }
+                else
+                {
+                    TokenMockLock = true;
+                }
             }
-            override public void ExitLock() => lockobj.ExitWriteLock();
+            override public void ExitLock()
+            {
+                try
+                {
+                    if (this.lockobj.IsWriteLockHeld)
+                    {
+                        //exitLockLog.Add($"{new StackTrace()}");
+                        lockobj.ExitWriteLock();
+                    }
+                    else if(TokenMockLock)
+                    {
+                        TokenMockLock = false;
+                    }
+                    else
+                    {
+                        if (!Defines.IgnoreNonDangerousExceptions)
+                            NLogger.Error("You tried to exit read lock, but read lock for this thread already free");
+                    }
+                }
+                catch (Exception e)
+                {
+                    if (!Defines.IgnoreNonDangerousExceptions)
+                        NLogger.Error(e);
+                }
+            }
         }
 
         public class ReadLockToken : LockToken
@@ -262,13 +303,51 @@ namespace NECS
                         NLogger.Error("HALT! DEADLOCK ESCAPE! You tried to enter read lock inner write locked thread!");
                     return;
                 }
-                if (!this.lockobj.IsReadLockHeld)
-                    lockobj.EnterReadLock();
+                if (!this.lockobj.IsReadLockHeld || this.lockobj.RecursionPolicy == LockRecursionPolicy.SupportsRecursion)
+                {
+                    try
+                    {
+                        lockobj.EnterReadLock();
+                    }
+                    catch (Exception e)
+                    {
+                        if (!Defines.IgnoreNonDangerousExceptions)
+                            NLogger.Error(e);
+                    }
+                }
+                else
+                {
+                    TokenMockLock = true;
+                }
             }
-            override public void ExitLock() => lockobj.ExitReadLock();
+            override public void ExitLock()
+            {
+                try
+                {
+                    if (this.lockobj.IsReadLockHeld)
+                    {
+                        //exitLockLog.Add($"{new StackTrace()}");
+                        lockobj.ExitReadLock();
+                    }
+                    else if(TokenMockLock)
+                    {
+                        TokenMockLock = false;
+                    }
+                    else
+                    {
+                        if (!Defines.IgnoreNonDangerousExceptions)
+                            NLogger.Error("You tried to exit read lock, but read lock for this thread already free");
+                    }
+                }
+                catch (Exception e)
+                {
+                    if (!Defines.IgnoreNonDangerousExceptions)
+                        NLogger.Error(e);
+                }
+            }
         }
 
-        private readonly ReaderWriterLockSlim lockobj = new ReaderWriterLockSlim();
+        private readonly ReaderWriterLockSlim lockobj = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
         public ReadLockToken ReadLock() => new ReadLockToken(lockobj);
         public WriteLockToken WriteLock() => new WriteLockToken(lockobj);
@@ -435,7 +514,7 @@ namespace NECS
         {
         }
 
-        public static void RunAsync(Action action)
+        public static void RunAsyncTask(Action action)
         {
 #if UNITY_5_3_OR_NEWER
             Func<Task> asyncUpd = async () =>
@@ -461,6 +540,37 @@ namespace NECS
                 }).ConfigureAwait(false);
             };
             asyncUpd();
+#endif
+        }
+
+        public static void RunAsync(Action action)
+        {
+#if UNITY_5_3_OR_NEWER
+    Thread thread = new Thread(() =>
+    {
+        try
+        {
+            action();
+        }
+        catch (Exception ex)
+        {
+            NLogger.LogError(ex);
+        }
+    });
+    thread.Start();
+#else
+            Thread thread = new Thread(() =>
+            {
+                try
+                {
+                    action();
+                }
+                catch (Exception ex)
+                {
+                    NLogger.LogError(ex);
+                }
+            });
+            thread.Start();
 #endif
         }
 

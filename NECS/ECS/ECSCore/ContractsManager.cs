@@ -69,10 +69,23 @@ namespace NECS.ECS.ECSCore
                 return;
             foreach(var SystemPair in TimeDependContractEntityDatabase)
             {
-                if (SystemPair.Key.TimeDependActive && !SystemPair.Key.InWork && SystemPair.Key.LastEndExecutionTimestamp + DateTimeExtensions.MillisecondToTicks
+                if (SystemPair.Key.TimeDependActive && !SystemPair.Key.InWork && !SystemPair.Key.InProgress && SystemPair.Key.LastEndExecutionTimestamp + DateTimeExtensions.MillisecondToTicks
                     (SystemPair.Key.DelayRunMilliseconds) < DateTime.Now.Ticks)
                 {
-                    TryExecuteContracts(new List<ECSExecutableContractContainer> { SystemPair.Key }, TimeDependContractEntityDatabase[SystemPair.Key].Keys.ToList());
+                    SystemPair.Key.InProgress = true;
+                    if(SystemPair.Key.AsyncExecution)
+                    {
+                        TaskEx.RunAsync(() =>
+                        {
+                            TryExecuteContracts(new List<ECSExecutableContractContainer> { SystemPair.Key }, TimeDependContractEntityDatabase[SystemPair.Key].Keys.ToList());
+                            SystemPair.Key.InProgress = false;
+                        });
+                    }
+                    else
+                    {
+                        TryExecuteContracts(new List<ECSExecutableContractContainer> { SystemPair.Key }, TimeDependContractEntityDatabase[SystemPair.Key].Keys.ToList());
+                        SystemPair.Key.InProgress = false;
+                    }
                 }
             }
         }
@@ -83,7 +96,7 @@ namespace NECS.ECS.ECSCore
             {
                 if(contract.TimeDependExecution && argEntities != null)
                 {
-                    if(contract.TryExecuteContract(true, argEntities))
+                    if(argEntities.Count > 0 && contract.TryExecuteContract(true, argEntities))
                     {
                         if(contract.RemoveAfterExecution)
                             RemoveContract(contract);

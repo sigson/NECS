@@ -68,6 +68,7 @@ namespace NECS.ECS.ECSCore
         public bool TimeDependActive { get; set; } = true;
         public bool AsyncExecution { get; set; } = true;
         public bool InWork { get; set; }
+        public bool InProgress { get; set; }
         public long LastEndExecutionTimestamp { get; set; }
         public long DelayRunMilliseconds { get; set; }
 
@@ -135,22 +136,42 @@ namespace NECS.ECS.ECSCore
                             if(ExecuteContract)
                             {
                                 this.InWork = true;
-                                if(AsyncExecution)
+                                if(false)
                                 {
+                                    var lockersCopy = new List<IDisposable>(lockers);
                                     TaskEx.RunAsync(() => {
-                                        ContractExecutable(this, executionEntities.ToArray());
+                                        try
+                                        {
+                                            ContractExecutable(this, executionEntities.ToArray());
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            NLogger.LogError(ex);
+                                        }
+                                        lockersCopy.ForEach(x => x.Dispose());
                                         this.LastEndExecutionTimestamp = DateTime.Now.Ticks;
                                         this.InWork = false;
                                     });
                                 }
                                 else
                                 {
-                                    ContractExecutable(this, executionEntities.ToArray());
+                                    try
+                                    {
+                                        ContractExecutable(this, executionEntities.ToArray());
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        NLogger.LogError(ex);
+                                    }
+                                    lockers.ForEach(x => x.Dispose());
                                     this.LastEndExecutionTimestamp = DateTime.Now.Ticks;
                                     this.InWork = false;
                                 }
                             }
-                            lockers.ForEach(x => x.Dispose());
+                            else
+                            {
+                                lockers.ForEach(x => x.Dispose());
+                            }
                             if(ExecuteContract)
                                 ContractExecuted = true;
                             return true;
@@ -177,10 +198,46 @@ namespace NECS.ECS.ECSCore
                         if(GetContractLockers(contractEntities, filledContractConditions, filledEntityComponentPresenceSign, true, out var lockers, out var executionEntities) && lockers != null)
                         {
                             if(ExecuteContract)
-                                ContractExecutable(this, executionEntities.ToArray());
-                            lockers.ForEach(x => x.Dispose());
-                            if(ExecuteContract)
-                                ContractExecuted = true;
+                            {
+                                this.InWork = true;
+                                if(false)
+                                {
+                                    var lockersCopy = new List<IDisposable>(lockers);
+                                    TaskEx.RunAsync(() => {
+                                        try
+                                        {
+                                            ContractExecutable(this, executionEntities.ToArray());
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            NLogger.LogError(ex);
+                                        }
+                                        lockersCopy.ForEach(x => x.Dispose());
+                                        this.LastEndExecutionTimestamp = DateTime.Now.Ticks;
+                                        this.InWork = false;
+                                    });
+                                }
+                                else
+                                {
+                                    try
+                                    {
+                                        ContractExecutable(this, executionEntities.ToArray());
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        NLogger.LogError(ex);
+                                    }
+                                    lockers.ForEach(x => x.Dispose());
+                                    this.LastEndExecutionTimestamp = DateTime.Now.Ticks;
+                                    this.InWork = false;
+                                }
+                            }
+                            else
+                            {
+                                lockers.ForEach(x => x.Dispose());
+                            }
+                            // if(ExecuteContract)
+                            //     ContractExecuted = true;
                             return true;
                         }
                     }
@@ -211,13 +268,16 @@ namespace NECS.ECS.ECSCore
                         foreach (var component in neededComponents)
                         {
                             if(component.Value)
+                            {
                                 if(contentity.entityComponents.GetReadLockedComponent(component.Key.IdToECSType(), out var componentInstance, out var token))
                                 {
                                     Lockers[entid].Add(token);
                                     continue;
                                 }
+                            }
                             else
-                                if(contentity.entityComponents.HoldComponentAddition(component.Key.IdToECSType(), out token))
+                            {
+                                if(contentity.entityComponents.HoldComponentAddition(component.Key.IdToECSType(), out var token))
                                 {
                                     if (!contentity.entityComponents.HasComponent(component.Key.IdToECSType()))
                                     {
@@ -229,6 +289,7 @@ namespace NECS.ECS.ECSCore
                                         token.Dispose();
                                     }
                                 }
+                            }
                             violationSeizure = true;
                             globalViolationSeizure = true;
                         }
