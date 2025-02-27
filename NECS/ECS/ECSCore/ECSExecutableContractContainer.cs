@@ -57,6 +57,8 @@ namespace NECS.ECS.ECSCore
             
         };
 
+        public Action<ECSExecutableContractContainer, ECSEntity[]> ErrorExecution = (ECSExecutableContractContainer contract, ECSEntity[] entities) => { };
+
         public bool TimeDependExecution { get; set; } = false;
 
         /// <summary>
@@ -133,48 +135,34 @@ namespace NECS.ECS.ECSCore
                         allentities.AddRange(this.EntityComponentPresenceSign.Keys);
                         if(GetContractLockers(allentities, this.ContractConditions, this.EntityComponentPresenceSign, false, out var lockers, out var executionEntities) && lockers != null)
                         {
-                            if(ExecuteContract)
+                            if (ExecuteContract)
                             {
                                 this.InWork = true;
-                                if(false)
+                                try
                                 {
-                                    var lockersCopy = new List<IDisposable>(lockers);
-                                    TaskEx.RunAsync(() => {
-                                        try
-                                        {
-                                            ContractExecutable(this, executionEntities.ToArray());
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            NLogger.LogError(ex);
-                                        }
-                                        lockersCopy.ForEach(x => x.Dispose());
-                                        this.LastEndExecutionTimestamp = DateTime.Now.Ticks;
-                                        this.InWork = false;
-                                    });
+                                    ContractExecutable(this, executionEntities.ToArray());
                                 }
-                                else
+                                catch (Exception ex)
                                 {
-                                    try
-                                    {
-                                        ContractExecutable(this, executionEntities.ToArray());
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        NLogger.LogError(ex);
-                                    }
-                                    lockers.ForEach(x => x.Dispose());
-                                    this.LastEndExecutionTimestamp = DateTime.Now.Ticks;
-                                    this.InWork = false;
+                                    NLogger.LogError(ex);
+                                    ErrorExecution(this, executionEntities.ToArray());
                                 }
+                                lockers.ForEach(x => x.Dispose());
+                                this.LastEndExecutionTimestamp = DateTime.Now.Ticks;
+                                this.InWork = false;
                             }
                             else
                             {
                                 lockers.ForEach(x => x.Dispose());
                             }
-                            if(ExecuteContract)
+                            if (ExecuteContract)
                                 ContractExecuted = true;
                             return true;
+                        }
+                        else
+                        {
+                            if (ExecuteContract)
+                                ErrorExecution(this, executionEntities.ToArray());
                         }
                     }
                     else
@@ -197,40 +185,21 @@ namespace NECS.ECS.ECSCore
                         }
                         if(GetContractLockers(contractEntities, filledContractConditions, filledEntityComponentPresenceSign, true, out var lockers, out var executionEntities) && lockers != null)
                         {
-                            if(ExecuteContract)
+                            if (ExecuteContract)
                             {
                                 this.InWork = true;
-                                if(false)
+                                try
                                 {
-                                    var lockersCopy = new List<IDisposable>(lockers);
-                                    TaskEx.RunAsync(() => {
-                                        try
-                                        {
-                                            ContractExecutable(this, executionEntities.ToArray());
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            NLogger.LogError(ex);
-                                        }
-                                        lockersCopy.ForEach(x => x.Dispose());
-                                        this.LastEndExecutionTimestamp = DateTime.Now.Ticks;
-                                        this.InWork = false;
-                                    });
+                                    ContractExecutable(this, executionEntities.ToArray());
                                 }
-                                else
+                                catch (Exception ex)
                                 {
-                                    try
-                                    {
-                                        ContractExecutable(this, executionEntities.ToArray());
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        NLogger.LogError(ex);
-                                    }
-                                    lockers.ForEach(x => x.Dispose());
-                                    this.LastEndExecutionTimestamp = DateTime.Now.Ticks;
-                                    this.InWork = false;
+                                    NLogger.LogError(ex);
+                                    ErrorExecution(this, executionEntities.ToArray());
                                 }
+                                lockers.ForEach(x => x.Dispose());
+                                this.LastEndExecutionTimestamp = DateTime.Now.Ticks;
+                                this.InWork = false;
                             }
                             else
                             {
@@ -240,11 +209,17 @@ namespace NECS.ECS.ECSCore
                             //     ContractExecuted = true;
                             return true;
                         }
+                        else
+                        {
+                            if (ExecuteContract)
+                                ErrorExecution(this, executionEntities.ToArray());
+                        }
                     }
                     return false;
                 }
                 else
                 {
+                    NLogger.LogError("You tried to execute contract that was already executed");
                     return false;
                 }
             }

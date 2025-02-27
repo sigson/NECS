@@ -60,6 +60,10 @@ namespace NECS.ECS.Types.AtomicType
             }
             set
             {
+                if(value == null)
+                {
+                    return;
+                }
                 var child = value;
                 if (child is ECSEntity)
                 {

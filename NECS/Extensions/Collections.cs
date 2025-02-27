@@ -969,7 +969,12 @@ namespace NECS.Extensions
                         {
                             recheckHolded:
                             KeysHoldingStorage.TryAddChangeLockedElement(key, false, true, out holdToken, true);
-                            if(KeysHoldingLockdownCache.ContainsKey(key))
+                            if(this.dictionary.ContainsKey(key))
+                            {
+                                holdToken.Dispose();
+                                goto recheckRaceOfStates;
+                            }
+                            else if(KeysHoldingLockdownCache.ContainsKey(key))
                             {
                                 holdToken.Dispose();
                                 goto recheckHolded;
@@ -1150,14 +1155,17 @@ namespace NECS.Extensions
             if (HoldKeys)
             {
                 KeysHoldingStorage.TryAddChangeLockedElement(key, false, holdMode, out var wrlockToken, true);
-                if(wrlockToken != null && !this.ContainsKey(key))
+                if(wrlockToken != null)
                 {
-                    if(KeysHoldingLockdownCache.TryAdd(key, false))
+                    if (!this.ContainsKey(key))
                     {
-                        wrlockToken.Dispose();
-                        KeysHoldingStorage.TryAddChangeLockedElement(key, false, holdMode, out lockToken);
-                        KeysHoldingLockdownCache.Remove(key, out _);
-                        return true;
+                        if (KeysHoldingLockdownCache.TryAdd(key, false))
+                        {
+                            wrlockToken.Dispose();
+                            KeysHoldingStorage.TryAddChangeLockedElement(key, false, holdMode, out lockToken);
+                            KeysHoldingLockdownCache.Remove(key, out _);
+                            return true;
+                        }
                     }
                     wrlockToken.Dispose();
                 }
