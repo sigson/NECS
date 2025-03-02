@@ -22,21 +22,254 @@ namespace NECS.ECS.ECSCore
     {
         public long Id { get; set; }
         [System.NonSerialized]
-        public Type SystemType = null;
+        protected Type _systemType = null;
+        public Type SystemType
+        {
+            get => _systemType;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _systemType = value;
+                }
+            }
+        }
+
+        protected Dictionary<long, List<Func<ECSEntity, bool>>> _contractConditions = null;
         /// <summary>
         /// key long - entityid
         /// </summary>
-        public Dictionary<long, List<Func<ECSEntity, bool>>> ContractConditions { get; set; } = null;
+        public Dictionary<long, List<Func<ECSEntity, bool>>> ContractConditions
+        {
+            get => _contractConditions;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _contractConditions = value;
+                }
+            }
+        }
+
+        protected Dictionary<long, Dictionary<long, bool>> _entityComponentPresenceSign = null;
         /// <summary>
         /// key long - entityownerid
         ///long - componentTypeId
         ///bool - presence state
         /// </summary>
-        public Dictionary<long, Dictionary<long, bool>> EntityComponentPresenceSign { get; set; } = null;
+        public Dictionary<long, Dictionary<long, bool>> EntityComponentPresenceSign
+        {
+            get => _entityComponentPresenceSign;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _entityComponentPresenceSign = value;
+                }
+            }
+        }
 
-        public List<long> NeededEntities {
-            get{
-                if(ContractConditions != null && EntityComponentPresenceSign != null)
+        protected Action<ECSExecutableContractContainer, ECSEntity[]> _contractExecutable =
+            (ECSExecutableContractContainer contract, ECSEntity[] entities) =>
+            {
+                foreach (var entity in entities)
+                {
+                    contract.ContractExecutableSingle(contract, entity);
+                }
+            };
+        public Action<ECSExecutableContractContainer, ECSEntity[]> ContractExecutable
+        {
+            get => _contractExecutable;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _contractExecutable = value;
+                }
+            }
+        }
+
+        protected Action<ECSExecutableContractContainer, ECSEntity> _contractExecutableSingle =
+            (contract, entity) => { };
+        public Action<ECSExecutableContractContainer, ECSEntity> ContractExecutableSingle
+        {
+            get => _contractExecutableSingle;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _contractExecutableSingle = value;
+                }
+            }
+        }
+
+        protected Action<ECSExecutableContractContainer, ECSEntity[]> _errorExecution =
+            (ECSExecutableContractContainer contract, ECSEntity[] entities) => { };
+        public Action<ECSExecutableContractContainer, ECSEntity[]> ErrorExecution
+        {
+            get => _errorExecution;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _errorExecution = value;
+                }
+            }
+        }
+
+        protected bool _timeDependExecution = false;
+        public bool TimeDependExecution
+        {
+            get => _timeDependExecution;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _timeDependExecution = value;
+                }
+            }
+        }
+
+        protected bool _removeAfterExecution = true;
+        /// <summary>
+        /// Set FALSE if contract is time depend
+        /// </summary>
+        public bool RemoveAfterExecution
+        {
+            get => _removeAfterExecution;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _removeAfterExecution = value;
+                }
+            }
+        }
+
+        protected long _maxTries = long.MaxValue;
+        public long MaxTries
+        {
+            get => _maxTries;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _maxTries = value;
+                }
+            }
+        }
+
+        protected long _nowTried = 0;
+        public long NowTried
+        {
+            get => _nowTried;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _nowTried = value;
+                }
+            }
+        }
+
+        protected bool _timeDependActive = true;
+        public bool TimeDependActive
+        {
+            get => _timeDependActive;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _timeDependActive = value;
+                }
+            }
+        }
+
+        protected bool _asyncExecution = true;
+        public bool AsyncExecution
+        {
+            get => _asyncExecution;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _asyncExecution = value;
+                }
+            }
+        }
+
+        protected bool _inWork = false;
+        public bool InWork
+        {
+            get => _inWork;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _inWork = value;
+                }
+            }
+        }
+
+        protected bool _inProgress = false;
+        public bool InProgress
+        {
+            get => _inProgress;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _inProgress = value;
+                }
+            }
+        }
+
+        protected long _lastEndExecutionTimestamp = 0;
+        public long LastEndExecutionTimestamp
+        {
+            get => _lastEndExecutionTimestamp;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _lastEndExecutionTimestamp = value;
+                }
+            }
+        }
+
+        protected long _delayRunMilliseconds = 0;
+        public long DelayRunMilliseconds
+        {
+            get => _delayRunMilliseconds;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _delayRunMilliseconds = value;
+                }
+            }
+        }
+
+        protected bool _contractExecuted = false;
+        protected bool ContractExecuted
+        {
+            get => _contractExecuted;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _contractExecuted = value;
+                }
+            }
+        }
+
+        public object ContractLocker { get; set; } = new object();
+
+        public List<long> NeededEntities
+        {
+            get
+            {
+                if (ContractConditions != null && EntityComponentPresenceSign != null)
                 {
                     var allentities = ContractConditions.Keys.ToList();
                     allentities.AddRange(this.EntityComponentPresenceSign.Keys);
@@ -45,37 +278,6 @@ namespace NECS.ECS.ECSCore
                 return null;
             }
         }
-
-        public Action<ECSExecutableContractContainer, ECSEntity[]> ContractExecutable = (ECSExecutableContractContainer contract, ECSEntity[] entities) => {
-            foreach (var entity in entities)
-            {
-                contract.ContractExecutableSingle(contract, entity);
-            }
-        };
-
-        public Action<ECSExecutableContractContainer, ECSEntity> ContractExecutableSingle = (contract, entity) => {
-            
-        };
-
-        public Action<ECSExecutableContractContainer, ECSEntity[]> ErrorExecution = (ECSExecutableContractContainer contract, ECSEntity[] entities) => { };
-
-        public bool TimeDependExecution { get; set; } = false;
-
-        /// <summary>
-        /// Set FALSE if contract is time depend
-        /// </summary>
-        public bool RemoveAfterExecution { get; set; } = true;
-        public long MaxTries { get; set; } = long.MaxValue;
-        public long NowTried { get; set; } = 0;
-        public bool TimeDependActive { get; set; } = true;
-        public bool AsyncExecution { get; set; } = true;
-        public bool InWork { get; set; }
-        public bool InProgress { get; set; }
-        public long LastEndExecutionTimestamp { get; set; }
-        public long DelayRunMilliseconds { get; set; }
-
-        private bool ContractExecuted { get; set; } = false;
-        private object ContractLocker { get; set; } = new object();
 
         /// <summary>
         /// Need to setup in initalize method. Setting up look like is:
