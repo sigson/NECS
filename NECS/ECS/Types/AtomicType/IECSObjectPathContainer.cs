@@ -14,6 +14,20 @@ namespace NECS.ECS.Types.AtomicType
     {
         public List<string> pathToECSObject = new List<string>();
 
+        public long serializableInstanceId = -1;
+        public long CacheInstanceId {
+            get{
+                if(Interlocked.Read(ref this.serializableInstanceId) == -1)
+                {
+                    if(ECSObject != null)
+                    {
+                        Interlocked.Exchange(ref this.serializableInstanceId, ECSObject.instanceId);
+                    }
+                }
+                return Interlocked.Read(ref this.serializableInstanceId);
+            }
+        }
+
         private IECSObject cacheECSObject = null;
 
         [Newtonsoft.Json.JsonIgnore]
@@ -55,6 +69,13 @@ namespace NECS.ECS.Types.AtomicType
                         }
                     }
                     cacheECSObject = currentObject;
+                    if(Interlocked.Read(ref this.serializableInstanceId) == -1)
+                    {
+                        if(cacheECSObject != null)
+                        {
+                            Interlocked.Exchange(ref this.serializableInstanceId, cacheECSObject.instanceId);
+                        }
+                    }
                 }
                 return cacheECSObject;
             }
@@ -86,6 +107,13 @@ namespace NECS.ECS.Types.AtomicType
                     pathToECSObject.Reverse();
                 }
                 cacheECSObject = value;
+                if (Interlocked.Read(ref this.serializableInstanceId) == -1)
+                {
+                    if (cacheECSObject != null)
+                    {
+                        Interlocked.Exchange(ref this.serializableInstanceId, cacheECSObject.instanceId);
+                    }
+                }
             }
         }
     }

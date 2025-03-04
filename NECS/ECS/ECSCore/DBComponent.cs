@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using static NECS.ECS.ECSCore.ComponentsDBComponent;
+using NECS.ECS.Types.AtomicType;
 
 namespace NECS.ECS.ECSCore
 {
@@ -25,7 +26,7 @@ namespace NECS.ECS.ECSCore
         static public new long Id { get; set; }
         static public new System.Collections.Generic.List<System.Action> StaticOnChangeHandlers { get; set; }
 
-        public Dictionary<long, List<dbRow>> serializedDB = new Dictionary<long, List<dbRow>>();
+        public Dictionary<IECSObjectPathContainer, List<dbRow>> serializedDB = new Dictionary<IECSObjectPathContainer, List<dbRow>>();
 
         public virtual void SerializeDB(bool serializeOnlyChanged = false, bool clearChanged = true)
         {
@@ -76,11 +77,13 @@ namespace NECS.ECS.ECSCore
         [System.NonSerialized]
         public Dictionary<long, long> ComponentOwners = new Dictionary<long, long>();
         [System.NonSerialized]
+        public Dictionary<long, IECSObjectPathContainer> OwnerPaths = new Dictionary<long, IECSObjectPathContainer>();
+        [System.NonSerialized]
         public Dictionary<long, int> ChangedComponents = new Dictionary<long, int>();
 
         #region add methods
 
-        public virtual void AddComponent(ECSEntity ownerComponent, ECSComponent component)
+        public virtual void AddComponent(IECSObject ownerComponent, ECSComponent component)
         {
             Dictionary<long, (ECSComponent, ComponentState)> components = new Dictionary<long, (ECSComponent, ComponentState)>();
             ECSComponent addedComponent = null;
@@ -91,18 +94,29 @@ namespace NECS.ECS.ECSCore
                     DB.TryGetValue(ownerComponent.instanceId, out components);
                     if (components == null)
                         components = new Dictionary<long, (ECSComponent, ComponentState)>();
-                    component.ownerEntity = ownerComponent;
+                    if (ownerComponent is ECSEntity eCSEntity)
+                    {
+                        component.ownerEntity = eCSEntity;
+                    }
+                    else if (ownerComponent is ECSComponent eCSComponent)
+                    {
+                        component.ownerEntity = eCSComponent.ownerEntity;
+                    }
                     component.ownerDB = this;
                     components[component.instanceId] = (component, ComponentState.Created);
                     DB[ownerComponent.instanceId] = components;
                     ComponentOwners[component.instanceId] = ownerComponent.instanceId;
+                    if(!OwnerPaths.ContainsKey(ownerComponent.instanceId))
+                    {
+                        OwnerPaths[ownerComponent.instanceId] = new IECSObjectPathContainer(){ECSObject = ownerComponent};
+                    }
                     ChangedComponents[component.instanceId] = 1;
                     addedComponent = component;
                 }
             }
             addedComponent.AddedReaction(addedComponent.ownerEntity);
         }
-        public virtual void AddOrChangeComponent(ECSEntity ownerComponent, ECSComponent component)
+        public virtual void AddOrChangeComponent(IECSObject ownerComponent, ECSComponent component)
         {
             Dictionary<long, (ECSComponent, ComponentState)> components = new Dictionary<long, (ECSComponent, ComponentState)>();
             bool change = false;
@@ -121,10 +135,21 @@ namespace NECS.ECS.ECSCore
                     {
                         //lock (ownerEntity.entityComponents.serializationLocker)
                         {
-                            component.ownerEntity = ownerComponent;
+                            if(ownerComponent is ECSEntity eCSEntity)
+                            {
+                                component.ownerEntity = eCSEntity;
+                            }
+                            else if (ownerComponent is ECSComponent eCSComponent)
+                            {
+                                component.ownerEntity = eCSComponent.ownerEntity;
+                            }
                             component.ownerDB = this;
                             components[component.instanceId] = (component, ComponentState.Created);
                             ComponentOwners[component.instanceId] = ownerComponent.instanceId;
+                            if(!OwnerPaths.ContainsKey(ownerComponent.instanceId))
+                            {
+                                OwnerPaths[ownerComponent.instanceId] = new IECSObjectPathContainer(){ECSObject = ownerComponent};
+                            }
                             ChangedComponents[component.instanceId] = 1;
                         }
                     }
@@ -134,16 +159,25 @@ namespace NECS.ECS.ECSCore
             if(change)
                 ChangeComponent(component, ownerComponent);
             else
-                component.AddedReaction(ownerComponent);
+            {
+                if (ownerComponent is ECSEntity eCSEntity)
+                {
+                    component.AddedReaction(eCSEntity);
+                }
+                else if (ownerComponent is ECSComponent eCSComponent)
+                {
+                    component.AddedReaction(eCSComponent.ownerEntity);
+                }
+            }
         }
-        public virtual void AddComponents(ECSEntity ownerComponent, params ECSComponent[] component)
+        public virtual void AddComponents(IECSObject ownerComponent, params ECSComponent[] component)
         {
             foreach(var comp in component)
             {
                 AddComponent(ownerComponent, comp);
             }
         }
-        public virtual void AddComponents(ECSEntity ownerComponent, List<ECSComponent> component)
+        public virtual void AddComponents(IECSObject ownerComponent, List<ECSComponent> component)
         {
             foreach (var comp in component)
             {
@@ -151,33 +185,33 @@ namespace NECS.ECS.ECSCore
             }
         }
 
-        public virtual void AddComponent(long ownerComponentId, ECSComponent component)
+        public virtual void AddComponent(IECSObjectPathContainer ownerComponentId, ECSComponent component)
         {
-            AddComponent(ManagerScope.instance.entityManager.EntityStorage[ownerComponentId], component);
+            AddComponent(ownerComponentId.ECSObject, component);
         }
-        public virtual void AddOrChangeComponent(long ownerComponentId, ECSComponent component)
+        public virtual void AddOrChangeComponent(IECSObjectPathContainer ownerComponentId, ECSComponent component)
         {
-            AddOrChangeComponent(ManagerScope.instance.entityManager.EntityStorage[ownerComponentId], component);
+            AddOrChangeComponent(ownerComponentId.ECSObject, component);
         }
-        public virtual void AddComponents(long ownerComponentId, params ECSComponent[] component)
+        public virtual void AddComponents(IECSObjectPathContainer ownerComponentId, params ECSComponent[] component)
         {
             foreach (var comp in component)
             {
-                AddComponent(ManagerScope.instance.entityManager.EntityStorage[ownerComponentId], comp);
+                AddComponent(ownerComponentId.ECSObject, comp);
             }
         }
-        public virtual void AddComponents(long ownerComponentId, List<ECSComponent> component)
+        public virtual void AddComponents(IECSObjectPathContainer ownerComponentId, List<ECSComponent> component)
         {
             foreach (var comp in component)
             {
-                AddComponent(ManagerScope.instance.entityManager.EntityStorage[ownerComponentId], comp);
+                AddComponent(ownerComponentId.ECSObject, comp);
             }
         }
 
         #endregion
 
         #region edit methods
-        public virtual (ECSComponent, ComponentState) GetComponent(long componentId, ECSEntity ownerComponent = null)
+        public virtual (ECSComponent, ComponentState) GetComponent(long componentId, IECSObject ownerComponent = null)
         {
             lock (this.locker)
             {
@@ -204,7 +238,7 @@ namespace NECS.ECS.ECSCore
                 }
             }
         }
-        public virtual List<(ECSComponent, ComponentState)> GetComponentsByType(List<long> componentTypeId, ECSEntity ownerComponent = null)
+        public virtual List<(ECSComponent, ComponentState)> GetComponentsByType(List<long> componentTypeId, IECSObject ownerComponent = null)
         {
             List<(ECSComponent, ComponentState)> result = new List<(ECSComponent, ComponentState)>();
             lock (this.locker)
@@ -234,7 +268,7 @@ namespace NECS.ECS.ECSCore
             return result;
         }
 
-        public virtual void ChangeComponent(ECSComponent component, ECSEntity ownerComponent = null)
+        public virtual void ChangeComponent(ECSComponent component, IECSObject ownerComponent = null)
         {
             if(!ComponentOwners.ContainsKey(component.instanceId))
             {
@@ -265,7 +299,7 @@ namespace NECS.ECS.ECSCore
 
         #region remove methods
 
-        public virtual void RemoveComponent(long componentId, ECSEntity ownerComponent = null)
+        public virtual void RemoveComponent(long componentId, IECSObject ownerComponent = null)
         {
             if (!ComponentOwners.ContainsKey(componentId))
             {
@@ -312,21 +346,69 @@ namespace NECS.ECS.ECSCore
                 RemoveComponent(comp);
             }
         }
-        public virtual void RemoveComponent(List<long> componentsId, ECSEntity ownerComponent = null)
+        public virtual void RemoveComponent(List<long> componentsId, IECSObject ownerComponent = null)
         {
             foreach (var comp in componentsId)
             {
                 RemoveComponent(comp);
             }
         }
-        public virtual void RemoveComponent(List<ECSComponent> components, ECSEntity ownerComponent = null)
+        public virtual void RemoveComponent(List<ECSComponent> components, IECSObject ownerComponent = null)
         {
             foreach (var comp in components)
             {
                 RemoveComponent(comp.instanceId);
             }
         }
-        public virtual void RemoveComponentsByType(List<long> componentTypeId, List<ECSEntity> ownerComponent = null)
+        public virtual void RemoveComponentsByType(List<Type> componentTypeId, bool includeInherit, List<IECSObject> ownerComponent = null)
+        {
+            List<ECSComponent> removedComponents = new List<ECSComponent>();
+            using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())//lock (ownerEntity.entityComponents.serializationLocker)
+            {
+                lock (this.locker)
+                {
+                    List<long> owners = new List<long>();
+                    if (ownerComponent == null)
+                    {
+                        owners = DB.Keys.ToList();
+                    }
+                    else
+                    {
+                        ownerComponent.ForEach(x =>
+                        {
+                            if (DB.ContainsKey(x.instanceId))
+                                owners.Add(x.instanceId);
+                        });
+                    }
+                    foreach (var dbOwner in owners)
+                    {
+                        var components = DB[dbOwner];
+                        List<(ECSComponent, ComponentState)> removeList = new List<(ECSComponent, ComponentState)>();
+                        foreach (var comp in components)
+                        {
+                            foreach (var removableType in componentTypeId)
+                            {
+                                if (comp.Value.Item1.GetType() == removableType || (includeInherit && comp.Value.Item1.GetType().IsSubclassOf(removableType)))
+                                {
+                                    removeList.Add(comp.Value);
+                                }
+                            }
+                        }
+                        foreach (var removedComp in removeList)
+                        {
+                            components[removedComp.Item1.instanceId] = (removedComp.Item1, ComponentState.Removed);
+                            ChangedComponents[removedComp.Item1.instanceId] = 1;
+                            removedComponents.Add(removedComp.Item1);
+                        }
+                        DB[dbOwner] = components;
+                    }
+                }
+            }
+            removedComponents.ForEach(x => {
+                x.RemovingReaction(x.ownerEntity);
+            });
+        }
+        public virtual void RemoveComponentsByType(List<long> componentTypeId, List<IECSObject> ownerComponent = null)
         {
             List<ECSComponent> removedComponents = new List<ECSComponent>();
             using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())//lock (ownerEntity.entityComponents.serializationLocker)
@@ -382,6 +464,7 @@ namespace NECS.ECS.ECSCore
                 if (serializeOnlyChanged)
                 {
                     Dictionary<long, List<dbRow>> serializedComp = new Dictionary<long, List<dbRow>>();
+                    Dictionary<IECSObjectPathContainer, List<dbRow>> serializedCompPath = new Dictionary<IECSObjectPathContainer, List<dbRow>>();
 
                     foreach (var changedComponent in ChangedComponents)
                     {
@@ -403,13 +486,14 @@ namespace NECS.ECS.ECSCore
                                 componentState = component.Item2
                             });
                             serializedComp[ownerId] = components;
+                            serializedCompPath[this.OwnerPaths[ownerId]] = components;
                         }
                         catch (Exception ex)
                         {
                             errorChanged.Add(changedComponent.Key);
                         }
                     }
-                    serializedDB = serializedComp;
+                    serializedDB = serializedCompPath;
                 }
                 else
                 {
@@ -432,7 +516,7 @@ namespace NECS.ECS.ECSCore
                             });
 
                         }
-                        serializedDB[entityRow.Key] = components;
+                        serializedDB[this.OwnerPaths[entityRow.Key]] = components;
                     }
                 }
                 if (clearChanged)
@@ -450,7 +534,7 @@ namespace NECS.ECS.ECSCore
                     var entityRowValues = entityRow.Value.ToList();
                     for (int i = 0; i < entityRowValues.Count; i++)
                     {
-                        var ownerList = DB[entityRow.Key];
+                        var ownerList = DB[entityRow.Key.ECSObject.instanceId];
                         var ecsComponent = ownerList[entityRowValues[i].componentInstanceId];
                         if (ecsComponent.Item2 == ComponentState.Removed)
                         {
@@ -471,17 +555,28 @@ namespace NECS.ECS.ECSCore
                 foreach (var serializedRow in serializedDB)
                 {
                     Dictionary<long, (ECSComponent, ComponentState)> components = new Dictionary<long, (ECSComponent, ComponentState)>();
-                    DB.TryGetValue(serializedRow.Key, out components);
+                    DB.TryGetValue(serializedRow.Key.CacheInstanceId, out components);
                     if (components == null)
                         components = new Dictionary<long, (ECSComponent, ComponentState)>();
-                    ECSEntity entityOwner = null;
-                    if (ManagerScope.instance.entityManager.EntityStorage.TryGetValue(serializedRow.Key, out entityOwner))
+                    IECSObject entityOwner = serializedRow.Key.ECSObject;
+                    if (entityOwner != null)
                     {
                         foreach (var component in serializedRow.Value)
                         {
                             var unserComp = (ECSComponent)ReflectionCopy.MakeReverseShallowCopy(component.component);
                             component.componentInstanceId = unserComp.instanceId;
-                            unserComp.ownerEntity = entityOwner;
+                            if (!OwnerPaths.ContainsKey(entityOwner.instanceId))
+                            {
+                                OwnerPaths[entityOwner.instanceId] = new IECSObjectPathContainer() { ECSObject = entityOwner };
+                            }
+                            if (entityOwner is ECSEntity eCSEntity)
+                            {
+                                unserComp.ownerEntity = eCSEntity;
+                            }
+                            else if (entityOwner is ECSComponent eCSComponent)
+                            {
+                                unserComp.ownerEntity = eCSComponent.ownerEntity;
+                            }
                             unserComp.ownerDB = this;
                             if (!components.ContainsKey(unserComp.instanceId))
                             {
@@ -503,7 +598,7 @@ namespace NECS.ECS.ECSCore
                             }
                             ChangedComponents[unserComp.instanceId] = 1;
                         }
-                        DB[serializedRow.Key] = components;
+                        DB[serializedRow.Key.CacheInstanceId] = components;
                     }
                     else
                     {
@@ -521,7 +616,7 @@ namespace NECS.ECS.ECSCore
                 var entityRowValues = entityRow.Value.ToList();
                 for (int i = 0; i < entityRowValues.Count; i++)
                 {
-                    var ownerList = DB[entityRow.Key];
+                    var ownerList = DB[entityRow.Key.CacheInstanceId];
                     var ecsComponent = ownerList[entityRowValues[i].componentInstanceId];
                     if (ecsComponent.Item2 == ComponentState.Created)
                     {
