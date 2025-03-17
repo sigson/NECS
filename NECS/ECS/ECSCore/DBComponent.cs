@@ -453,6 +453,22 @@ namespace NECS.ECS.ECSCore
                 x.RemovingReaction(x.ownerEntity);
             });
         }
+
+        public void RemoveComponentsByOwner(long instanceId)
+        {
+            try
+            {
+                var dbsnap = this.DB.SnapshotI(this.SerialLocker)[instanceId];
+                foreach (var inter in dbsnap)
+                {
+                    this.RemoveComponent(inter.Value.Item1.instanceId);
+                }
+            }
+            catch (Exception e)
+            {
+                NLogger.LogError("error remove components from db by owner");
+            }
+        }
         #endregion
 
         public override void SerializeDB(bool serializeOnlyChanged = false, bool clearChanged = true)

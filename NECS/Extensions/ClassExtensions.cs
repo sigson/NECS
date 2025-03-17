@@ -212,7 +212,34 @@ namespace NECS
 
         public static Type IdToECSType(this long id)
         {
-            return NECS.ECS.ECSCore.EntitySerialization.TypeStorage[id];
+            if (NECS.ECS.ECSCore.EntitySerialization.TypeStorage.TryGetValue(id, out var result))
+            {
+                return result;
+            }
+            return default;
+        }
+
+        public static long IdToECSType(this Type id)
+        {
+            if (NECS.ECS.ECSCore.EntitySerialization.TypeIdStorage.TryGetValue(id, out var result))
+            {
+                return result;
+            }
+            return default;
+        }
+
+        public static Type NameToECSType(this string componentName)
+        {
+            if (NECS.ECS.ECSCore.EntitySerialization.TypeStringStorage.TryGetValue(componentName, out var result))
+            {
+                return result;
+            }
+            return default;
+        }
+
+        public static long NameToECSId(this string componentName)
+        {
+            return componentName.NameToECSType().IdToECSType();
         }
 
         //public static T[] Concat<T>(this T[] x, T[] y)

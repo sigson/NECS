@@ -9,6 +9,26 @@ using NECS.Extensions;
 //{
 public static class EnumerableExtension
 {
+    private static readonly Random rand1 = new Random();
+    public static IEnumerable<T> TakeRandom<T>(this IEnumerable<T> source, int count = -1)
+    {
+        if (count == -1)
+        {
+            count = rand1.Next(1, source.Count());
+        }
+        if (source == null)
+            throw new ArgumentNullException(nameof(source));
+        if (count < 0)
+            throw new ArgumentOutOfRangeException(nameof(count), "Count cannot be negative");
+
+        var list = source.ToList();
+        int availableCount = list.Count;
+        if (availableCount == 0)
+            return Enumerable.Empty<T>();
+
+        int actualCount = Math.Min(count, availableCount);
+        return list.OrderBy(_ => rand1.Next()).Take(actualCount);
+    }
     public static void ForEach<TKey>(this IEnumerable<TKey> enumerable, Action<TKey> compute)
     {
         Collections.ForEach<TKey>(enumerable, compute);
