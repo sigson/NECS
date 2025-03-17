@@ -50,14 +50,25 @@ namespace NECS.ECS.ECSCore
         }
 
         [System.NonSerialized]
-        private PriorityEventQueue<StateReactionType, Action> StateReactionQueue = null;
-
+        private PriorityEventQueue<StateReactionType, Action> _stateReactionQueue = null;
+        private PriorityEventQueue<StateReactionType, Action> StateReactionQueue
+        {
+            get
+            {
+                if (_stateReactionQueue == null)
+                {
+                    _stateReactionQueue = new PriorityEventQueue<StateReactionType, Action>(new List<StateReactionType>() { StateReactionType.Added, StateReactionType.Changed, StateReactionType.Removed }, 1, x => x + 2);
+                }
+                return _stateReactionQueue;
+            }
+            set => _stateReactionQueue = value;
+        }
 
 
         public ECSComponent()
         {
             componentManagers.ownerComponent = this;
-            StateReactionQueue = new PriorityEventQueue<StateReactionType, Action>(new List<StateReactionType>() { StateReactionType.Added, StateReactionType.Changed, StateReactionType.Removed }, 1, x => x + 2);
+            //StateReactionQueue = new PriorityEventQueue<StateReactionType, Action>(new List<StateReactionType>() { StateReactionType.Added, StateReactionType.Changed, StateReactionType.Removed }, 1, x => x + 2);
         }
 
         public List<Action<ECSEntity, ECSComponent>> GetOnChangeComponentCallback()

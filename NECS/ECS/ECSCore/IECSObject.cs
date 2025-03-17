@@ -63,7 +63,22 @@ namespace NECS.ECS.ECSCore
         /// </summary>
         public Dictionary<long, IECSObjectPathContainer> childECSObjectsId = new Dictionary<long, IECSObjectPathContainer>();
         [System.NonSerialized]
-        private LockedDictionary<long, IECSObject> childECSObjects = new LockedDictionary<long, IECSObject>();
+        private LockedDictionary<long, IECSObject> storagechildECSObjects;
+        private LockedDictionary<long, IECSObject> childECSObjects
+        {
+            get
+            {
+                if (storagechildECSObjects == null)
+                {
+                    storagechildECSObjects = new LockedDictionary<long, IECSObject>();
+                }
+                return storagechildECSObjects;
+            }
+            set
+            {
+                storagechildECSObjects = value;
+            }
+        }
         
         protected virtual void OnUpdateOwner(IECSObject newOwner)
         {
