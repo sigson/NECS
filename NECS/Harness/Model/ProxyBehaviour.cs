@@ -33,8 +33,32 @@ namespace NECS.Harness.Model
 
         private object invocationLocker = new object();
         private int invocationCounter = 0;
+
+        private bool proxyInited = false;
+        private void InitProxyBehaviour()
+        {
+            if(!proxyInited)
+            {
+                this.OnLateUpdate += () =>
+                {
+                    if (ExecuteInstructionEvent != null && invocationCounter > 0)
+                    {
+                        //ExecutedList.Clear();
+                        foreach (var invoke in ExecuteInstructionEvent)
+                        {
+                            invoke.Value();
+                            Interlocked.Decrement(ref invocationCounter);
+                            ExecuteInstructionEvent.TryRemove(invoke.Key, out _);
+                        }
+                    }
+                };
+                proxyInited = true;
+            }
+        }
+
         public void ExecuteInstruction(Action<object> action, object Object, string ErrorLog = "", Action exceptionCallback = null)
         {
+            InitProxyBehaviour();
             if (Thread.CurrentThread != unityThread)
             {
                 var actionkey = Guid.NewGuid().GuidToLongR();
@@ -80,6 +104,7 @@ namespace NECS.Harness.Model
 
         public void ExecuteInstruction(Action action, string ErrorLog = "", Action exceptionCallback = null)
         {
+            InitProxyBehaviour();
             if (Thread.CurrentThread != unityThread)
             {
                 var actionkey = Guid.NewGuid().GuidToLongR();
@@ -125,6 +150,7 @@ namespace NECS.Harness.Model
 
         public T ExecuteFunction<T>(Func<T> function, string ErrorLog = "", Action exceptionCallback = null) where T : class
         {
+            InitProxyBehaviour();
             if (Thread.CurrentThread != unityThread)
             {
                 long resuldUID = 0;
@@ -172,20 +198,6 @@ namespace NECS.Harness.Model
             }
             else
                 return function();
-        }
-
-        protected virtual void LateUpdate()
-        {
-            if (ExecuteInstructionEvent != null && invocationCounter > 0)
-            {
-                //ExecutedList.Clear();
-                foreach (var invoke in ExecuteInstructionEvent)
-                {
-                    invoke.Value();
-                    Interlocked.Decrement(ref invocationCounter);
-                    ExecuteInstructionEvent.TryRemove(invoke.Key, out _);
-                }
-            }
         }
     }
 }

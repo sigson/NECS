@@ -130,6 +130,14 @@ namespace NECS.GameEngineAPI
             }
         }
 
+        public Action OnUpdate = () => {};
+        public Action<float> OnUpdateFD = (delta) => {};
+        public Action<double> OnUpdateDD = (delta) => {};
+        public Action OnLateUpdate = () => {};
+        public Action<float> OnLateUpdateFD = (delta) => {};
+        public Action<double> OnLateUpdateDD = (delta) => {};
+
+
 #if GODOT4_0_OR_GREATER
         public override void _Process(double delta)
         {
@@ -140,9 +148,15 @@ namespace NECS.GameEngineAPI
                 this.Update();
                 this.Update(delta);
                 this.Update(Convert.ToDouble(delta));
+                this.OnUpdate();
+                this.OnUpdateFD(delta);
+                this.OnUpdateDD(Convert.ToDouble(delta));
                 this.LateUpdate();
                 this.LateUpdate(delta);
                 this.LateUpdate(Convert.ToDouble(delta));
+                this.OnLateUpdate();
+                this.OnLateUpdateFD(delta);
+                this.OnLateUpdateDD(Convert.ToDouble(delta));
             }
 
         }
@@ -157,9 +171,15 @@ namespace NECS.GameEngineAPI
                 this.Update();
                 this.Update(delta);
                 this.Update(Convert.ToDouble(delta));
+                this.OnUpdate();
+                this.OnUpdateFD(delta);
+                this.OnUpdateDD(Convert.ToDouble(delta));
                 this.LateUpdate();
                 this.LateUpdate(delta);
                 this.LateUpdate(Convert.ToDouble(delta));
+                this.OnLateUpdate();
+                this.OnLateUpdateFD(delta);
+                this.OnLateUpdateDD(Convert.ToDouble(delta));
             }
 
         }

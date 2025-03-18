@@ -29,7 +29,7 @@ public abstract
             }
         }
 
-        protected virtual void Awake()
+        override public void Awake()
         {
             AwakeImpl();
         }
@@ -42,7 +42,7 @@ public abstract
             }
         }
 
-        protected virtual void OnDestroy()
+        override public void OnDestroy()
         {
             ChildTemp.ForEach(x => Destroy(x));
             OnDestroyImpl();
