@@ -56,7 +56,7 @@ namespace NECS.ECS.ECSCore
         {
             var AllEvents = ECSAssemblyExtensions.GetAllSubclassOf(typeof(ECSEvent)).Select(x => (ECSEvent)Activator.CreateInstance(x));
             
-            foreach (ECSExecutableContractContainer system in ManagerScope.instance.systemManager.TimeDependContractEntityDatabase.Keys.ToList())
+            foreach (ECSExecutableContractContainer system in ManagerScope.instance.systemManager.EventHandlerCacheSystems)
             {
                 var SystemInterest = system.GetInterestedEventsList();
                 foreach (var Event in AllEvents)

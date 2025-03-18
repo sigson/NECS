@@ -356,10 +356,6 @@ namespace NECS.ECS.ECSCore
 
                 if (!ManagerScope.instance.entityManager.EntityStorage.TryGetValue(bufEntity.desEntity.instanceId, out entity))
                 {
-                    if(Defines.LogECSEntitySerializationComponents)
-                    {
-                        NLogger.Log( $"In {bufEntity.desEntity.AliasName} Entity added " + bufEntity.desEntity.instanceId.ToString());
-                    }
                     entity = bufEntity.desEntity;
                     storage = bufEntity.desEntity.entityComponents;
                     storage.DeserializeStorage(bufEntity.Components);
@@ -367,6 +363,10 @@ namespace NECS.ECS.ECSCore
                     entity.AddComponentSilent(new EntityManagersComponent());
                     entity.fastEntityComponentsId = new Dictionary<long, int>(entity.entityComponents.Components.ToDictionary(k => k.instanceId, t => 0));
                     entity.AfterDeserialization();
+                    if(Defines.LogECSEntitySerializationComponents)
+                    {
+                        NLogger.Log( $"In {bufEntity.desEntity.AliasName} Entity added " + bufEntity.desEntity.instanceId.ToString() + $" with {entity.entityComponents.ComponentClasses.Select(x => x.Name).ToStringListing()} components");
+                    }
                     ManagerScope.instance.entityManager.OnAddNewEntity(entity);
                     return;
                 }
@@ -387,7 +387,7 @@ namespace NECS.ECS.ECSCore
                     var tComponent = (ECSComponent)component.Value;
                     if(Defines.LogECSEntitySerializationComponents)
                     {
-                        NLogger.Log($"In entity {bufEntity.desEntity.AliasName}:{entity.instanceId} will updated {tComponent.GetType().ToString()}");
+                        NLogger.Log($"In entity {bufEntity.desEntity.AliasName}:{entity.instanceId} will updated {tComponent.GetType().Name}");
                     }
                     entity.AddOrChangeComponentSilentWithOwnerRestoring(tComponent);
                     if (tComponent is DBComponent)

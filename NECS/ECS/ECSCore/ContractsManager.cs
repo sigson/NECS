@@ -26,6 +26,7 @@ namespace NECS.ECS.ECSCore
         public IDictionary<long, ConcurrentHashSet<ECSExecutableContractContainer>> AwaitingContractDatabase = new ConcurrentDictionary<long, ConcurrentHashSet<ECSExecutableContractContainer>>();
         //public IDictionary<ECSExecutableContractContainer, ConcurrentDictionary<long, bool>> ContractExecutionArgsDatabase = new ConcurrentDictionary<ECSExecutableContractContainer, ConcurrentDictionary<long, bool>>(); // list of entity id in conditions and action
 
+        public List<ECSExecutableContractContainer> EventHandlerCacheSystems = new List<ECSExecutableContractContainer>();
 
         public IDictionary<ECSExecutableContractContainer, ConcurrentDictionary<long, int>> TimeDependContractEntityDatabase = new ConcurrentDictionary<ECSExecutableContractContainer, ConcurrentDictionary<long, int>>();//List of interested entity Instance ID
         //fill all id before running ecs
@@ -45,6 +46,10 @@ namespace NECS.ECS.ECSCore
                         TimeDependContractEntityDatabase.TryAdd(system, new ConcurrentDictionary<long, int>());
                     else
                         NLogger.Error($"System {system.GetType().Name} has not initialized conditions.");
+                }
+                if(system.SystemEventHandler != null && system.SystemEventHandler.Count > 0)
+                {
+                    EventHandlerCacheSystems.Add(system);
                 }
 
                 foreach (var CallbackData in system.ComponentsOnChangeCallbacks)

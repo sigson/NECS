@@ -362,8 +362,8 @@ namespace NECS.ECS.ECSCore
                     });
                 }
             }
-            else
-                NLogger.Error("try add presented component");
+            // else
+            //     NLogger.Error("try add presented component");
             
             if (!silent && changed)
             {
@@ -396,7 +396,7 @@ namespace NECS.ECS.ECSCore
                 }
             }
             else
-                NLogger.Error("try add presented component");
+                NLogger.Error($"try add presented component {comType.Name} into {this.entity.AliasName}:{this.entity.instanceId}");
             return added;
         }
 

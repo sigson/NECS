@@ -104,7 +104,10 @@ namespace NECS.Harness.Services
                 var oldsocket = entity.GetComponent<SocketComponent>().Socket;
                 SocketToEntity[socketAdapter] = entity;
                 EntityToSocket[entity] = socketAdapter;
-                SocketToEntity.Remove(oldsocket, out _);
+                if(oldsocket != socketAdapter)
+                {
+                    SocketToEntity.Remove(oldsocket, out _);
+                }
                 entity.GetComponent<SocketComponent>().Socket = socketAdapter;
                 userLogged.userRelogin = true;
             }
