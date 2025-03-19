@@ -743,6 +743,12 @@ namespace NECS.GameEngineAPI
 #elif NET
         : StaticEngineApiObjectBehaviour, IEngineApiObjectBehaviour, IEngineApiCallableMethods //: ENGINEGAMEOBJECT, IEngineApiObjectBehaviour, IEngineApiCallableMethods
     {
+        public Action OnUpdate = () => {};
+        public Action<float> OnUpdateFD = (delta) => {};
+        public Action<double> OnUpdateDD = (delta) => {};
+        public Action OnLateUpdate = () => {};
+        public Action<float> OnLateUpdateFD = (delta) => {};
+        public Action<double> OnLateUpdateDD = (delta) => {};
         public EngineApiObjectBehaviour()
         {
         }
