@@ -389,7 +389,7 @@ namespace NECS.ECS.ECSCore
                     {
                         NLogger.Log($"In entity {bufEntity.desEntity.AliasName}:{entity.instanceId} will updated {tComponent.GetType().Name}");
                     }
-                    entity.AddOrChangeComponentSilentWithOwnerRestoring(tComponent);
+                    entity.AddOrChangeComponentWithOwnerRestoring(tComponent);
                     if (tComponent is DBComponent)
                         TaskEx.RunAsync(() => (entity.GetComponent<DBComponent>(tComponent.GetId())).UnserializeDB());
                     tComponent.AfterDeserialization();

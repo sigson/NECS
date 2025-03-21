@@ -55,6 +55,30 @@ public static class EnumerableExtension
         }
     }
 
+    public static void ForEachWithIndex<TKey>(this IEnumerable<TKey> list, Action<int> compute)
+    {
+        if (list == null)
+            return;
+        var rlist = list.ToList();
+        int count = rlist.Count;
+        for (int i = 0; i < count; i++)
+        {
+            compute(i);
+        }
+    }
+
+    public static void ForEachWithIndex<TKey>(this IEnumerable<TKey> list, Action<TKey, int> compute)
+    {
+        if (list == null)
+            return;
+        var rlist = list.ToList();
+        int count = rlist.Count;
+        for (int i = 0; i < count; i++)
+        {
+            compute(rlist[i], i);
+        }
+    }
+
     public static T Fill<T>(this T fillObject, System.Collections.IEnumerable fillInput, Action<T, object> fillAction) where T : System.Collections.IEnumerable
     {
         foreach (var fillObj in fillInput)

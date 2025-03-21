@@ -1721,6 +1721,8 @@ namespace NECS.Extensions
         {
             for (int i = 0; i < OpenedDownGates; i++)
             {
+                if(i >= _priorityOrder.Count)
+                    break;
                 var prioritynow = _priorityOrder[i];
                 if (_eventLists.TryGetValue(prioritynow.priorityValue, out var prioritystorage))
                 {

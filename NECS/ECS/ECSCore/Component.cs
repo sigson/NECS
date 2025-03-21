@@ -42,7 +42,7 @@ namespace NECS.ECS.ECSCore
         [System.NonSerialized]
         public ComponentManagers componentManagers = new ComponentManagers();
 
-        private enum StateReactionType
+        public enum StateReactionType
         {
             Added,
             Changed,
@@ -51,7 +51,7 @@ namespace NECS.ECS.ECSCore
 
         [System.NonSerialized]
         private PriorityEventQueue<StateReactionType, Action> _stateReactionQueue = null;
-        private PriorityEventQueue<StateReactionType, Action> StateReactionQueue
+        public PriorityEventQueue<StateReactionType, Action> StateReactionQueue
         {
             get
             {

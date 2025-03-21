@@ -341,7 +341,7 @@ namespace NECS.ECS.ECSCore
                 AddComponentProcess(comType, newcomponent, restoringMode);
                     added = true;
             }, (key, newcomponent, oldcomponent) => {
-                changed = ChangeComponentProcess(newcomponent, silent, restoringMode ? this.entity : null);
+                changed = ChangeComponentProcess(newcomponent, oldcomponent, silent, restoringMode ? this.entity : null);
                 if (restoringMode)
 				{
 					if (newcomponent is DBComponent dBComponent)
@@ -421,7 +421,7 @@ namespace NECS.ECS.ECSCore
             bool changed = false;
             components.ExecuteOnChangeLocked(component.GetTypeFast(), component, (key, chcomponent, oldcomponent) =>
                 {
-                    changed = ChangeComponentProcess(chcomponent, silent, restoringOwner);
+                    changed = ChangeComponentProcess(chcomponent,oldcomponent, silent, restoringOwner);
                 }
             );
             if (!silent && changed)
@@ -432,12 +432,13 @@ namespace NECS.ECS.ECSCore
             //this.MarkComponentChanged(component, silent);
         }
 
-        private bool ChangeComponentProcess(ECSComponent component, bool silent = false, ECSEntity restoringOwner = null)
+        private bool ChangeComponentProcess(ECSComponent component, ECSComponent oldcomponent, bool silent = false, ECSEntity restoringOwner = null)
         {
             bool changed = false;
             if (restoringOwner != null)
                 component.ownerEntity = restoringOwner;
             component.Unregistered = false;
+            component.StateReactionQueue = oldcomponent.StateReactionQueue;
             if (!silent)
             {
                 Type componentClass = component.GetTypeFast();
@@ -646,9 +647,10 @@ namespace NECS.ECS.ECSCore
 
         public bool ChangeComponentUnsafe(ECSComponent component, bool silent = false, ECSEntity restoringOwner = null)
         {
+            var oldcomponent = GetComponentUnsafe(component.GetTypeFast());
             if (this.components.UnsafeChange(component.GetTypeFast(), component))
             {
-                ChangeComponentProcess(component, silent, restoringOwner);
+                ChangeComponentProcess(component, oldcomponent, silent, restoringOwner);
                 if (!silent)
                 {
                     component.ChangeReaction(this.entity);
