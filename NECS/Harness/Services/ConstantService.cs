@@ -524,11 +524,11 @@ namespace NECS.Harness.Services
         {
             get
             {
-                var splitedPath = this.Path.Split('\\');
+                var splitedPath = this.Path.Split(GlobalProgramState.instance.PathSystemSeparator[0]);
                 var newPath = "";
                 for (int i = 0; i < splitedPath.Length - 1; i++)
                 {
-                    newPath += splitedPath[i] + "\\";
+                    newPath += splitedPath[i] + GlobalProgramState.instance.PathSystemSeparator;
                 }
                 newPath = newPath.Substring(0, newPath.Length - 1);
                 var newNameLib = splitedPath.ElementAt(splitedPath.Length - 2);

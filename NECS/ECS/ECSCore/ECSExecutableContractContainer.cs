@@ -103,9 +103,9 @@ namespace NECS.ECS.ECSCore
             }
         }
 
-        protected Action<ECSExecutableContractContainer, ECSEntity[]> _errorExecution =
-            (ECSExecutableContractContainer contract, ECSEntity[] entities) => { };
-        public Action<ECSExecutableContractContainer, ECSEntity[]> ErrorExecution
+        protected Action<ECSExecutableContractContainer, long[]> _errorExecution =
+            (ECSExecutableContractContainer contract, long[] entities) => { };
+        public Action<ECSExecutableContractContainer, long[]> ErrorExecution
         {
             get => _errorExecution;
             set
@@ -337,6 +337,7 @@ namespace NECS.ECS.ECSCore
                         allentities.AddRange(this.EntityComponentPresenceSign.Keys);
                         if(GetContractLockers(allentities, this.ContractConditions, this.EntityComponentPresenceSign, false, out var lockers, out var executionEntities) && lockers != null)
                         {
+                            var errorState = false;
                             if (ExecuteContract)
                             {
                                 this.InWork = true;
@@ -347,7 +348,8 @@ namespace NECS.ECS.ECSCore
                                 catch (Exception ex)
                                 {
                                     NLogger.LogError(ex);
-                                    ErrorExecution(this, executionEntities.ToArray());
+                                    ErrorExecution(this, executionEntities.Select(x=>x.instanceId).ToArray());
+                                    errorState = true;
                                 }
                                 lockers.ForEach(x => x.Dispose());
                                 this.LastEndExecutionTimestamp = DateTime.Now.Ticks;
@@ -357,14 +359,16 @@ namespace NECS.ECS.ECSCore
                             {
                                 lockers.ForEach(x => x.Dispose());
                             }
-                            if (ExecuteContract)
+                            if (ExecuteContract && !errorState)
+                            {
                                 ContractExecuted = true;
-                            return true;
+                                return true;
+                            }
                         }
                         else
                         {
                             if (ExecuteContract)
-                                ErrorExecution(this, executionEntities.ToArray());
+                                ErrorExecution(this, allentities.ToArray());
                         }
                     }
                     else
@@ -387,6 +391,7 @@ namespace NECS.ECS.ECSCore
                         }
                         if(GetContractLockers(contractEntities, filledContractConditions, filledEntityComponentPresenceSign, true, out var lockers, out var executionEntities) && lockers != null)
                         {
+                            var errorState = false;
                             if (ExecuteContract)
                             {
                                 this.InWork = true;
@@ -397,7 +402,8 @@ namespace NECS.ECS.ECSCore
                                 catch (Exception ex)
                                 {
                                     NLogger.LogError(ex);
-                                    ErrorExecution(this, executionEntities.ToArray());
+                                    ErrorExecution(this, executionEntities.Select(x=>x.instanceId).ToArray());
+                                    errorState = true;
                                 }
                                 lockers.ForEach(x => x.Dispose());
                                 this.LastEndExecutionTimestamp = DateTime.Now.Ticks;
@@ -409,12 +415,13 @@ namespace NECS.ECS.ECSCore
                             }
                             // if(ExecuteContract)
                             //     ContractExecuted = true;
-                            return true;
+                            if(!errorState)
+                                return true;
                         }
                         else
                         {
                             if (ExecuteContract)
-                                ErrorExecution(this, executionEntities.ToArray());
+                                ErrorExecution(this, executionEntities.Select(x=>x.instanceId).ToArray());
                         }
                     }
                     return false;
