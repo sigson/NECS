@@ -23,16 +23,27 @@ namespace NECS.ECS.ECSCore
         public LockedDictionary<long, ECSEntity> EntityStorage = new LockedDictionary<long, ECSEntity>();
         public LockedDictionary<string, ECSEntity> PreinitializedEntities = new LockedDictionary<string, ECSEntity>();//for selectablemap, shopdb, ect.
 
-        public void OnAddNewEntity(ECSEntity Entity)
+        public void OnAddNewEntity(ECSEntity Entity, bool silent = false)
         {
             Entity.manager = this;
             if (!EntityStorage.TryAdd(Entity.instanceId, Entity))
                 NLogger.Error("error add entity to storage");
-            TaskEx.RunAsync(() =>
+            OnAddNewEntityReaction(Entity, silent);
+        }
+
+        public void OnAddNewEntityReaction(ECSEntity Entity, bool silent = false)
+        {
+            // Entity.manager = this;
+            // if (!EntityStorage.TryAdd(Entity.instanceId, Entity))
+            //     NLogger.Error("error add entity to storage");
+            if(!silent)
             {
-                Entity.entityComponents.RegisterAllComponents();
-                ManagerScope.instance.systemManager.OnEntityCreated(Entity);
-            });
+                TaskEx.RunAsync(() =>
+                {
+                    Entity.entityComponents.RegisterAllComponents();
+                    ManagerScope.instance.systemManager.OnEntityCreated(Entity);
+                });
+            }
         }
 
         public void OnRemoveEntity(ECSEntity Entity)

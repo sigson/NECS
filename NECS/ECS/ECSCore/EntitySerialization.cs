@@ -359,6 +359,7 @@ namespace NECS.ECS.ECSCore
                     entity = bufEntity.desEntity;
                     storage = bufEntity.desEntity.entityComponents;
                     storage.DeserializeStorage(bufEntity.Components);
+                    ManagerScope.instance.entityManager.OnAddNewEntity(entity, true);
                     storage.RestoreComponentsAfterSerialization(entity);
                     entity.AddComponentSilent(new EntityManagersComponent());
                     entity.fastEntityComponentsId = new Dictionary<long, int>(entity.entityComponents.Components.ToDictionary(k => k.instanceId, t => 0));
@@ -367,7 +368,7 @@ namespace NECS.ECS.ECSCore
                     {
                         NLogger.Log( $"In {bufEntity.desEntity.AliasName} Entity added " + bufEntity.desEntity.instanceId.ToString() + $" with {entity.entityComponents.ComponentClasses.Select(x => x.Name).ToStringListing()} components");
                     }
-                    ManagerScope.instance.entityManager.OnAddNewEntity(entity);
+                    ManagerScope.instance.entityManager.OnAddNewEntityReaction(entity);
                     return;
                 }
                 bufEntity.desEntity.entityComponents.DeserializeStorage(bufEntity.Components);
@@ -382,6 +383,8 @@ namespace NECS.ECS.ECSCore
                 }
                 entity.entityComponents.RegisterAllComponents();
 
+                List<ECSComponent> afterDeser = new List<ECSComponent>();
+
                 foreach (var component in bufEntity.desEntity.entityComponents.SerializationContainer)
                 {
                     var tComponent = (ECSComponent)component.Value;
@@ -390,10 +393,16 @@ namespace NECS.ECS.ECSCore
                         NLogger.Log($"In entity {bufEntity.desEntity.AliasName}:{entity.instanceId} will updated {tComponent.GetType().Name}");
                     }
                     entity.AddOrChangeComponentWithOwnerRestoring(tComponent);
-                    if (tComponent is DBComponent)
-                        TaskEx.RunAsync(() => (entity.GetComponent<DBComponent>(tComponent.GetId())).UnserializeDB());
-                    tComponent.AfterDeserialization();
+                    afterDeser.Add(tComponent);
                 }
+                afterDeser.ForEach(tComponent => {
+                    if (tComponent is DBComponent)
+                    {
+                        //TaskEx.RunAsync(() => (entity.GetComponent<DBComponent>(tComponent.GetId())).UnserializeDB());
+                        entity.GetComponent<DBComponent>(tComponent.GetId()).UnserializeDB();
+                    }
+                    tComponent.AfterDeserialization();
+                });
                 entity.AfterDeserialization();
                 entity.entityComponents.RegisterAllComponents();
             }

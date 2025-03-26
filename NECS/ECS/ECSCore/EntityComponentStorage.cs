@@ -300,6 +300,7 @@ namespace NECS.ECS.ECSCore
             this.entity = entity;
             if (components.Count == 0)
             {
+                List<ECSComponent> afterDeser = new List<ECSComponent>();
                 foreach (var objPair in SerializationContainer)
                 {
                     ECSComponent objComponent = (ECSComponent)objPair.Value;
@@ -307,15 +308,22 @@ namespace NECS.ECS.ECSCore
                     if (ECSComponentManager.AllComponents.TryGetValue(objPair.Key, out component))
                     {
                         var typedComponent = (ECSComponent)Convert.ChangeType(objPair.Value, component.GetTypeFast());
-                        if (typedComponent is DBComponent)
-                            TaskEx.RunAsync(() =>
-                            {
-                                (typedComponent as DBComponent).UnserializeDB();
-                            });
+                        
                         AddComponentImmediately(component.GetTypeFast(), typedComponent, true, true);
-                        typedComponent.AfterDeserialization();
+                        afterDeser.Add(typedComponent);
                     }
                 }
+                afterDeser.ForEach(typedComponent =>
+                {
+                    if (typedComponent is DBComponent)
+                    {
+                        //TaskEx.RunAsync(() =>
+                        //{
+                            (typedComponent as DBComponent).UnserializeDB();
+                        //});
+                    }
+                    typedComponent.AfterDeserialization();
+                });
             }
         }
 

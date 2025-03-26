@@ -85,6 +85,7 @@ namespace NECS.ECS.Types.AtomicType
             {
                 if(value == null)
                 {
+                    NLogger.Error($"Try to set null value to IECSObjectPathContainer");
                     return;
                 }
                 var child = value;
@@ -98,12 +99,12 @@ namespace NECS.ECS.Types.AtomicType
                     if (compChild.ownerDB != null)
                     {
                         pathToECSObject.Add($"{child.instanceId};cmp");
-                        pathToECSObject.Add($"{compChild.ownerDB.instanceId};cmp");
+                        pathToECSObject.Add($"{compChild.ownerDB.GetId()};cmp");
                         pathToECSObject.Add($"{compChild.ownerDB.ownerEntity.instanceId};ent");
                     }
                     else
                     {
-                        pathToECSObject.Add($"{child.instanceId};cmp");
+                        pathToECSObject.Add($"{child.GetId()};cmp");
                         pathToECSObject.Add($"{compChild.ownerEntity.instanceId};ent");
                     }
                     pathToECSObject.Reverse();
