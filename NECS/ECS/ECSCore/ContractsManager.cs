@@ -144,7 +144,7 @@ namespace NECS.ECS.ECSCore
                 NLogger.Log("Contract aborted. No conditions");
                 return;
             }
-
+            contract.GenerationStackTrace = new System.Diagnostics.StackTrace();
             foreach(var entityid in contract.NeededEntities)
             {
                 if(ManagerScope.instance.entityManager.EntityStorage.ContainsKey(entityid))

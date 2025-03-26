@@ -43,7 +43,17 @@ namespace NECS.Core.Logging
                 if(content is Exception)
                     Console.WriteLine($"[{DateTime.UtcNow}, {type}] {(content as Exception).Message}\n {(content as Exception).StackTrace}");
                 else
-                    Console.WriteLine($"[{DateTime.UtcNow}, {type}] {content}");
+                {
+                    if (ConsoleColor.Red.Equals(color))
+                    {
+                        Console.WriteLine($"[{DateTime.UtcNow}, {type}] {content}\n=======/\\/\\/\\/\\/\\======\n{new System.Diagnostics.StackTrace().ToString()}\n======================");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[{DateTime.UtcNow}, {type}] {content}");
+                    }
+                }
+                    
 #endif
             }
         }

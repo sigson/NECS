@@ -251,12 +251,13 @@ namespace NECS.Harness.Services
 
                         if (DirectoryAdapter.Exists(ziptempfolder))
                             DirectoryAdapter.Delete(ziptempfolder, true);
-                        FileEx.CopyFilesRecursively(new DirectoryInfo(GlobalProgramState.instance.GameConfigDir), new DirectoryInfo(ziptempgamedir));
-                        #endregion
                         if (!DirectoryAdapter.Exists(ziptempfolder))
                         {
                             DirectoryAdapter.CreateDirectory(ziptempfolder);
                         }
+                        FileEx.CopyFilesRecursively(new DirectoryInfo(GlobalProgramState.instance.GameConfigDir), new DirectoryInfo(ziptempgamedir));
+                        #endregion
+                        
                         ZipExt.CompressDirectory(ziptempfolder, PathEx.Combine(GlobalProgramState.instance.GameDataDir, "zippedconfig.zip"), (prog) => { });
                     }
                     #if GODOT && !GODOT4_0_OR_GREATER

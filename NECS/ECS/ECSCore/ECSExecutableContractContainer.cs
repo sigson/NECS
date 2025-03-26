@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace NECS.ECS.ECSCore
 {
@@ -31,6 +32,19 @@ namespace NECS.ECS.ECSCore
                 lock (ContractLocker)
                 {
                     _systemType = value;
+                }
+            }
+        }
+
+        protected StackTrace genTrace = null;
+        public StackTrace GenerationStackTrace
+        {
+            get => genTrace;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    genTrace = value;
                 }
             }
         }
@@ -273,7 +287,7 @@ namespace NECS.ECS.ECSCore
                 {
                     var allentities = ContractConditions.Keys.ToList();
                     allentities.AddRange(this.EntityComponentPresenceSign.Keys);
-                    return allentities;
+                    return new HashSet<long>(allentities).ToList();
                 }
                 return null;
             }
@@ -300,6 +314,7 @@ namespace NECS.ECS.ECSCore
 
         public ECSExecutableContractContainer()
         {
+            GenerationStackTrace = new System.Diagnostics.StackTrace();
             if(this.GetType() == typeof(ECSExecutableContractContainer))
             {
                 this.MaxTries = 1;
@@ -428,7 +443,7 @@ namespace NECS.ECS.ECSCore
                 }
                 else
                 {
-                    NLogger.LogError("You tried to execute contract that was already executed");
+                    NLogger.Log("You tried to execute contract that was already executed\n" + this.GenerationStackTrace.ToString() + "\n================================");
                     return false;
                 }
             }
@@ -441,7 +456,7 @@ namespace NECS.ECS.ECSCore
             executionEntities = null;
             var localExecutionEntities = new List<ECSEntity>();
             bool globalViolationSeizure = false;
-            foreach (var entityid in contractEntities)
+            foreach (var entityid in new HashSet<long>(contractEntities))
             {
                 ManagerScope.instance.entityManager.EntityStorage.ExecuteReadLockedContinuously(entityid, (entid, contentity) =>
                 {

@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using static NECS.ECS.ECSCore.EntitySerialization;
+using NECS.Core.Logging;
 
 namespace NECS.Harness.Serialization
 {
@@ -45,6 +46,11 @@ namespace NECS.Harness.Serialization
 
         public static SerializedEntity DeserializeAdapterEntity(byte[] entity)
         {
+            if(entity == null || entity.Length == 0)
+            {
+                NLogger.Error("Failed to deserialize empty adapter entity");
+                return null;
+            }
             if(Defines.AOTMode)
             {
                 return JsonConvert.DeserializeObject<SerializedEntity>(Encoding.UTF8.GetString(entity));
@@ -78,6 +84,11 @@ namespace NECS.Harness.Serialization
 
         public static SerializedEvent DeserializeAdapterEvent(byte[] entity)
         {
+            if(entity == null || entity.Length == 0)
+            {
+                NLogger.Error("Failed to deserialize empty adapter event");
+                return null;
+            }
             if (Defines.AOTMode)
             {
                 return JsonConvert.DeserializeObject<SerializedEvent>(Encoding.UTF8.GetString(entity));
@@ -112,6 +123,11 @@ namespace NECS.Harness.Serialization
 
         public static ECSComponent DeserializeECSComponent(byte[] component, long typeId)
         {
+            if(component == null || component.Length == 0)
+            {
+                NLogger.Error("Failed to deserialize empty adapter event");
+                return null;
+            }
             if (Defines.AOTMode)
             {
                 return (ECSComponent)JsonConvert.DeserializeObject(Encoding.UTF8.GetString(component), EntitySerialization.TypeStorage[typeId]);
@@ -145,6 +161,11 @@ namespace NECS.Harness.Serialization
 
         public static ECSEntity DeserializeECSEntity(byte[] entity)
         {
+            if(entity == null || entity.Length == 0)
+            {
+                NLogger.Error("Failed to deserialize empty ECSEntity");
+                return null;
+            }
             if (Defines.AOTMode)
             {
                 return JsonConvert.DeserializeObject<ECSEntity>(Encoding.UTF8.GetString(entity));
@@ -178,6 +199,11 @@ namespace NECS.Harness.Serialization
 
         public static ECSEvent DeserializeECSEvent(byte[] ecsevent, long typeId)
         {
+            if(ecsevent == null || ecsevent.Length == 0)
+            {
+                NLogger.Error("Failed to deserialize empty ECSEvent");
+                return null;
+            }
             if (Defines.AOTMode)
             {
                 return (ECSEvent)JsonConvert.DeserializeObject(Encoding.UTF8.GetString(ecsevent), EntitySerialization.TypeStorage[typeId]);

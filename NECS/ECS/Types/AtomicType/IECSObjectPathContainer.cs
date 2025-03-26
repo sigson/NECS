@@ -29,6 +29,7 @@ namespace NECS.ECS.Types.AtomicType
             }
         }
 
+        [System.NonSerialized]
         private IECSObject cacheECSObject = null;
 
         [Newtonsoft.Json.JsonIgnore]

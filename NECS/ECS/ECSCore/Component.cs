@@ -51,6 +51,7 @@ namespace NECS.ECS.ECSCore
 
         [System.NonSerialized]
         private PriorityEventQueue<StateReactionType, Action> _stateReactionQueue = null;
+        [JsonIgnore]
         public PriorityEventQueue<StateReactionType, Action> StateReactionQueue
         {
             get
