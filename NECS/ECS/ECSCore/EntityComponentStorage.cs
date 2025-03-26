@@ -522,7 +522,6 @@ namespace NECS.ECS.ECSCore
         private void RemoveComponentProcess(Type componentClass, ECSComponent component)
         {
             this.changedComponents.Remove(componentClass, out _);
-            this.components.Remove(componentClass);
             this.SerializationContainer.Remove(component.GetId(), out _);
             this.IdToTypeComponent.Remove(component.GetId(), out _);
             this.entity.fastEntityComponentsId.RemoveI(component.instanceId, this.entity.SerialLocker);
