@@ -25,6 +25,23 @@ namespace NECS.GameEngineAPI
         {
             return this.gameObject.AddComponent<T>();
         }
+
+        protected bool initFlag = false;
+
+        public void Initialize()
+        {
+            if (initFlag)
+            {
+                return;
+            }
+            InitializeImpl();
+            initFlag = true;
+        }
+
+        protected virtual void InitializeImpl()
+        {
+
+        }
     }
 #endif
 #if GODOT
@@ -97,6 +114,23 @@ namespace NECS.GameEngineAPI
             }
         }
 
+        protected bool initFlag = false;
+
+        public void Initialize()
+        {
+            if (initFlag)
+            {
+                return;
+            }
+            InitializeImpl();
+            initFlag = true;
+        }
+
+        protected virtual void InitializeImpl()
+        {
+
+        }
+
         protected SynchronizedList<EngineApiObjectBehaviour> childComponents = new SynchronizedList<EngineApiObjectBehaviour>();
 
         #region GodotBase
@@ -116,6 +150,7 @@ namespace NECS.GameEngineAPI
             {
                 base._Ready();
                 this.Awake();
+                Initialize();
             }
 
         }

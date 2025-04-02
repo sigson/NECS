@@ -28,6 +28,12 @@ namespace NECS.ECS.ECSCore
         public long instanceId = Guid.NewGuid().GuidToLongR();
         [System.NonSerialized]
         public List<IManager> connectPoints = new List<IManager>();
+        public List<T> GetConnectPoints<T>() where T : IManager
+        {
+            var result = new List<T>();
+            this.connectPoints.Where(x => x.GetType() == typeof(T)).ForEach(x => result.Add((T)x));
+            return result;
+        }
         [System.NonSerialized]
         public Type ObjectType;
         [System.NonSerialized]

@@ -176,22 +176,67 @@ public partial class InputEx : Node
 #region isInputBlock
     public InputObjectState GetKeyState(Godot.KeyList key)
     {
-        if(InputMapState.TryGetValue(typeof(InputEventKey).ToString() + ((int)key).ToString(), out var lastState))
+        string keyId = typeof(InputEventKey).ToString() + ((int)key).ToString();
+        
+        // Добавляем двойную проверку - и в нашем состоянии, и физическое состояние
+        bool isPhysicallyPressed = Input.IsPhysicalKeyPressed((int)key);
+        
+        if (isPhysicallyPressed)
+        {
+            // Если клавиша физически нажата, но в нашей системе она не отмечена как нажатая
+            if (!InputMapState.TryGetValue(keyId, out var state) || 
+                (state != InputObjectState.Pressed && state != InputObjectState.Entered))
+            {
+                // Динамически обновляем состояние
+                InputMapState[keyId] = InputObjectState.Pressed;
+                return InputObjectState.Pressed;
+            }
+        }
+        else
+        {
+            // Если клавиша физически не нажата, но в нашей системе она отмечена как нажатая
+            if (InputMapState.TryGetValue(keyId, out var state) && 
+                (state == InputObjectState.Pressed || state == InputObjectState.Entered))
+            {
+                // Динамически обновляем состояние
+                InputMapState[keyId] = InputObjectState.Released;
+                return InputObjectState.Released;
+            }
+        }
+        
+        // Стандартная логика проверки состояния
+        if (InputMapState.TryGetValue(keyId, out var lastState))
         {
             return NonSyncReplacer(lastState);
         }
+        
+        // Если клавиша физически нажата, но еще не в нашей системе
+        if (isPhysicallyPressed)
+        {
+            InputMapState[keyId] = InputObjectState.Pressed;
+            return InputObjectState.Pressed;
+        }
+        
         return InputObjectState.Quiet;
     }
 
+    // Измененный метод GetKeyStateF
     public float GetKeyStateF(Godot.KeyList key)
     {
-        if(InputMapState.TryGetValue(typeof(InputEventKey).ToString() + ((int)key).ToString(), out var lastState))
+        // Двойная проверка - и физическое нажатие, и состояние в системе
+        bool isPhysicallyPressed = Input.IsPhysicalKeyPressed((int)key);
+        
+        if (isPhysicallyPressed)
         {
-            if(NonSyncReplacer(lastState) == InputObjectState.Entered || NonSyncReplacer(lastState) == InputObjectState.Pressed)
-            {
-                return 1f;
-            }
+            return 1f;
         }
+        
+        InputObjectState state = GetKeyState(key);
+        if (state == InputObjectState.Entered || state == InputObjectState.Pressed)
+        {
+            return 1f;
+        }
+        
         return 0f;
     }
 

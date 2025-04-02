@@ -436,7 +436,7 @@ namespace NECS.ECS.ECSCore
                         else
                         {
                             if (ExecuteContract)
-                                ErrorExecution(this, executionEntities.Select(x=>x.instanceId).ToArray());
+                                ErrorExecution(this, contractEntities.ToArray());
                         }
                     }
                     return false;
@@ -527,6 +527,10 @@ namespace NECS.ECS.ECSCore
             }
             else
             {
+                if(localExecutionEntities.Count == 0 && partialEntityTargetListLockingAllowed)
+                {
+                    return false;
+                }
                 lockTokens = Lockers.Values.SelectMany(x => x).ToList();
                 executionEntities = localExecutionEntities;
                 return true;
