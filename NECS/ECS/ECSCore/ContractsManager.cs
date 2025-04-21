@@ -109,32 +109,35 @@ namespace NECS.ECS.ECSCore
                 }
                 else
                 {
+                    if(contract.NowTried >= contract.MaxTries && !contract.ContractExecuted && !contract.InWork)
+                    {
+                        RemoveContract(contract);
+                        NLogger.Log($"Contract failed to execute after {contract.MaxTries} tries.\n======================\n{contract.GenerationStackTrace}\n======================");
+                    }
                     if(contract.TryExecuteContract())
                     {
                         if(contract.RemoveAfterExecution)
                             RemoveContract(contract);
                     }
-                    if(contract.NowTried >= contract.MaxTries)
-                    {
-                        RemoveContract(contract);
-                    }
                 }
             }
         }
 
-        private void RemoveContract(ECSExecutableContractContainer contract)
+        private bool RemoveContract(ECSExecutableContractContainer contract)
         {
+            bool result = false;
             foreach (var entity in contract.NeededEntities)
             {
                 if (contract.RemoveAfterExecution && AwaitingContractDatabase.TryGetValue(entity, out var contracts))
                 {
-                    contracts.Remove(contract);
+                    result = contracts.Remove(contract);
                 }
                 if (contract.RemoveAfterExecution && TimeDependContractEntityDatabase.TryGetValue(contract, out var entities))
                 {
-                    TimeDependContractEntityDatabase.Remove(contract);
+                    result = TimeDependContractEntityDatabase.Remove(contract);
                 }
             }
+            return result;
         }
 
         public void RegisterContract(ECSExecutableContractContainer contract, bool autoExecute = true)

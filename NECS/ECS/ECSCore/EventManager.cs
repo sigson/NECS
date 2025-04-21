@@ -47,7 +47,7 @@ namespace NECS.ECS.ECSCore
                 }
                 catch
                 {
-                    Console.WriteLine(Event.GetType().Name);
+                    NLogger.LogError(Event.GetType().Name + " event no have static id field or ID attribute");
                 }
             }
         }

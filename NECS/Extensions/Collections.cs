@@ -1,10 +1,12 @@
-﻿using NECS.ECS.ECSCore;
+﻿using NECS.Core.Logging;
+using NECS.ECS.ECSCore;
 using NECS.Harness.Model;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.Serialization;
@@ -1669,6 +1671,8 @@ namespace NECS.Extensions
         private readonly Dictionary<TKey, SynchronizedList<ActionWrapper>> _eventLists;
         private readonly List<PriorityWrapper> _priorityOrder;
         private readonly object _lock = new object();
+        private StackTrace creationStackTrace;
+        private Type ownerType;
 
         /// <summary>
         /// 
@@ -1678,10 +1682,13 @@ namespace NECS.Extensions
         /// <param name="gatesCounter"> may be + 2</param>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentException"></exception>
-        public PriorityEventQueue(IEnumerable<TKey> priorityOrder, int gatesOpened = Int32.MaxValue, Func<int, int> gatesCounter = null)
+        public PriorityEventQueue(IEnumerable<TKey> priorityOrder, int gatesOpened = Int32.MaxValue, Func<int, int> gatesCounter = null, Type ownerType = null)
         {
             if (priorityOrder == null)
                 throw new ArgumentNullException(nameof(priorityOrder));
+
+            creationStackTrace = new StackTrace();
+            this.ownerType = ownerType;
             OpenedDownGates = gatesOpened;
             if(gatesCounter == null)
             {
@@ -1743,7 +1750,14 @@ namespace NECS.Extensions
                                     }
                                     lock (_lock)
                                     {
-                                        _eventLists[prioritynow.priorityValue].RemoveAt(0);
+                                        try
+                                        {
+                                            _eventLists[prioritynow.priorityValue].RemoveAt(0);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            NLogger.Log($"Error in priority event queue (Maybe you start already executed only one execution method (OnAdded as example)) - {ex.Message}\n in type {this.ownerType} \n{this.creationStackTrace}");
+                                        }
                                     }
                                     ProcessEvents();
                                 }
@@ -1783,7 +1797,15 @@ namespace NECS.Extensions
                                         }
                                         lock (_lock)
                                         {
-                                            _eventLists[prioritynow.priorityValue].RemoveAt(0);
+                                            //_eventLists[prioritynow.priorityValue].RemoveAt(0);
+                                            try
+                                            {
+                                                _eventLists[prioritynow.priorityValue].RemoveAt(0);
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                NLogger.Log($"Error in priority event queue (Maybe you start already executed only one execution method (OnAdded as example)) - {ex.Message}\n in type {this.ownerType} \n{this.creationStackTrace}");
+                                            }
                                         }
 
                                         ProcessEvents();

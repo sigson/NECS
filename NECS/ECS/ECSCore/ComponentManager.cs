@@ -51,7 +51,7 @@ namespace NECS.ECS.ECSCore
                 }
                 catch(Exception ex)
                 {
-                    Console.WriteLine(comp.GetType().Name);
+                    NLogger.Error(comp.GetType().Name + " no have static id field or ID attribute");
                     entity.AddComponentSilent((ECSComponent)comp.Clone());
                 }
             }

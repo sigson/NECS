@@ -374,7 +374,7 @@ namespace NECS
             }
         }
 
-        private readonly ReaderWriterLockSlim lockobj = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+        public readonly ReaderWriterLockSlim lockobj = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
         public ReadLockToken ReadLock() => new ReadLockToken(lockobj);
         public WriteLockToken WriteLock() => new WriteLockToken(lockobj);

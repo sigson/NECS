@@ -58,7 +58,7 @@ namespace NECS.ECS.ECSCore
             {
                 if (_stateReactionQueue == null)
                 {
-                    _stateReactionQueue = new PriorityEventQueue<StateReactionType, Action>(new List<StateReactionType>() { StateReactionType.Added, StateReactionType.Changed, StateReactionType.Removed }, 1, x => x + 2);
+                    _stateReactionQueue = new PriorityEventQueue<StateReactionType, Action>(new List<StateReactionType>() { StateReactionType.Added, StateReactionType.Changed, StateReactionType.Removed }, 1, x => x + 2, this.GetTypeFast());
                 }
                 return _stateReactionQueue;
             }

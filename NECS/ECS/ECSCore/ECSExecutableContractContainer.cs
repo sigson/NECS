@@ -199,6 +199,19 @@ namespace NECS.ECS.ECSCore
             }
         }
 
+        protected bool _partialEntityFiltering = false;
+        public bool PartialEntityFiltering
+        {
+            get => _partialEntityFiltering;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _partialEntityFiltering = value;
+                }
+            }
+        }
+
         protected bool _asyncExecution = true;
         public bool AsyncExecution
         {
@@ -265,7 +278,7 @@ namespace NECS.ECS.ECSCore
         }
 
         protected bool _contractExecuted = false;
-        protected bool ContractExecuted
+        public bool ContractExecuted
         {
             get => _contractExecuted;
             set
@@ -273,6 +286,19 @@ namespace NECS.ECS.ECSCore
                 lock (ContractLocker)
                 {
                     _contractExecuted = value;
+                }
+            }
+        }
+
+        protected bool _manualExitFromWorkingState = false;
+        public bool ManualExitFromWorkingState
+        {
+            get => _manualExitFromWorkingState;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _manualExitFromWorkingState = value;
                 }
             }
         }
@@ -346,6 +372,7 @@ namespace NECS.ECS.ECSCore
                 NowTried++;
                 if (!ContractExecuted)
                 {
+                    OnTryExecute();
                     if(contractEntities == null)
                     {
                         var allentities = ContractConditions.Keys.ToList();
@@ -367,8 +394,11 @@ namespace NECS.ECS.ECSCore
                                     errorState = true;
                                 }
                                 lockers.ForEach(x => x.Dispose());
-                                this.LastEndExecutionTimestamp = DateTime.Now.Ticks;
-                                this.InWork = false;
+                                if(!ManualExitFromWorkingState)
+                                {
+                                    this.LastEndExecutionTimestamp = DateTime.Now.Ticks;
+                                    this.InWork = false;
+                                }
                             }
                             else
                             {
@@ -421,8 +451,11 @@ namespace NECS.ECS.ECSCore
                                     errorState = true;
                                 }
                                 lockers.ForEach(x => x.Dispose());
-                                this.LastEndExecutionTimestamp = DateTime.Now.Ticks;
-                                this.InWork = false;
+                                if(!ManualExitFromWorkingState)
+                                {
+                                    this.LastEndExecutionTimestamp = DateTime.Now.Ticks;
+                                    this.InWork = false;
+                                }
                             }
                             else
                             {
@@ -508,8 +541,15 @@ namespace NECS.ECS.ECSCore
 
                     if(violationSeizure)
                     {
-                        Lockers[entid].ForEach(x => x.Dispose());
-                        Lockers.Remove(entid);
+                        if(partialEntityTargetListLockingAllowed && this._partialEntityFiltering && Lockers[entid].Count > 0)
+                        {
+                            localExecutionEntities.Add(contentity);
+                        }
+                        else
+                        {
+                            Lockers[entid].ForEach(x => x.Dispose());
+                            Lockers.Remove(entid);
+                        }
                     }
                     else
                     {
@@ -525,16 +565,13 @@ namespace NECS.ECS.ECSCore
                 Lockers.ForEach(x => x.Value.ForEach(y => y.Dispose()));
                 return !globalViolationSeizure;
             }
-            else
+            if (localExecutionEntities.Count == 0)
             {
-                if(localExecutionEntities.Count == 0 && partialEntityTargetListLockingAllowed)
-                {
-                    return false;
-                }
-                lockTokens = Lockers.Values.SelectMany(x => x).ToList();
-                executionEntities = localExecutionEntities;
-                return true;
+                return false;
             }
+            lockTokens = Lockers.Values.SelectMany(x => x).ToList();
+            executionEntities = localExecutionEntities;
+            return true;
         }
 
         /// <summary>
@@ -544,6 +581,14 @@ namespace NECS.ECS.ECSCore
         public virtual void Run(long[] entities)
         {
 
+        }
+
+        /// <summary>
+        /// overridable function for debug purposes in tryexecution process
+        /// </summary>
+        public virtual void OnTryExecute()
+        {
+            
         }
 
         /// <summary>
