@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static FileAdapter;
 #if UNITY_5_3_OR_NEWER
 using UnityEngine;
 #endif
@@ -35,13 +36,13 @@ namespace NECS.Harness.Services
             get
             {
 #if UNITY_5_3_OR_NEWER
-                return PathEx.Combine(PathEx.Combine(persistentDataPath, "GameData"), "GameConfig");
+                return FSExtensions.Combine(FSExtensions.Combine(persistentDataPath, "GameData"), "GameConfig");
 #endif
 #if NET && !GODOT
-                return PathEx.Combine(PathEx.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "GameData"), "GameConfig");
+                return FSExtensions.Combine(FSExtensions.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "GameData"), "GameConfig");
 #endif
 #if GODOT
-                return PathEx.Combine(PathEx.Combine(persistentDataPath, "GameData").Replace("\\", "/"), "GameConfig").Replace("\\", "/");
+                return FSExtensions.Combine(FSExtensions.Combine(persistentDataPath, "GameData").Replace("\\", "/"), "GameConfig").Replace("\\", "/");
 #endif
             }
         }
@@ -51,13 +52,13 @@ namespace NECS.Harness.Services
             get
             {
 #if UNITY_5_3_OR_NEWER
-                return PathEx.Combine(streamingAssetsPath, "GameData");
+                return FSExtensions.Combine(streamingAssetsPath, "GameData");
 #endif
 #if NET && !GODOT
-                return PathEx.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "GameData");
+                return FSExtensions.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "GameData");
 #endif
 #if GODOT
-                return PathEx.Combine(streamingAssetsPath, "GameData").Replace("\\", "/");
+                return FSExtensions.Combine(streamingAssetsPath, "GameData").Replace("\\", "/");
 #endif
             }
         }
@@ -67,13 +68,13 @@ namespace NECS.Harness.Services
             get
             {
 #if UNITY_5_3_OR_NEWER
-                return PathEx.Combine(PathEx.Combine(streamingAssetsPath, "GameData"), "Config");
+                return FSExtensions.Combine(FSExtensions.Combine(streamingAssetsPath, "GameData"), "Config");
 #endif
 #if NET && !GODOT
-                return PathEx.Combine(PathEx.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "GameData"), "Config");
+                return FSExtensions.Combine(FSExtensions.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName), "GameData"), "Config");
 #endif
 #if GODOT
-                return PathEx.Combine(PathEx.Combine(streamingAssetsPath, "GameData").Replace("\\", "/"), "Config").Replace("\\", "/");
+                return FSExtensions.Combine(FSExtensions.Combine(streamingAssetsPath, "GameData").Replace("\\", "/"), "Config").Replace("\\", "/");
 #endif
             }
         }

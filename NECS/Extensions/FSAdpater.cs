@@ -104,7 +104,7 @@ public class DirectoryAdapter
                 {
                     if (!_godotDirectory.CurrentIsDir())
                     {
-                        files.Add(PathEx.Combine(path, fileName).FixPath());
+                        files.Add(FSExtensions.Combine(path, fileName).FixPath());
                     }
                     fileName = _godotDirectory.GetNext();
                 }
@@ -134,7 +134,7 @@ public class DirectoryAdapter
                 {
                     if (_godotDirectory.CurrentIsDir())
                     {
-                        directories.Add(PathEx.Combine(path, dirName).FixPath());
+                        directories.Add(FSExtensions.Combine(path, dirName).FixPath());
                     }
                     dirName = _godotDirectory.GetNext();
                 }
@@ -151,7 +151,7 @@ public class DirectoryAdapter
             #if NET
                 return Directory.GetParent(path)?.FullName;
             #elif GODOT
-                return PathEx.GetDirectoryName(path);
+                return FSExtensions.GetDirectoryName(path);
             #elif UNITY
                 return System.IO.Directory.GetParent(path)?.FullName;
             #endif
@@ -175,7 +175,7 @@ public class DirectoryAdapter
                 {
                     if (_godotDirectory.CurrentIsDir())
                     {
-                        directories.Add(PathEx.Combine(path, dirName));
+                        directories.Add(FSExtensions.Combine(path, dirName));
                     }
                     dirName = _godotDirectory.GetNext();
                 }
@@ -201,7 +201,7 @@ public class DirectoryAdapter
                     if (Exists(destDirName))
                         throw new IOException($"Destination directory already exists: {destDirName}");
 
-                    var error = _godotDirectory.Open(PathEx.GetDirectoryName(sourceDirName));
+                    var error = _godotDirectory.Open(FSExtensions.GetDirectoryName(sourceDirName));
                     if (error != Godot.Error.Ok)
                         throw new IOException($"Failed to open source directory: {error}");
 
@@ -233,7 +233,7 @@ public class DirectoryAdapter
                 string fileName = _godotDirectory.GetNext();
                 while (fileName != "")
                 {
-                    string fullPath = PathEx.Combine(path, fileName);
+                    string fullPath = FSExtensions.Combine(path, fileName);
                     if (_godotDirectory.CurrentIsDir())
                     {
                         DeleteDirectoryRecursive(fullPath);
@@ -609,5 +609,147 @@ public class FileAdapter
         #elif UNITY
             return UnityEngine.Windows.File.GetLastWriteTime(path);
         #endif
+    }
+
+
+    public static class FSExtensions
+    {
+        #if GODOT
+        public static char DirectorySeparatorChar = '/';
+        #else
+        public static char DirectorySeparatorChar = System.IO.Path.DirectorySeparatorChar;
+        #endif
+        
+        public static char AltDirectorySeparatorChar = System.IO.Path.AltDirectorySeparatorChar;
+        public static char VolumeSeparatorChar = System.IO.Path.VolumeSeparatorChar;
+        public static char[] InvalidPathChars = System.IO.Path.InvalidPathChars;
+        
+        #if GODOT
+        public static char PathSeparator = '/';
+        #else
+        public static char PathSeparator = System.IO.Path.PathSeparator;
+        #endif
+
+        private static string ReplacePathSeparators(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return path;
+
+            if (DirectorySeparatorChar != System.IO.Path.DirectorySeparatorChar)
+                path = path.Replace(System.IO.Path.DirectorySeparatorChar, DirectorySeparatorChar);
+
+            // if (AltDirectorySeparatorChar != System.IO.Path.AltDirectorySeparatorChar)
+            //     path = path.Replace(System.IO.Path.AltDirectorySeparatorChar, AltDirectorySeparatorChar);
+
+            if (VolumeSeparatorChar != System.IO.Path.VolumeSeparatorChar)
+                path = path.Replace(System.IO.Path.VolumeSeparatorChar, VolumeSeparatorChar);
+
+            #if GODOT
+            var findedgodotstart = path.IndexOf(":/");
+            if(findedgodotstart != -1 && path[findedgodotstart + 2] != '/')
+            {
+                path = path.Replace(":/", "://");
+            }
+            #endif
+            return path;
+        }
+
+        public static string ChangeExtension(string path, string extension)
+        {
+            return ReplacePathSeparators(System.IO.Path.ChangeExtension(path, extension));
+        }
+
+        public static string Combine(string path1, string path2)
+        {
+            return ReplacePathSeparators(System.IO.Path.Combine(path1, path2));
+        }
+
+        public static string Combine(string path1, string path2, string path3)
+        {
+            return ReplacePathSeparators(System.IO.Path.Combine(path1, path2, path3));
+        }
+
+        public static string Combine(string path1, string path2, string path3, string path4)
+        {
+            return ReplacePathSeparators(System.IO.Path.Combine(path1, path2, path3, path4));
+        }
+
+        public static string Combine(params string[] paths)
+        {
+            return ReplacePathSeparators(System.IO.Path.Combine(paths));
+        }
+
+        public static string GetDirectoryName(string path)
+        {
+            return ReplacePathSeparators(System.IO.Path.GetDirectoryName(path));
+        }
+
+        public static string GetExtension(string path)
+        {
+            return System.IO.Path.GetExtension(path);
+        }
+
+        public static string GetFileName(string path)
+        {
+            return System.IO.Path.GetFileName(path);
+        }
+
+        public static string GetFileNameWithoutExtension(string path)
+        {
+            return System.IO.Path.GetFileNameWithoutExtension(path);
+        }
+
+        public static string GetFullPath(string path)
+        {
+            return ReplacePathSeparators(System.IO.Path.GetFullPath(path));
+        }
+
+        public static char[] GetInvalidFileNameChars()
+        {
+            return System.IO.Path.GetInvalidFileNameChars();
+        }
+
+        public static char[] GetInvalidPathChars()
+        {
+            return System.IO.Path.GetInvalidPathChars();
+        }
+
+        public static string GetPathRoot(string path)
+        {
+            return ReplacePathSeparators(System.IO.Path.GetPathRoot(path));
+        }
+
+        public static string GetRandomFileName()
+        {
+            return System.IO.Path.GetRandomFileName();
+        }
+
+        public static string GetTempFileName()
+        {
+            return ReplacePathSeparators(System.IO.Path.GetTempFileName());
+        }
+
+        public static string GetTempPath()
+        {
+            return ReplacePathSeparators(System.IO.Path.GetTempPath());
+        }
+
+        public static bool HasExtension(string path)
+        {
+            return System.IO.Path.HasExtension(path);
+        }
+
+        public static bool IsPathRooted(string path)
+        {
+            return System.IO.Path.IsPathRooted(path);
+        }
+
+        public static void CopyFilesRecursively(DirectoryInfo source, DirectoryInfo target)
+        {
+            foreach (DirectoryInfo dir in source.GetDirectories())
+                CopyFilesRecursively(dir, target.CreateSubdirectory(dir.Name));
+            foreach (FileInfo file in source.GetFiles())
+                file.CopyTo(FSExtensions.Combine(target.FullName, file.Name));
+        }
     }
 }

@@ -12,6 +12,7 @@ using System.Linq;
 using System.IO;
 using System.Threading.Tasks;
 using System.Timers;
+using NECS.Extensions.ThreadingSync;
 
 namespace NECS.ECS.ECSCore
 {

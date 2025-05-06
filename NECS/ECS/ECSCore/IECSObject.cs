@@ -16,6 +16,7 @@ using System.IO;
 
 using System.Threading.Tasks;
 using NECS.ECS.Types.AtomicType;
+using NECS.Extensions.ThreadingSync;
 
 namespace NECS.ECS.ECSCore
 {

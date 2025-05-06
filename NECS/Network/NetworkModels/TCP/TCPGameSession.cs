@@ -10,6 +10,8 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
+using NECS.Extensions;
+using NECS.Extensions.ThreadingSync;
 
 namespace NECS.Network.NetworkModels.TCP
 {

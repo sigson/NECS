@@ -16,6 +16,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Collections.Concurrent;
 using NECS.Core.Logging;
+using NECS.Extensions;
 
 namespace NetSerializer
 {
@@ -151,7 +152,7 @@ namespace NetSerializer
 
 				while (m_runtimeTypeIDList.ContainsKey(m_nextAvailableTypeID))
 					m_nextAvailableTypeID++;
-				var crc = new NECS.Crc32();
+				var crc = new Crc32();
 
 				//uint typeID = m_nextAvailableTypeID++;
 

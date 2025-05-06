@@ -3,6 +3,7 @@ using NECS.ECS.DefaultObjects.ECSComponents;
 using NECS.ECS.DefaultObjects.Events.ECSEvents;
 using NECS.ECS.DefaultObjects.Events.LowLevelNetEvent.Auth;
 using NECS.ECS.ECSCore;
+using NECS.Extensions;
 using NECS.Harness.Model;
 using NECS.Network.NetworkModels;
 using System;

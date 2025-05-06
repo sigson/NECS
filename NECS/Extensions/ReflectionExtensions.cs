@@ -1,12 +1,27 @@
 ﻿using System.Collections.Generic;
 using System.Reflection;
-using System.ArrayExtensions;
 using Newtonsoft.Json.Linq;
 using System.Linq;
 using NECS.Extensions;
 
 namespace System
 {
+    public static class ECSAssemblyExtensions
+    {
+        public static IEnumerable<Type> GetAllSubclassOf(Type parent)
+        {
+            var allAssembly = AppDomain.CurrentDomain.GetAssemblies();
+            foreach (var a in allAssembly)
+                foreach (var t in a.GetTypes())
+                    //if (t.IsAssignableTo(parent)) yield return t;
+                    if (t.IsSubclassOf(parent))
+                    {
+                        yield return t;
+                        //foreach(var xt in GetAllSubclassOf(t))
+                        //    yield return xt;
+                    }
+        }
+    }
     public static class DeepCopy
     {
         public static object CopyObject(object Object)
@@ -164,6 +179,99 @@ namespace System
         {
             return (T)Copy((Object)original);
         }
+
+        public static bool TryEnterWriteLockAwaiter(this ReaderWriterLockSlim readerWriterLockSlim, int timeout)
+        {
+            bool executed = false;
+            while (!executed)
+            {
+                try
+                {
+                    if (!readerWriterLockSlim.IsWriteLockHeld && readerWriterLockSlim.TryEnterWriteLock(timeout))
+                    {
+                        executed = true;
+                        return true;
+                    }
+                    else
+                    {
+                        Thread.Sleep(1);
+                    }
+                }
+                catch { }
+                
+            }
+            return false;
+        }
+
+        public static bool TryEnterReadLockAwaiter(this ReaderWriterLockSlim readerWriterLockSlim, int timeout)
+        {
+            bool executed = false;
+            while (!executed)
+            {
+                if (readerWriterLockSlim.TryEnterReadLock(timeout))
+                {
+                    executed = true;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        
+
+        /// <summary>
+        /// Extension for 'Object' that copies the properties to a destination object.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="destination">The destination.</param>
+        public static void CopyProperties(this object source, object destination)
+        {
+            // If any this null throw an exception
+            if (source == null || destination == null)
+                throw new Exception("Source or/and Destination Objects are null");
+            // Getting the Types of the objects
+            Type typeDest = destination.GetType();
+            Type typeSrc = source.GetType();
+
+            // Iterate the Properties of the source instance and  
+            // populate them from their desination counterparts  
+            System.Reflection.PropertyInfo[] srcProps = typeSrc.GetProperties();
+            foreach (PropertyInfo srcProp in srcProps)
+            {
+                if (!srcProp.CanRead)
+                {
+                    continue;
+                }
+                PropertyInfo targetProperty = typeDest.GetProperty(srcProp.Name);
+                if (targetProperty == null)
+                {
+                    continue;
+                }
+                if (!targetProperty.CanWrite)
+                {
+                    continue;
+                }
+                if (targetProperty.GetSetMethod(true) != null && targetProperty.GetSetMethod(true).IsPrivate)
+                {
+                    continue;
+                }
+                if ((targetProperty.GetSetMethod().Attributes & MethodAttributes.Static) != 0)
+                {
+                    continue;
+                }
+                if (!targetProperty.PropertyType.IsAssignableFrom(srcProp.PropertyType))
+                {
+                    continue;
+                }
+                if (!(targetProperty.CanRead && targetProperty.GetMethod.IsStatic) ||
+                (targetProperty.CanWrite && targetProperty.SetMethod.IsStatic))
+                {
+                    continue;
+                }
+                // Passed all tests, lets set the value
+                targetProperty.SetValue(destination, srcProp.GetValue(source, null), null);
+            }
+        }
     }
 
     public class ReferenceEqualityComparer : EqualityComparer<Object>
@@ -178,52 +286,4 @@ namespace System
             return obj.GetHashCode();
         }
     }
-
-    namespace ArrayExtensions
-    {
-        public static class ArrayExtensions
-        {
-            public static void ForEach(this Array array, Action<Array, int[]> action)
-            {
-                if (array.LongLength == 0) return;
-                ArrayTraverse walker = new ArrayTraverse(array);
-                do action(array, walker.Position);
-                while (walker.Step());
-            }
-        }
-
-        internal class ArrayTraverse
-        {
-            public int[] Position;
-            private int[] maxLengths;
-
-            public ArrayTraverse(Array array)
-            {
-                maxLengths = new int[array.Rank];
-                for (int i = 0; i < array.Rank; ++i)
-                {
-                    maxLengths[i] = array.GetLength(i) - 1;
-                }
-                Position = new int[array.Rank];
-            }
-
-            public bool Step()
-            {
-                for (int i = 0; i < Position.Length; ++i)
-                {
-                    if (Position[i] < maxLengths[i])
-                    {
-                        Position[i]++;
-                        for (int j = 0; j < i; j++)
-                        {
-                            Position[j] = 0;
-                        }
-                        return true;
-                    }
-                }
-                return false;
-            }
-        }
-    }
-
 }

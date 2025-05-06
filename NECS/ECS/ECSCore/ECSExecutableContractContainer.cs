@@ -16,6 +16,7 @@ using System.Linq;
 using System.IO;
 using System.Diagnostics.Contracts;
 using System.Diagnostics;
+using NECS.Extensions.ThreadingSync;
 
 namespace NECS.ECS.ECSCore
 {

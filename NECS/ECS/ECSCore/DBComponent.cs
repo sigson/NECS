@@ -16,6 +16,7 @@ using System.Linq;
 using System.IO;
 using static NECS.ECS.ECSCore.ComponentsDBComponent;
 using NECS.ECS.Types.AtomicType;
+using NECS.Extensions.ThreadingSync;
 
 namespace NECS.ECS.ECSCore
 {

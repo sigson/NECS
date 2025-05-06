@@ -5,6 +5,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static FileAdapter;
 
 namespace NECS.Extensions
 {
@@ -21,7 +22,7 @@ namespace NECS.Extensions
                 zipStream.Write(BitConverter.GetBytes(c), 0, sizeof(char));
 
             //Compress file content
-            byte[] bytes = FileAdapter.ReadAllBytes(PathEx.Combine(sDir, sRelativePath));
+            byte[] bytes = FileAdapter.ReadAllBytes(FSExtensions.Combine(sDir, sRelativePath));
             zipStream.Write(BitConverter.GetBytes(bytes.Length), 0, sizeof(int));
             zipStream.Write(bytes, 0, bytes.Length);
         }
@@ -55,8 +56,8 @@ namespace NECS.Extensions
             bytes = new byte[iFileLen];
             zipStream.Read(bytes, 0, bytes.Length);
 
-            string sFilePath = PathEx.Combine(sDir, sFileName);
-            string sFinalDir = PathEx.GetDirectoryName(sFilePath);
+            string sFilePath = FSExtensions.Combine(sDir, sFileName);
+            string sFinalDir = FSExtensions.GetDirectoryName(sFilePath);
             if (!DirectoryAdapter.Exists(sFinalDir))
                 DirectoryAdapter.CreateDirectory(sFinalDir);
 
@@ -70,7 +71,7 @@ namespace NECS.Extensions
         public static void CompressDirectory(string sInDir, string sOutFile, ProgressDelegate progress)
         {
             string[] sFiles = DirectoryAdapter.GetFiles(sInDir);
-            int iDirLen = sInDir[sInDir.Length - 1] == PathEx.DirectorySeparatorChar ? sInDir.Length : sInDir.Length + 1;
+            int iDirLen = sInDir[sInDir.Length - 1] == FSExtensions.DirectorySeparatorChar ? sInDir.Length : sInDir.Length + 1;
 
             
             using (MemoryStream outFile = new MemoryStream())

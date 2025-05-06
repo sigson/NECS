@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using NECS.Network.NetworkModels;
+using NECS.Extensions.ThreadingSync;
 
 namespace NECS.ECS.ECSCore
 {

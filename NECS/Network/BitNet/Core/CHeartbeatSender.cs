@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using NECS;
+using NECS.Extensions;
 
 namespace BitNet
 {

@@ -12,6 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using YamlDotNet.Core.Tokens;
+using static FileAdapter;
 
 namespace NECS.DB.SQLite
 {
@@ -199,7 +200,7 @@ CREATE TABLE IF NOT EXISTS ""Friends"" (
 
         public override void Load(string DBPath)
         {
-            string connectionString = "Data Source=" + PathEx.Combine(GlobalProgramState.instance.GameDataDir, DBPath) + ";Cache=Shared;Mode=ReadWriteCreate;";
+            string connectionString = "Data Source=" + FSExtensions.Combine(GlobalProgramState.instance.GameDataDir, DBPath) + ";Cache=Shared;Mode=ReadWriteCreate;";
             if(Defines.DBEventsLogging)
                 NLogger.LogDB($"Using DB on path => '{connectionString}'");
             Connection = new SqliteConnection(connectionString);

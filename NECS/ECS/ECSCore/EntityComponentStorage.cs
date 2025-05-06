@@ -13,6 +13,7 @@ using System.Linq;
 using System.IO;
 using System.ComponentModel;
 using NECS.Harness.Serialization;
+using NECS.Extensions.ThreadingSync;
 
 namespace NECS.ECS.ECSCore
 {
