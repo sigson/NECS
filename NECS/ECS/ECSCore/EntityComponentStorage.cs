@@ -422,7 +422,7 @@ namespace NECS.ECS.ECSCore
                 this.SerializationContainer[component.GetId()] = component;
             this.IdToTypeComponent.TryAdd(component.GetId(), component.GetTypeFast());
             //this.entity.manager.OnAddComponent(this.entity, component);
-            ManagerScope.instance.entityManager.OnAddComponent(this.entity, component);
+            ECSService.instance.entityManager.OnAddComponent(this.entity, component);
         }
 
         public bool ChangeComponent(ECSComponent component, bool silent = false, ECSEntity restoringOwner = null)
@@ -535,7 +535,7 @@ namespace NECS.ECS.ECSCore
             this.IdToTypeComponent.Remove(component.GetId(), out _);
             this.entity.fastEntityComponentsId.RemoveI(component.instanceId, this.entity.SerialLocker);
             this.RemovedComponents.Add(component.GetId());
-            ManagerScope.instance.entityManager.OnRemoveComponent(this.entity, component);
+            ECSService.instance.entityManager.OnRemoveComponent(this.entity, component);
         }
 
 
@@ -570,7 +570,7 @@ namespace NECS.ECS.ECSCore
                             this.SerializationContainer.Remove(removedComponent.GetId(), out _);
                             this.IdToTypeComponent.Remove(removedComponent.GetId(), out _);
                             this.RemovedComponents.Add(removedComponent.GetId());
-                            ManagerScope.instance.entityManager.OnRemoveComponent(this.entity, removedComponent);
+                            ECSService.instance.entityManager.OnRemoveComponent(this.entity, removedComponent);
                             removedComponent.RemovingReaction(this.entity);
                         }
                     });
@@ -750,7 +750,7 @@ namespace NECS.ECS.ECSCore
                     component.Unregistered = false;
                     component.AddedReaction(entity);
                     //this.entity.manager.OnAddComponent(this.entity, component);
-                    ManagerScope.instance.entityManager.OnAddComponent(this.entity, component);
+                    ECSService.instance.entityManager.OnAddComponent(this.entity, component);
                 }
             }
             else
@@ -764,7 +764,7 @@ namespace NECS.ECS.ECSCore
                             component.Unregistered = false;
                             component.AddedReaction(entity);
                             //this.entity.manager.OnAddComponent(this.entity, component);
-                            ManagerScope.instance.entityManager.OnAddComponent(this.entity, component);
+                            ECSService.instance.entityManager.OnAddComponent(this.entity, component);
                         }
                     });
                 }

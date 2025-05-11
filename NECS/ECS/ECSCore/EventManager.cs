@@ -26,12 +26,14 @@ namespace NECS.ECS.ECSCore
         public ConcurrentDictionaryEx<long, ECSEvent> EventBus = new ConcurrentDictionaryEx<long, ECSEvent>();
         public Dictionary<long, Type> EventSerializationCache = new Dictionary<long, Type>();
 
-        public ObjectPool<EventWatcher> watcherPool;
-
-        public ECSEventManager()
+        private ECSWorld world;
+        public ECSEventManager(ECSWorld world)
         {
+            this.world = world;
             watcherPool = new ObjectPool<EventWatcher>(() => new EventWatcher(this, 0, 0));
         }
+
+        public ObjectPool<EventWatcher> watcherPool;
 
         public void IdStaticCache()
         {
@@ -57,7 +59,7 @@ namespace NECS.ECS.ECSCore
         {
             var AllEvents = ECSAssemblyExtensions.GetAllSubclassOf(typeof(ECSEvent)).Select(x => (ECSEvent)Activator.CreateInstance(x));
             
-            foreach (ECSExecutableContractContainer system in ManagerScope.instance.systemManager.EventHandlerCacheSystems)
+            foreach (ECSExecutableContractContainer system in world.contractsManager.EventHandlerCacheSystems)
             {
                 var SystemInterest = system.GetInterestedEventsList();
                 foreach (var Event in AllEvents)

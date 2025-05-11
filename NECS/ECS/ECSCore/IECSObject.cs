@@ -17,6 +17,7 @@ using System.IO;
 using System.Threading.Tasks;
 using NECS.ECS.Types.AtomicType;
 using NECS.Extensions.ThreadingSync;
+using NECS.Harness.Services;
 
 namespace NECS.ECS.ECSCore
 {
@@ -35,6 +36,24 @@ namespace NECS.ECS.ECSCore
             this.connectPoints.Where(x => x.GetType() == typeof(T)).ForEach(x => result.Add((T)x));
             return result;
         }
+
+        public long ECSWorldOwnerId = 0;
+        [JsonIgnore]
+        public ECSWorld ECSWorldOwner {
+            get {
+                if (ECSWorldOwnerId == 0)
+                {
+                    NLogger.LogError($"IECSObject '{instanceId}: {this.GetType().Name}': ECSWorldOwnerId == 0");
+                    return null;
+                }
+                return ECSService.instance.GetWorld(ECSWorldOwnerId);
+            }
+            set
+            {
+                ECSWorldOwnerId = value.instanceId;
+            }
+        }
+
         [System.NonSerialized]
         public Type ObjectType;
         [System.NonSerialized]

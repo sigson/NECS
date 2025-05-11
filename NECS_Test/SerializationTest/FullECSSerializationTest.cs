@@ -20,7 +20,7 @@ namespace NECS_Test.SerializationTest
             IService.RegisterAllServices();
             //ConstantService.instance.SetupConfigs(GlobalProgramState.instance.TechConfigDir);
             var entity = new ECSEntity();
-            ManagerScope.instance.entityManager.OnAddNewEntity(entity);
+            ECSService.instance.entityManager.OnAddNewEntity(entity);
             entity.AddComponent(new ECSComponentSerializationCheck());
             entity.dataAccessPolicies.Add(new ECSComponentSerializationCheckGDAP());
 

@@ -23,7 +23,7 @@ namespace NECS.ECS.Components.ECSComponents
                 {
                     if(selfDestructAction == null)
                     {
-                        ManagerScope.instance.entityManager.OnRemoveEntity(entity);
+                        this.ECSWorldOwner.entityManager.OnRemoveEntity(entity);
                     }
                     else
                     {

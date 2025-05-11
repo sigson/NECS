@@ -48,7 +48,7 @@ namespace NECS.ECS.Types.AtomicType
 
                         if (objectType == "ent")
                         {
-                            currentObject = ManagerScope.instance.entityManager.EntityStorage[instanceId];
+                            currentObject = ECSService.instance.entityManager.EntityStorage[instanceId];
                         }
                         else if (objectType == "cmp")
                         {

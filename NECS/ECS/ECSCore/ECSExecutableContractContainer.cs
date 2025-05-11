@@ -17,6 +17,7 @@ using System.IO;
 using System.Diagnostics.Contracts;
 using System.Diagnostics;
 using NECS.Extensions.ThreadingSync;
+using NECS.Harness.Services;
 
 namespace NECS.ECS.ECSCore
 {
@@ -131,6 +132,22 @@ namespace NECS.ECS.ECSCore
                 }
             }
         }
+
+
+        protected Func<ECSWorld, bool> _worldFilter =
+            (world) => { return true; };
+        public Func<ECSWorld, bool> WorldFilter
+        {
+            get => _worldFilter;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _worldFilter = value;
+                }
+            }
+        }
+
 
         protected bool _timeDependExecution = false;
         public bool TimeDependExecution
@@ -492,7 +509,7 @@ namespace NECS.ECS.ECSCore
             bool globalViolationSeizure = false;
             foreach (var entityid in new HashSet<long>(contractEntities))
             {
-                ManagerScope.instance.entityManager.EntityStorage.ExecuteReadLockedContinuously(entityid, (entid, contentity) =>
+                ECSService.instance.GetEntityWorld(entityid).entityManager.EntityStorage.ExecuteReadLockedContinuously(entityid, (entid, contentity) =>
                 {
                     bool violationSeizure = false;
                     Lockers.Add(entid, new List<RWLock.LockToken>());
@@ -604,11 +621,6 @@ namespace NECS.ECS.ECSCore
                 result.TryAdd(eventid.Key, 0);
             }
             return result;
-        }
-
-        protected void RegisterEventHandler(long eventId)
-        {
-            ManagerScope.instance.eventManager.UpdateSystemHandlers(eventId, this.SystemEventHandler[eventId]);
         }
     }
 }

@@ -20,13 +20,19 @@ namespace NECS.ECS.ECSCore
 {
     public class ECSEntityManager
     {
-
+        private ECSWorld world;
         public LockedDictionary<long, ECSEntity> EntityStorage = new LockedDictionary<long, ECSEntity>();
         public LockedDictionary<string, ECSEntity> PreinitializedEntities = new LockedDictionary<string, ECSEntity>();//for selectablemap, shopdb, ect.
+
+        public ECSEntityManager(ECSWorld world)
+        {
+            this.world = world;
+        }
 
         public void OnAddNewEntity(ECSEntity Entity, bool silent = false)
         {
             Entity.manager = this;
+            Entity.ECSWorldOwner = world;
             if (!EntityStorage.TryAdd(Entity.instanceId, Entity))
                 NLogger.Error("error add entity to storage");
             OnAddNewEntityReaction(Entity, silent);
@@ -42,7 +48,7 @@ namespace NECS.ECS.ECSCore
                 TaskEx.RunAsync(() =>
                 {
                     Entity.entityComponents.RegisterAllComponents();
-                    ManagerScope.instance.systemManager.OnEntityCreated(Entity);
+                    this.world.contractsManager.OnEntityCreated(Entity);
                 });
             }
         }
@@ -53,7 +59,7 @@ namespace NECS.ECS.ECSCore
             Entity.OnDelete();
             TaskEx.RunAsync(() =>
             {
-                ManagerScope.instance.systemManager.OnEntityDestroyed(Entity);
+                this.world.contractsManager.OnEntityDestroyed(Entity);
             });
         }
 
@@ -64,7 +70,7 @@ namespace NECS.ECS.ECSCore
                 return;
             TaskEx.RunAsync(() =>
             {
-                ManagerScope.instance.systemManager.OnEntityComponentAddedReaction(Entity, Component);
+                this.world.contractsManager.OnEntityComponentAddedReaction(Entity, Component);
             });
         }
 
@@ -74,7 +80,7 @@ namespace NECS.ECS.ECSCore
                 return;
             TaskEx.RunAsync(() =>
             {
-                ManagerScope.instance.systemManager.OnEntityComponentRemovedReaction(Entity, Component);
+                this.world.contractsManager.OnEntityComponentRemovedReaction(Entity, Component);
             });
         }
     }

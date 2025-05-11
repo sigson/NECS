@@ -32,11 +32,23 @@ namespace NECS.ECS.ECSCore
         public IDictionary<ECSExecutableContractContainer, ConcurrentDictionary<long, int>> TimeDependContractEntityDatabase = new ConcurrentDictionary<ECSExecutableContractContainer, ConcurrentDictionary<long, int>>();//List of interested entity Instance ID
         //fill all id before running ecs
 
-        public static bool LockSystems = false;
+        private ECSWorld world;
+        private Func<Type, bool> staticContractFiltering;
+        public ECSContractsManager(ECSWorld world, Func<Type, bool> staticContractFiltering)
+        {
+            this.world = world;
+            this.staticContractFiltering = staticContractFiltering;
+            if(staticContractFiltering == null)
+            {
+                this.staticContractFiltering = (x) => true;
+            }
+        }
+
+        public bool LockSystems = false;
 
         public void InitializeSystems()
         {
-            var AllSystems = ECSAssemblyExtensions.GetAllSubclassOf(typeof(ECSExecutableContractContainer)).Select(x => (ECSExecutableContractContainer)Activator.CreateInstance(x)).ToList();
+            var AllSystems = ECSAssemblyExtensions.GetAllSubclassOf(typeof(ECSExecutableContractContainer)).Where(x => this.staticContractFiltering(x)).Select(x => (ECSExecutableContractContainer)Activator.CreateInstance(x)).Where(x => x.WorldFilter(this.world)).ToList();
             AllSystems = AllSystems.Except(ReturnExceptedSystems()).ToList<ECSExecutableContractContainer>();
             foreach(ECSExecutableContractContainer system in AllSystems)
             {
@@ -151,7 +163,7 @@ namespace NECS.ECS.ECSCore
             contract.GenerationStackTrace = new System.Diagnostics.StackTrace();
             foreach(var entityid in contract.NeededEntities)
             {
-                if(ManagerScope.instance.entityManager.EntityStorage.ContainsKey(entityid))
+                if(world.entityManager.EntityStorage.ContainsKey(entityid))
                 {
                     ConcurrentHashSet<ECSExecutableContractContainer> listContracts = null;
                     if(!AwaitingContractDatabase.TryGetValue(entityid, out listContracts))

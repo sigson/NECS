@@ -137,7 +137,7 @@ namespace NECS.Harness.Services
             {
                 SocketAdapters.Remove(socketAdapter.Id, out _);
                 NetworkMaliciousEventCounteractionService.instance.maliciousScoringStorage.Remove(socketAdapter.Id, out _);
-                ManagerScope.instance.eventManager.OnEventAdd(new ClientDisconnectedEvent()
+                ECSService.instance.eventManager.OnEventAdd(new ClientDisconnectedEvent()
                 {
                     SocketSource = socketAdapter
                 });
@@ -222,7 +222,7 @@ namespace NECS.Harness.Services
 
             TaskEx.RunAsync(() =>
             {
-                ManagerScope.instance.eventManager.OnEventAdd(deserializedEvent, socketAdapter);
+                ECSService.instance.eventManager.OnEventAdd(deserializedEvent, socketAdapter);
             });
 
 

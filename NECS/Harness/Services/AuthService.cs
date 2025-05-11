@@ -97,7 +97,7 @@ namespace NECS.Harness.Services
                 entity.AddComponentSilent(new SocketComponent() { Socket = socketAdapter  });
                 SocketToEntity[socketAdapter] = entity;
                 EntityToSocket[entity] = socketAdapter;
-                ManagerScope.instance.entityManager.OnAddNewEntity(entity);
+                ECSService.instance.entityManager.OnAddNewEntity(entity);
                 userLogged.userRelogin = false;
             }
             else
@@ -115,7 +115,7 @@ namespace NECS.Harness.Services
             userLogged.Username = userData.Username;
             userLogged.userEntity = entity;
             userLogged.userEntityId = entity.instanceId;
-            ManagerScope.instance.eventManager.OnEventAdd(userLogged);
+            ECSService.instance.eventManager.OnEventAdd(userLogged);
         }
 
         public override void InitializeProcess()

@@ -27,6 +27,13 @@ namespace NECS.ECS.ECSCore
         public static Dictionary<long, List<Action<ECSEntity, ECSComponent>>> OnChangeCallbacksDB = new Dictionary<long, List<Action<ECSEntity, ECSComponent>>>();
 
         public static ECSComponentGroup GlobalProgramComponentGroup;
+
+        private ECSWorld world;
+        public ECSComponentManager(ECSWorld world)
+        {
+            this.world = world;
+        }
+
         static public void IdStaticCache()
         {
             var AllDirtyComponents = ECSAssemblyExtensions.GetAllSubclassOf(typeof(ECSComponent)).Where(x=>!x.IsAbstract).Select(x => (ECSComponent)Activator.CreateInstance(x)).ToList(); 

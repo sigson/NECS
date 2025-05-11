@@ -443,7 +443,7 @@ namespace NECS.Harness.Services
                     Action<Network.NetworkModels.SocketAdapter> socketAction = (Network.NetworkModels.SocketAdapter socketAdapter) => {
                         if (!Loaded)
                         {
-                            ManagerScope.instance.eventManager.OnEventAdd(new ConfigCheckEvent()
+                            ECSService.instance.eventManager.OnEventAdd(new ConfigCheckEvent()
                             {
                                 configHash = hashConfig
                             });

@@ -28,7 +28,7 @@ namespace NECS.Harness.Model
             TaskEx.RunAsync(() =>
             {
                 ecsEvent.instanceId = Guid.NewGuid().GuidToLongR() + DateTime.Now.Ticks;
-                ManagerScope.instance.eventManager.OnEventAdd(ecsEvent);
+                ECSService.instance.eventManager.OnEventAdd(ecsEvent);
             });
         }
 
