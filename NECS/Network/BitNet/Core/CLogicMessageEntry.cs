@@ -25,6 +25,7 @@ namespace BitNet
         public void start()
         {
             Thread logic = new Thread(this.do_logic);
+            logic.Name = "BitNet Logic";
             //Task logic = new Task(this.do_logic);
             logic.Start();
             //Thread saveInfoThread = null;

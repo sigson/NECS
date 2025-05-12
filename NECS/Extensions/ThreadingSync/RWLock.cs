@@ -1,3 +1,4 @@
+using KPreisser;
 using NECS.Core.Logging;
 
 namespace NECS.Extensions.ThreadingSync
@@ -13,8 +14,8 @@ namespace NECS.Extensions.ThreadingSync
         }
         public class WriteLockToken : LockToken
         {
-            private readonly ReaderWriterLockSlim lockobj;
-            public WriteLockToken(ReaderWriterLockSlim @lock)
+            private readonly IReaderWriterLockSlim lockobj;
+            public WriteLockToken(IReaderWriterLockSlim @lock)
             {
                 this.lockobj = @lock;
                 if (this.lockobj.IsReadLockHeld)
@@ -69,8 +70,8 @@ namespace NECS.Extensions.ThreadingSync
 
         public class ReadLockToken : LockToken
         {
-            private readonly ReaderWriterLockSlim lockobj;
-            public ReadLockToken(ReaderWriterLockSlim @lock)
+            private readonly IReaderWriterLockSlim lockobj;
+            public ReadLockToken(IReaderWriterLockSlim @lock)
             {
                 this.lockobj = @lock;
                 if (this.lockobj.IsWriteLockHeld)
@@ -123,7 +124,7 @@ namespace NECS.Extensions.ThreadingSync
             }
         }
 
-        public readonly ReaderWriterLockSlim lockobj = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+        public readonly IReaderWriterLockSlim lockobj;
 
         public ReadLockToken ReadLock() => new ReadLockToken(lockobj);
         public WriteLockToken WriteLock() => new WriteLockToken(lockobj);
@@ -141,6 +142,25 @@ namespace NECS.Extensions.ThreadingSync
             using (this.WriteLock())
             {
                 action();
+            }
+        }
+
+        public RWLock()
+        {
+            if(Defines.OneThreadMode)
+            {
+                lockobj = new MockReaderWriterLockSlim();
+            }
+            else
+            {
+                if(Defines.ThreadsMode)
+                {
+                    lockobj = new LocalReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+                }
+                else
+                {
+                    lockobj = new AsyncReaderWriterLockSlim();
+                }
             }
         }
 

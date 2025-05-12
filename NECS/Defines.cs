@@ -18,4 +18,6 @@ public static class Defines
     public static bool IgnoreNonDangerousExceptions = true;
     public static bool AOTMode = false;
     public static int TimerMinimumMSTick = 15;
+    public static bool ThreadsMode = false;
+    public static bool OneThreadMode = false;
 }

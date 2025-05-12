@@ -50,6 +50,7 @@ namespace BitNet
 				this.accept_args.Completed += new EventHandler<SocketAsyncEventArgs>(on_accept_completed);
 
                 Thread listen_thread = new Thread(do_listen);
+				listen_thread.Name = "BitNet Listener";
                 listen_thread.Start();
 			}
 			catch (Exception e)

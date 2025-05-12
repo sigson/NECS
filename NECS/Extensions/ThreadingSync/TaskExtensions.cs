@@ -47,40 +47,13 @@ namespace NECS.Extensions.ThreadingSync
             };
             asyncUpd();
 #else
-            Func<Task> asyncUpd = async () =>
-            {
-                await Task.Run(() =>
-                {
-                    try
-                    {
-                        action();
-                    }
-                    catch (Exception ex)
-                    {
-                        NLogger.LogError(ex);
-                    }
-                }).ConfigureAwait(false);
-            };
-            asyncUpd();
+            
 #endif
         }
 
         public static void RunAsync(Action action)
         {
 #if UNITY_5_3_OR_NEWER
-    Thread thread = new Thread(() =>
-    {
-        try
-        {
-            action();
-        }
-        catch (Exception ex)
-        {
-            NLogger.LogError(ex);
-        }
-    });
-    thread.Start();
-#else
             Thread thread = new Thread(() =>
             {
                 try
@@ -93,6 +66,54 @@ namespace NECS.Extensions.ThreadingSync
                 }
             });
             thread.Start();
+#else
+            if (Defines.OneThreadMode)
+            {
+                try
+                {
+                    action();
+                }
+                catch (Exception ex)
+                {
+                    NLogger.LogError(ex);
+                }
+            }
+            else
+            {
+                if(Defines.ThreadsMode)
+                {
+                    Thread thread = new Thread(() =>
+                    {
+                        try
+                        {
+                            action();
+                        }
+                        catch (Exception ex)
+                        {
+                            NLogger.LogError(ex);
+                        }
+                    });
+                    thread.Start();
+                }
+                else
+                {
+                    Func<Task> asyncUpd = async () =>
+                    {
+                        await Task.Run(() =>
+                        {
+                            try
+                            {
+                                action();
+                            }
+                            catch (Exception ex)
+                            {
+                                NLogger.LogError(ex);
+                            }
+                        }).ConfigureAwait(false);
+                    };
+                    asyncUpd();
+                }
+            }
 #endif
         }
 

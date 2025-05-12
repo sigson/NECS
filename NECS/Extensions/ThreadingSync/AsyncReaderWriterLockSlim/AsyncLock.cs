@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Threading;
@@ -6,9 +7,10 @@ using System.Threading.Tasks;
 
 namespace NeoSmart.AsyncLock
 {
-    public class AsyncLock
+    public class AsyncLock : IDisposable
     {
         private SemaphoreSlim _reentrancy = new SemaphoreSlim(1, 1);
+        public ConcurrentStack<IDisposable> locks = new ConcurrentStack<IDisposable>();
         private int _reentrances = 0;
         // We are using this SemaphoreSlim like a posix condition variable.
         // We only want to wake waiters, one or more of whom will try to obtain
@@ -475,6 +477,77 @@ namespace NeoSmart.AsyncLock
             return @lock.ObtainLock(cancellationToken);
         }
 
+        public void EnterLock(CancellationToken cancellationToken = default)
+        {
+            TryEnterLock(-1, cancellationToken);
+        }
+
+        public void ExitLock(CancellationToken cancellationToken = default)
+        {
+            TryExitLock(cancellationToken);
+        }
+
+        public bool TryEnterLock(int millisecondsTimeout = -1, CancellationToken cancellationToken = default)
+        {
+            var @lock = new InnerLock(this, _asyncId.Value, ThreadId);
+            // Increment the async stack counter to prevent a child task from getting
+            // the lock at the same time as a child thread.
+            _asyncId.Value = Interlocked.Increment(ref AsyncLock.AsyncStackCounter);
+            var lockDisposable = @lock.TryObtainLock(TimeSpan.Zero);
+            if (lockDisposable is null)
+            {
+                return false;
+            }
+            locks.Append(lockDisposable);
+            return true;
+        }
+
+        public bool TryExitLock(CancellationToken cancellationToken = default)
+        {
+            if(locks.TryPop(out var lockDisposable))
+            {
+                lockDisposable?.Dispose();
+                return true;
+            }
+            return false;
+        }
+
+        public Task<bool> TryEnterLockAsync(int millisecondsTimeout, CancellationToken cancellationToken = default)
+        {
+            var @lock = new InnerLock(this, _asyncId.Value, ThreadId);
+            _asyncId.Value = Interlocked.Increment(ref AsyncLock.AsyncStackCounter);
+
+            return @lock.TryObtainLockAsync(TimeSpan.Zero)
+                .ContinueWith(state =>
+                {
+                    if (state.Exception is AggregateException ex)
+                    {
+                        ExceptionDispatchInfo.Capture(ex.InnerException!).Throw();
+                    }
+                    var disposableLock = state.Result;
+                    if (disposableLock is null)
+                    {
+                        return false;
+                    }
+
+                    locks.Append(disposableLock);
+                    return true;
+                });
+        }
+
+        public Task<bool> TryExitLockAsync(Action callback, TimeSpan timeout)
+        {
+            return new Task<bool>(() =>
+            {
+                if (locks.TryPop(out var lockDisposable))
+                {
+                    lockDisposable?.Dispose();
+                    return true;
+                }
+                return false;
+            });
+        }
+
         public bool TryLock(Action callback, TimeSpan timeout)
         {
             var @lock = new InnerLock(this, _asyncId.Value, ThreadId);
@@ -497,6 +570,11 @@ namespace NeoSmart.AsyncLock
                 lockDisposable.Dispose();
             }
             return true;
+        }
+
+        public void Dispose()
+        {
+            locks.ForEach(lockDisposable => lockDisposable?.Dispose());
         }
     }
 }

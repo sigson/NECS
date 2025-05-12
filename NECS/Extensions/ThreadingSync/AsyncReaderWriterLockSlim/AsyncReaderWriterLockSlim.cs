@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using NeoSmart.AsyncLock;
 
 namespace KPreisser
 {
@@ -47,7 +48,7 @@ namespace KPreisser
     /// 
     /// The lock internally uses <see cref="SemaphoreSlim"/>s to implement wait functionality.
     /// </remarks>
-    public class AsyncReaderWriterLockSlim : IDisposable
+    public class AsyncReaderWriterLockSlim : IReaderWriterLockSlim, IDisposable
     {
         private readonly object syncRoot = new object();
 
@@ -56,7 +57,7 @@ namespace KPreisser
         /// <summary>
         /// A <see cref="SemaphoreSlim"/> which is used to manage the write lock.
         /// </summary>
-        private readonly SemaphoreSlim writeLockSemaphore = new SemaphoreSlim(1, 1);
+        private readonly AsyncLock writeLockSemaphore = new AsyncLock();
 
         /// <summary>
         /// A <see cref="SemaphoreSlim"/> which a write lock uses to wait until the last
@@ -85,6 +86,28 @@ namespace KPreisser
         /// cleaned-up when the write lock is released.
         /// </summary>
         private long currentWaitingWriteLockCount;
+
+        public int WaitingReadCount => throw new NotImplementedException();
+
+        public int RecursiveWriteCount => throw new NotImplementedException();
+
+        public int RecursiveUpgradeCount => throw new NotImplementedException();
+
+        public int RecursiveReadCount => throw new NotImplementedException();
+
+        public LockRecursionPolicy RecursionPolicy => LockRecursionPolicy.SupportsRecursion;
+
+        public bool IsWriteLockHeld => this.writeLockSemaphore.locks.Count > 0;
+
+        public bool IsUpgradeableReadLockHeld => throw new NotImplementedException();
+
+        public bool IsReadLockHeld => this.currentReadLockCount > 0;
+
+        public int CurrentReadCount => throw new NotImplementedException();
+
+        public int WaitingUpgradeCount => throw new NotImplementedException();
+
+        public int WaitingWriteCount => throw new NotImplementedException();
 
 
         /// <summary>
@@ -278,7 +301,7 @@ namespace KPreisser
                 bool writeLockWaitResult = false;
                 try
                 {
-                    writeLockWaitResult = this.writeLockSemaphore.Wait(
+                    writeLockWaitResult = this.writeLockSemaphore.TryEnterLock(
                             millisecondsTimeout,
                             cancellationToken);
                 }
@@ -354,7 +377,7 @@ namespace KPreisser
                 bool writeLockWaitResult = false;
                 try
                 {
-                    writeLockWaitResult = await this.writeLockSemaphore.WaitAsync(
+                    writeLockWaitResult = await this.writeLockSemaphore.TryEnterLockAsync(
                             millisecondsTimeout,
                             cancellationToken);
                 }
@@ -575,7 +598,7 @@ namespace KPreisser
 
                 // Check if we can immediately acquire the write lock semaphore without
                 // releasing the lock on syncroot.
-                if (this.writeLockSemaphore.CurrentCount > 0 && this.writeLockSemaphore.Wait(0))
+                if (this.writeLockSemaphore.locks.Count == 0 && this.writeLockSemaphore.TryEnterLock())
                 {
                     // Directly call the postface method.
                     EnterWriteLockPostface(
@@ -712,7 +735,7 @@ namespace KPreisser
             }
 
             // Finally, release the write lock semaphore.
-            this.writeLockSemaphore.Release();
+            this.writeLockSemaphore.ExitLock();
         }
 
         private void ReleaseWriteLockState()
@@ -752,6 +775,55 @@ namespace KPreisser
             this.currentWriteLockState = null;
         }
 
+        public void EnterReadLock()
+        {
+            this.EnterReadLock(CancellationToken.None);
+        }
+
+        public void EnterUpgradeableReadLock()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void EnterWriteLock()
+        {
+            this.EnterWriteLock(CancellationToken.None);
+        }
+
+        public void ExitUpgradeableReadLock()
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool TryEnterReadLock(TimeSpan timeout)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool TryEnterReadLock(int millisecondsTimeout)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool TryEnterUpgradeableReadLock(int millisecondsTimeout)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool TryEnterUpgradeableReadLock(TimeSpan timeout)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool TryEnterWriteLock(int millisecondsTimeout)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool TryEnterWriteLock(TimeSpan timeout)
+        {
+            throw new NotImplementedException();
+        }
 
         private class WriteLockState
         {
