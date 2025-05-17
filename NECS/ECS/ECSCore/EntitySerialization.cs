@@ -354,13 +354,13 @@ namespace NECS.ECS.ECSCore
                 //    bufEntity = (SerializedEntity)DeepCopy.CopyObject(NetSerializer.Serializer.Default.Deserialize(memoryStream));
                 //}
                 bufEntity.DeserializeEntity();
-
-                if (!ECSService.instance.entityManager.EntityStorage.TryGetValue(bufEntity.desEntity.instanceId, out entity))
+                var ecsWorld = ECSService.instance.GetWorld(bufEntity.desEntity.ECSWorldOwnerId);
+                if (!ecsWorld.entityManager.EntityStorage.TryGetValue(bufEntity.desEntity.instanceId, out entity))
                 {
                     entity = bufEntity.desEntity;
                     storage = bufEntity.desEntity.entityComponents;
                     storage.DeserializeStorage(bufEntity.Components);
-                    ECSService.instance.entityManager.OnAddNewEntity(entity, true);
+                    ecsWorld.entityManager.OnAddNewEntity(entity, true);
                     storage.RestoreComponentsAfterSerialization(entity);
                     entity.AddComponentSilent(new EntityManagersComponent());
                     entity.fastEntityComponentsId = new Dictionary<long, int>(entity.entityComponents.Components.ToDictionary(k => k.instanceId, t => 0));
@@ -369,7 +369,7 @@ namespace NECS.ECS.ECSCore
                     {
                         NLogger.Log( $"In {bufEntity.desEntity.AliasName} Entity added " + bufEntity.desEntity.instanceId.ToString() + $" with {entity.entityComponents.ComponentClasses.Select(x => x.Name).ToStringListing()} components");
                     }
-                    ECSService.instance.entityManager.OnAddNewEntityReaction(entity);
+                    ecsWorld.entityManager.OnAddNewEntityReaction(entity);
                     return;
                 }
                 bufEntity.desEntity.entityComponents.DeserializeStorage(bufEntity.Components);
@@ -567,7 +567,8 @@ namespace NECS.ECS.ECSCore
                     bufEntity = (UnserializedEntity)GlobalCachingSerialization.standartSerializer.Deserialize(jreader, typeof(UnserializedEntity));
                     entity = null;
                     
-                    if (!ECSService.instance.entityManager.EntityStorage.TryGetValue(bufEntity.entity.instanceId, out entity))
+                    var ecsWorld = bufEntity.entity.ECSWorldOwner;
+                    if (!ecsWorld.entityManager.EntityStorage.TryGetValue(bufEntity.entity.instanceId, out entity))
                     {
                         NLogger.Log(bufEntity.entity.instanceId.ToString() + " new entity");
                         entity = bufEntity.entity;
@@ -578,7 +579,7 @@ namespace NECS.ECS.ECSCore
                         entity.entityComponents = storage;
                         entity.AddComponentSilent(new EntityManagersComponent());
                         entity.fastEntityComponentsId = new Dictionary<long, int>(entity.entityComponents.Components.ToDictionary(k => k.instanceId, t => 0));
-                        ECSService.instance.entityManager.OnAddNewEntity(entity);
+                        ecsWorld.entityManager.OnAddNewEntity(entity);
                         return;
                     }
                     bufEntity.ReworkDictionary();

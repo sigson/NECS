@@ -2,6 +2,7 @@
 using NECS.ECS.ECSCore;
 using NECS.Extensions.ThreadingSync;
 using NECS.GameEngineAPI;
+using NECS.Harness.Services;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

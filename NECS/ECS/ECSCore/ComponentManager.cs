@@ -36,6 +36,7 @@ namespace NECS.ECS.ECSCore
 
         static public void IdStaticCache()
         {
+            //var tempWorld = ECSService.instance.GetWorld();
             var AllDirtyComponents = ECSAssemblyExtensions.GetAllSubclassOf(typeof(ECSComponent)).Where(x=>!x.IsAbstract).Select(x => (ECSComponent)Activator.CreateInstance(x)).ToList(); 
             foreach(var comp in AllDirtyComponents)
             {
@@ -43,7 +44,8 @@ namespace NECS.ECS.ECSCore
                     NLogger.Error(comp.GetTypeFast().Name + " id is presened");
                 AllComponents[comp.GetId()] = comp;
             }
-            ECSEntity entity = new ECSEntity();
+            //ECSEntity entity = new ECSEntity();
+            //tempWorld.entityManager.OnAddNewEntity(entity);
             foreach (var comp in AllComponents.Values)
             {
                 try
@@ -54,17 +56,17 @@ namespace NECS.ECS.ECSCore
                         field.SetValue(null, customAttrib.Id);
                     else
                         NLogger.LogError($"WARNING! Type{comp.GetType().ToString()} no have static id field or ID attribute");
-                    entity.AddComponentSilent((ECSComponent)comp.Clone());
+                    //entity.AddComponentSilent((ECSComponent)comp.Clone());
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     NLogger.Error(comp.GetType().Name + " no have static id field or ID attribute");
-                    entity.AddComponentSilent((ECSComponent)comp.Clone());
+                    //entity.AddComponentSilent((ECSComponent)comp.Clone());
                 }
             }
             //var checkData = EntitySerialization.FullSerialize(entity); // fill json serialization cache
             //EntitySerialization.InitSerialize(); // fill json serialization cache
-            entity.entityComponents.OnEntityDelete();
+            //entity.entityComponents.OnEntityDelete();
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
                 GlobalProgramComponentGroup = new ClientComponentGroup();
             else if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)

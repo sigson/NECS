@@ -39,6 +39,8 @@ namespace NECS.Harness.Services
 
         private ConcurrentDictionary<long, long> EntityWorldOwnerCache = new ConcurrentDictionary<long, long>();
 
+        public ECSEventManager eventManager;
+
         public (ECSWorld world, ECSEntity entity) GetWorldAndEntity(long entityId)
         {
             if(EntityWorldOwnerCache.TryGetValue(entityId, out var worldId))
@@ -132,11 +134,16 @@ namespace NECS.Harness.Services
         }
 
         private static ConcurrentDictionary<long, ECSWorld> WorldDB = new ConcurrentDictionary<long, ECSWorld>();
+
+        public IEnumerable<ECSWorld> GetAllWorlds() => WorldDB.Values;
         
         public override void InitializeProcess()
         {
             EntitySerialization.InitSerialize();
             ECSComponentManager.IdStaticCache();
+            eventManager = new ECSEventManager();
+            eventManager.IdStaticCache();
+            eventManager.InitializeEventManager();
         }
 
         public override void OnDestroyReaction()

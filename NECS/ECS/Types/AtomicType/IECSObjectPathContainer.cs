@@ -1,5 +1,6 @@
 using NECS.Core.Logging;
 using NECS.ECS.ECSCore;
+using NECS.Harness.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -48,7 +49,7 @@ namespace NECS.ECS.Types.AtomicType
 
                         if (objectType == "ent")
                         {
-                            currentObject = ECSService.instance.entityManager.EntityStorage[instanceId];
+                            currentObject = ECSService.instance.GetWorldAndEntity(instanceId).entity;
                         }
                         else if (objectType == "cmp")
                         {

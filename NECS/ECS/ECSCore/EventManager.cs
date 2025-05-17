@@ -26,10 +26,10 @@ namespace NECS.ECS.ECSCore
         public ConcurrentDictionaryEx<long, ECSEvent> EventBus = new ConcurrentDictionaryEx<long, ECSEvent>();
         public Dictionary<long, Type> EventSerializationCache = new Dictionary<long, Type>();
 
-        private ECSWorld world;
-        public ECSEventManager(ECSWorld world)
+        //private ECSWorld world;
+        public ECSEventManager()
         {
-            this.world = world;
+            //this.world = world;
             watcherPool = new ObjectPool<EventWatcher>(() => new EventWatcher(this, 0, 0));
         }
 
@@ -55,31 +55,41 @@ namespace NECS.ECS.ECSCore
             }
         }
 
-        public void InitializeEventManager()
+        public void InitializeEventManager(bool initMode = false)
         {
-            var AllEvents = ECSAssemblyExtensions.GetAllSubclassOf(typeof(ECSEvent)).Select(x => (ECSEvent)Activator.CreateInstance(x));
-            
-            foreach (ECSExecutableContractContainer system in world.contractsManager.EventHandlerCacheSystems)
+            if(initMode)
             {
-                var SystemInterest = system.GetInterestedEventsList();
-                foreach (var Event in AllEvents)
+                SystemHandlers.Clear();
+            }
+            var AllEvents = ECSAssemblyExtensions.GetAllSubclassOf(typeof(ECSEvent)).Select(x => (ECSEvent)Activator.CreateInstance(x));
+
+            foreach (ECSWorld world in ECSService.instance.GetAllWorlds())
+            {
+                foreach (ECSExecutableContractContainer system in world.contractsManager.EventHandlerCacheSystems)
                 {
-                    if(SystemInterest.Keys.Contains(Event.GetId()))
+                    if (system.WorldFilter(world))
                     {
-                        ConcurrentDictionaryEx<ECSExecutableContractContainer, List<Func<ECSEvent, object>>> NewDictionary;
-                        if(SystemHandlers.TryGetValue(Event.GetId(), out NewDictionary))
+                        var SystemInterest = system.GetInterestedEventsList();
+                        foreach (var Event in AllEvents)
                         {
-                            List<Func<ECSEvent, object>> outfunc;
-                            if(system.SystemEventHandler.TryGetValue(Event.GetId(), out outfunc))
-                                NewDictionary.TryAdd(system, outfunc);
-                        }
-                        else
-                        {
-                            NewDictionary = new ConcurrentDictionaryEx<ECSExecutableContractContainer, List<Func<ECSEvent, object>>>();
-                            List<Func<ECSEvent, object>> outfunc;
-                            if (system.SystemEventHandler.TryGetValue(Event.GetId(), out outfunc))
-                                NewDictionary.TryAdd(system, outfunc);
-                            SystemHandlers.TryAdd(Event.GetId(), NewDictionary);
+                            if (SystemInterest.Keys.Contains(Event.GetId()))
+                            {
+                                ConcurrentDictionaryEx<ECSExecutableContractContainer, List<Func<ECSEvent, object>>> NewDictionary;
+                                if (SystemHandlers.TryGetValue(Event.GetId(), out NewDictionary))
+                                {
+                                    List<Func<ECSEvent, object>> outfunc;
+                                    if (system.SystemEventHandler.TryGetValue(Event.GetId(), out outfunc))
+                                        NewDictionary.TryAdd(system, outfunc);
+                                }
+                                else
+                                {
+                                    NewDictionary = new ConcurrentDictionaryEx<ECSExecutableContractContainer, List<Func<ECSEvent, object>>>();
+                                    List<Func<ECSEvent, object>> outfunc;
+                                    if (system.SystemEventHandler.TryGetValue(Event.GetId(), out outfunc))
+                                        NewDictionary.TryAdd(system, outfunc);
+                                    SystemHandlers.TryAdd(Event.GetId(), NewDictionary);
+                                }
+                            }
                         }
                     }
                 }

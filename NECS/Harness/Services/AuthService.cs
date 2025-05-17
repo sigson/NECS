@@ -97,7 +97,12 @@ namespace NECS.Harness.Services
                 entity.AddComponentSilent(new SocketComponent() { Socket = socketAdapter  });
                 SocketToEntity[socketAdapter] = entity;
                 EntityToSocket[entity] = socketAdapter;
-                ECSService.instance.entityManager.OnAddNewEntity(entity);
+                if (entity.ECSWorldOwner == null)
+                {
+                    NLogger.Error("entity.ECSWorldOwner == null");
+                    return;
+                }
+                entity.ECSWorldOwner.entityManager.OnAddNewEntity(entity);
                 userLogged.userRelogin = false;
             }
             else
