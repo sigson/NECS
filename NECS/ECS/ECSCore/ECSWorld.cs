@@ -1,4 +1,5 @@
 using NECS.Extensions;
+using NECS.Harness.Services;
 
 namespace NECS.ECS.ECSCore
 {
@@ -20,6 +21,7 @@ namespace NECS.ECS.ECSCore
             entityManager = new ECSEntityManager(this);
             componentManager = new ECSComponentManager(this);
             contractsManager = new ECSContractsManager(this, staticContractFiltering);
+            ECSService.instance.eventManager.InitializeEventManager();
             contractsManager.InitializeSystems();
             var timer = new TimerCompat(5, (obj, arg) => contractsManager.RunTimeDependContracts(), true);
             timer.Start();

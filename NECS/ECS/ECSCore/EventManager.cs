@@ -55,12 +55,9 @@ namespace NECS.ECS.ECSCore
             }
         }
 
-        public void InitializeEventManager(bool initMode = false)
+        public void InitializeEventManager()
         {
-            if(initMode)
-            {
-                SystemHandlers.Clear();
-            }
+            var LocalSystemHandlers = new ConcurrentDictionaryEx<long, ConcurrentDictionaryEx<ECSExecutableContractContainer, List<Func<ECSEvent, object>>>>();
             var AllEvents = ECSAssemblyExtensions.GetAllSubclassOf(typeof(ECSEvent)).Select(x => (ECSEvent)Activator.CreateInstance(x));
 
             foreach (ECSWorld world in ECSService.instance.GetAllWorlds())
@@ -75,7 +72,7 @@ namespace NECS.ECS.ECSCore
                             if (SystemInterest.Keys.Contains(Event.GetId()))
                             {
                                 ConcurrentDictionaryEx<ECSExecutableContractContainer, List<Func<ECSEvent, object>>> NewDictionary;
-                                if (SystemHandlers.TryGetValue(Event.GetId(), out NewDictionary))
+                                if (LocalSystemHandlers.TryGetValue(Event.GetId(), out NewDictionary))
                                 {
                                     List<Func<ECSEvent, object>> outfunc;
                                     if (system.SystemEventHandler.TryGetValue(Event.GetId(), out outfunc))
@@ -87,13 +84,14 @@ namespace NECS.ECS.ECSCore
                                     List<Func<ECSEvent, object>> outfunc;
                                     if (system.SystemEventHandler.TryGetValue(Event.GetId(), out outfunc))
                                         NewDictionary.TryAdd(system, outfunc);
-                                    SystemHandlers.TryAdd(Event.GetId(), NewDictionary);
+                                    LocalSystemHandlers.TryAdd(Event.GetId(), NewDictionary);
                                 }
                             }
                         }
                     }
                 }
             }
+            SystemHandlers = LocalSystemHandlers;
         }
 
         public void OnEventAdd(ECSEvent ecsEvent, SocketAdapter SocketA)
