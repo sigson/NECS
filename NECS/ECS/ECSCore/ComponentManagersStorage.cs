@@ -15,15 +15,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using NECS.ECS.Types.AtomicType;
 
 namespace NECS.ECS.ECSCore
 {
     [System.Serializable]
-    public class ComponentManagers : IDictionary<Type, IComponentManager>
+    public class ComponentManagersStorage : IDictionary<Type, IComponentManager>
     {
         static public new long Id { get; set; }
         static public new System.Collections.Generic.List<System.Action> StaticOnChangeHandlers { get; set; }
-        public ECSComponent ownerComponent = null;
+        public IECSObjectPathContainer ownerComponent = new IECSObjectPathContainer();
 
         IDictionary<Type, IComponentManager> managersStorage = new ConcurrentDictionary<Type, IComponentManager>();
 

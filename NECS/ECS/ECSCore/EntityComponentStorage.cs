@@ -32,6 +32,9 @@ namespace NECS.ECS.ECSCore
         //public object operationLocker = new object();
         [System.NonSerialized]
         public RWLock StabilizationLocker = new RWLock();
+
+        public ConcurrentDictionary<long, ComponentManagersStorage> ComponentsManagers = new ConcurrentDictionary<long, ComponentManagersStorage>();
+
         public EntityComponentStorage(ECSEntity entity)
         {
             this.entity = entity;

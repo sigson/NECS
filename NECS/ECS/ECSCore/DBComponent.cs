@@ -597,7 +597,7 @@ namespace NECS.ECS.ECSCore
                             unserComp.ownerDB = this;
                             if (!components.ContainsKey(unserComp.instanceId))
                             {
-                                unserComp.componentManagers.ownerComponent = unserComp;
+                                //unserComp.componentManagers.ownerComponent = unserComp;
                                 components[unserComp.instanceId] = (unserComp, component.componentState);
                                 ComponentOwners[unserComp.instanceId] = entityOwner.instanceId;
                                 unserComp.AfterDeserialization();
@@ -608,7 +608,7 @@ namespace NECS.ECS.ECSCore
                             }
                             else
                             {
-                                unserComp.componentManagers = components[unserComp.instanceId].Item1.componentManagers;
+                                //unserComp.componentManagers = components[unserComp.instanceId].Item1.componentManagers;
                                 components[unserComp.instanceId] = (unserComp, component.componentState);
                                 unserComp.componentManagers.ForEach(x => x.Value.ConnectPoint = unserComp);
                                 unserComp.AfterDeserialization();

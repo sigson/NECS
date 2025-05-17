@@ -39,8 +39,24 @@ namespace NECS.ECS.ECSCore
         public List<Action<ECSEntity, ECSComponent>> OnChangeHandlers = new List<Action<ECSEntity, ECSComponent>>();
         [System.NonSerialized]
         public bool Unregistered = true;
-        [System.NonSerialized]
-        public ComponentManagers componentManagers = new ComponentManagers();
+        public ComponentManagersStorage componentManagers
+        {
+            get
+            {
+                if (this.ownerEntity != null)
+                {
+                    if (!this.ownerEntity.entityComponents.ComponentsManagers.TryGetValue(this.instanceId, out var manager))
+                    {
+                        manager = new ComponentManagersStorage();
+                        manager.ownerComponent.ECSObject = this;
+                        manager.ownerComponent.AlwaysUpdateCache = true;
+                        this.ownerEntity.entityComponents.ComponentsManagers[this.instanceId] = manager;
+                    }
+                    return manager;
+                }
+                return null;
+            }
+        }
 
         public enum StateReactionType
         {
@@ -68,7 +84,7 @@ namespace NECS.ECS.ECSCore
 
         public ECSComponent()
         {
-            componentManagers.ownerComponent = this;
+            //componentManagers.ownerComponent = this;
             //StateReactionQueue = new PriorityEventQueue<StateReactionType, Action>(new List<StateReactionType>() { StateReactionType.Added, StateReactionType.Changed, StateReactionType.Removed }, 1, x => x + 2);
         }
 

@@ -30,6 +30,8 @@ namespace NECS.ECS.Types.AtomicType
             }
         }
 
+        public bool AlwaysUpdateCache = false;
+
         [System.NonSerialized]
         private IECSObject cacheECSObject = null;
 
@@ -38,48 +40,52 @@ namespace NECS.ECS.Types.AtomicType
         {
             get
             {
-                if (cacheECSObject == null && pathToECSObject.Count > 0)
+                if (AlwaysUpdateCache)
                 {
-                    IECSObject currentObject = null;
-                    foreach (var pathelement in pathToECSObject)
-                    {
-                        var pathParts = pathelement.Split(';');
-                        var instanceId = long.Parse(pathParts[0]);
-                        var objectType = pathParts[1];
-
-                        if (objectType == "ent")
-                        {
-                            currentObject = ECSService.instance.GetWorldAndEntity(instanceId).entity;
-                        }
-                        else if (objectType == "cmp")
-                        {
-                            if (currentObject == null)
-                            {
-                                NLogger.Error($"Something went wrong during deserialization of IECSObject '{instanceId}: {this.GetType().Name}': currentObject == null && objectType == 'cmp'");
-                            }
-                            else if (currentObject is ECSEntity owentity)
-                            {
-                                currentObject = owentity.GetComponent(instanceId);
-                            }
-                            else if (currentObject is ComponentsDBComponent dbowner)
-                            {
-                                currentObject = dbowner.GetComponent(instanceId).Item1;
-                            }
-                            else
-                            {
-                                NLogger.Error($"Something went wrong during deserialization of IECSObject '{instanceId}: {this.GetType().Name}': objectType == 'cmp' && objectType != ComponentsDBComponent");
-                            }
-                        }
-                    }
-                    cacheECSObject = currentObject;
-                    if(Interlocked.Read(ref this.serializableInstanceId) == -1)
-                    {
-                        if(cacheECSObject != null)
-                        {
-                            Interlocked.Exchange(ref this.serializableInstanceId, cacheECSObject.instanceId);
-                        }
-                    }
+                    cacheECSObject = null;
                 }
+                if (cacheECSObject == null && pathToECSObject.Count > 0)
+                    {
+                        IECSObject currentObject = null;
+                        foreach (var pathelement in pathToECSObject)
+                        {
+                            var pathParts = pathelement.Split(';');
+                            var instanceId = long.Parse(pathParts[0]);
+                            var objectType = pathParts[1];
+
+                            if (objectType == "ent")
+                            {
+                                currentObject = ECSService.instance.GetWorldAndEntity(instanceId).entity;
+                            }
+                            else if (objectType == "cmp")
+                            {
+                                if (currentObject == null)
+                                {
+                                    NLogger.Error($"Something went wrong during deserialization of IECSObject '{instanceId}: {this.GetType().Name}': currentObject == null && objectType == 'cmp'");
+                                }
+                                else if (currentObject is ECSEntity owentity)
+                                {
+                                    currentObject = owentity.GetComponent(instanceId);
+                                }
+                                else if (currentObject is ComponentsDBComponent dbowner)
+                                {
+                                    currentObject = dbowner.GetComponent(instanceId).Item1;
+                                }
+                                else
+                                {
+                                    NLogger.Error($"Something went wrong during deserialization of IECSObject '{instanceId}: {this.GetType().Name}': objectType == 'cmp' && objectType != ComponentsDBComponent");
+                                }
+                            }
+                        }
+                        cacheECSObject = currentObject;
+                        if (Interlocked.Read(ref this.serializableInstanceId) == -1)
+                        {
+                            if (cacheECSObject != null)
+                            {
+                                Interlocked.Exchange(ref this.serializableInstanceId, cacheECSObject.instanceId);
+                            }
+                        }
+                    }
                 return cacheECSObject;
             }
             set
