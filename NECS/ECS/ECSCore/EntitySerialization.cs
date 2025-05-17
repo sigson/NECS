@@ -42,6 +42,9 @@ namespace NECS.ECS.ECSCore
                 TypeIdStorage[x.GetType()] = x.GetId();
                 TypeStringStorage[x.GetType().Name] = x.GetType();
 
+                if (x is BaseCustomType)
+                    return;
+
                 try
                 {
                     var field = x.GetType().GetField("<Id>k__BackingField", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
