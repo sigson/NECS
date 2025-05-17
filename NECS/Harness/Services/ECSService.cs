@@ -140,7 +140,6 @@ namespace NECS.Harness.Services
         public override void InitializeProcess()
         {
             EntitySerialization.InitSerialize();
-            ECSComponentManager.IdStaticCache();
             eventManager = new ECSEventManager();
             eventManager.IdStaticCache();
             eventManager.InitializeEventManager();

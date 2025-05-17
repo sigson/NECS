@@ -395,7 +395,16 @@ namespace NECS.ECS.ECSCore
                     {
                         var allentities = ContractConditions.Keys.ToList();
                         allentities.AddRange(this.EntityComponentPresenceSign.Keys);
-                        if(GetContractLockers(allentities, this.ContractConditions, this.EntityComponentPresenceSign, false, out var lockers, out var executionEntities) && lockers != null)
+                        var getContractLockFunc = GetContractLockers;
+                        if (Defines.OneThreadMode)
+                        {
+                            getContractLockFunc = GetContractLockersOneThread;
+                        }
+                        else
+                        {
+                            getContractLockFunc = GetContractLockers;
+                        }
+                        if (getContractLockFunc(allentities, this.ContractConditions, this.EntityComponentPresenceSign, false, out var lockers, out var executionEntities) && lockers != null)
                         {
                             var errorState = false;
                             if (ExecuteContract)
@@ -408,11 +417,11 @@ namespace NECS.ECS.ECSCore
                                 catch (Exception ex)
                                 {
                                     NLogger.LogError(ex);
-                                    ErrorExecution(this, executionEntities.Select(x=>x.instanceId).ToArray());
+                                    ErrorExecution(this, executionEntities.Select(x => x.instanceId).ToArray());
                                     errorState = true;
                                 }
                                 lockers.ForEach(x => x.Dispose());
-                                if(!ManualExitFromWorkingState)
+                                if (!ManualExitFromWorkingState)
                                 {
                                     this.LastEndExecutionTimestamp = DateTime.Now.Ticks;
                                     this.InWork = false;
@@ -500,6 +509,79 @@ namespace NECS.ECS.ECSCore
             }
         }
 
+        private bool GetContractLockersOneThread(
+    List<long> contractEntities,
+    IDictionary<long, List<Func<ECSEntity, bool>>> localContractConditions,
+    IDictionary<long, Dictionary<long, bool>> localEntityComponentPresenceSign,
+    bool partialEntityTargetListLockingAllowed,
+    out List<RWLock.LockToken> lockTokens,
+    out List<ECSEntity> executionEntities)
+        {
+            lockTokens = new List<RWLock.LockToken>();
+            executionEntities = new List<ECSEntity>();
+            bool globalViolationSeizure = false;
+
+            foreach (var entityId in contractEntities)
+            {
+                var entityManager = ECSService.instance.GetEntityWorld(entityId).entityManager;
+                if (!entityManager.EntityStorage.TryGetValue(entityId, out var entity))
+                    continue;
+
+                bool violationSeizure = false;
+                var entityTokens = new List<RWLock.LockToken>();
+                bool yescomponent = false;
+                // Check component requirements
+                if (localEntityComponentPresenceSign.TryGetValue(entityId, out var neededComponents))
+                {
+                    foreach (var component in neededComponents)
+                    {
+                        bool hasComponent = entity.entityComponents.HasComponent(component.Key.IdToECSType());
+                        if (component.Value != hasComponent)
+                        {
+                            violationSeizure = true;
+                            globalViolationSeizure = true;
+                            break;
+                        }
+                        yescomponent = true;
+                        // if (component.Value && entity.entityComponents.GetReadLockedComponent(
+                        //     component.Key.IdToECSType(), out _, out var token))
+                        // {
+                        //     entityTokens.Add(token);
+                        // }
+                    }
+                }
+
+                // Check conditions
+                if (!violationSeizure && localContractConditions.TryGetValue(entityId, out var conditions))
+                {
+                    violationSeizure = conditions.Any(condition => !condition(entity));
+                    globalViolationSeizure |= violationSeizure;
+                }
+
+                // Handle entity based on violation status
+                if (!violationSeizure || (partialEntityTargetListLockingAllowed &&
+                    _partialEntityFiltering && yescomponent))
+                {
+                    executionEntities.Add(entity);
+                    lockTokens.AddRange(entityTokens);
+                }
+                else
+                {
+                    entityTokens.ForEach(token => token.Dispose());
+                }
+            }
+
+            if (globalViolationSeizure && !partialEntityTargetListLockingAllowed)
+            {
+                lockTokens.ForEach(token => token.Dispose());
+                lockTokens.Clear();
+                executionEntities.Clear();
+                return false;
+            }
+
+            return executionEntities.Count > 0;
+        }
+
         private bool GetContractLockers(List<long> contractEntities, IDictionary<long, List<Func<ECSEntity, bool>>> LocalContractConditions, IDictionary<long, Dictionary<long, bool>> LocalEntityComponentPresenceSign, bool partialEntityTargetListLockingAllowed, out List<RWLock.LockToken> lockTokens, out List<ECSEntity> executionEntities)
         {
             Dictionary<long, List<RWLock.LockToken>> Lockers = new Dictionary<long, List<RWLock.LockToken>>();
@@ -513,13 +595,13 @@ namespace NECS.ECS.ECSCore
                 {
                     bool violationSeizure = false;
                     Lockers.Add(entid, new List<RWLock.LockToken>());
-                    if(LocalEntityComponentPresenceSign.TryGetValue(entid, out var neededComponents))
+                    if (LocalEntityComponentPresenceSign.TryGetValue(entid, out var neededComponents))
                     {
                         foreach (var component in neededComponents)
                         {
-                            if(component.Value)
+                            if (component.Value)
                             {
-                                if(contentity.entityComponents.GetReadLockedComponent(component.Key.IdToECSType(), out var componentInstance, out var token))
+                                if (contentity.entityComponents.GetReadLockedComponent(component.Key.IdToECSType(), out var componentInstance, out var token))
                                 {
                                     Lockers[entid].Add(token);
                                     continue;
@@ -527,7 +609,7 @@ namespace NECS.ECS.ECSCore
                             }
                             else
                             {
-                                if(contentity.entityComponents.HoldComponentAddition(component.Key.IdToECSType(), out var token))
+                                if (contentity.entityComponents.HoldComponentAddition(component.Key.IdToECSType(), out var token))
                                 {
                                     if (!contentity.entityComponents.HasComponent(component.Key.IdToECSType()))
                                     {
@@ -545,11 +627,11 @@ namespace NECS.ECS.ECSCore
                         }
                     }
 
-                    if(LocalContractConditions.TryGetValue(entid, out var conditions))
+                    if (LocalContractConditions.TryGetValue(entid, out var conditions))
                     {
                         foreach (var condition in conditions)
                         {
-                            if(!condition(contentity))
+                            if (!condition(contentity))
                             {
                                 violationSeizure = true;
                                 globalViolationSeizure = true;
@@ -557,9 +639,9 @@ namespace NECS.ECS.ECSCore
                         }
                     }
 
-                    if(violationSeizure)
+                    if (violationSeizure)
                     {
-                        if(partialEntityTargetListLockingAllowed && this._partialEntityFiltering && Lockers[entid].Count > 0)
+                        if (partialEntityTargetListLockingAllowed && this._partialEntityFiltering && Lockers[entid].Count > 0)
                         {
                             localExecutionEntities.Add(contentity);
                         }
@@ -574,11 +656,11 @@ namespace NECS.ECS.ECSCore
                         localExecutionEntities.Add(contentity);
                     }
                 }, out var entitytoken);
-                if(entitytoken != null && Lockers.ContainsKey(entityid))
+                if (entitytoken != null && Lockers.ContainsKey(entityid))
                     Lockers[entityid].Add(entitytoken);
 
             }
-            if(globalViolationSeizure && !partialEntityTargetListLockingAllowed)
+            if (globalViolationSeizure && !partialEntityTargetListLockingAllowed)
             {
                 Lockers.ForEach(x => x.Value.ForEach(y => y.Dispose()));
                 return !globalViolationSeizure;

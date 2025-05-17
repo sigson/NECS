@@ -305,12 +305,12 @@ namespace NECS.ECS.ECSCore
                 foreach (var objPair in SerializationContainer)
                 {
                     ECSComponent objComponent = (ECSComponent)objPair.Value;
-                    ECSComponent component;
-                    if (ECSComponentManager.AllComponents.TryGetValue(objPair.Key, out component))
+                    Type component;
+                    if (EntitySerialization.TypeStorage.TryGetValue(objPair.Key, out component))
                     {
-                        var typedComponent = (ECSComponent)Convert.ChangeType(objPair.Value, component.GetTypeFast());
+                        var typedComponent = (ECSComponent)Convert.ChangeType(objPair.Value, component);
                         
-                        AddComponentImmediately(component.GetTypeFast(), typedComponent, true, true);
+                        AddComponentImmediately(component, typedComponent, true, true);
                         afterDeser.Add(typedComponent);
                     }
                 }

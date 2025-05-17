@@ -18,6 +18,7 @@ using System.Linq;
 using System.IO;
 using NECS.Harness.Serialization;
 using NECS.Extensions.ThreadingSync;
+using System.Reflection;
 
 namespace NECS.ECS.ECSCore
 {
@@ -35,9 +36,25 @@ namespace NECS.ECS.ECSCore
             var ecsObjects = ECSAssemblyExtensions.GetAllSubclassOf(typeof(IECSObject)).Where(x => !x.IsAbstract).Where(x => !nonSerializedSet.Contains(x)).ToList();
             ecsObjects.Select(x => Activator.CreateInstance(x)).Cast<IECSObject>().ForEach(x =>
             {
+                if (TypeStorage.ContainsKey(x.GetId()))
+                    NLogger.Error("Error adding " + x.GetType().Name + " id " + x.GetId() + " is presened as " + TypeStorage[x.GetId()].Name);
                 TypeStorage[x.GetId()] = x.GetType();
                 TypeIdStorage[x.GetType()] = x.GetId();
                 TypeStringStorage[x.GetType().Name] = x.GetType();
+
+                try
+                {
+                    var field = x.GetType().GetField("<Id>k__BackingField", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+                    var customAttrib = x.GetType().GetCustomAttribute<TypeUidAttribute>();
+                    if (customAttrib != null && field != null)
+                        field.SetValue(null, customAttrib.Id);
+                    else
+                        NLogger.LogError($"WARNING! Type{x.GetType().ToString()} no have static id field or ID attribute");
+                }
+                catch (Exception ex)
+                {
+                    NLogger.Error(x.GetType().Name + " no have static id field or ID attribute");
+                }
             });
 
             ecsObjects.Add(typeof(SerializedEntity));
@@ -182,7 +199,7 @@ namespace NECS.ECS.ECSCore
                 if(Defines.LogECSEntitySerializationComponents)
                 {
                     var preparedData = "";
-                    GDAP.BinAvailableComponents.ForEach(x => preparedData += ECSComponentManager.AllComponents[x.Key].ToString() + "\n");
+                    GDAP.BinAvailableComponents.ForEach(x => preparedData += EntitySerialization.TypeStorage[x.Key].ToString() + "\n");
                     if(preparedData != "")
                     {
                         NLogger.Log($"Will removed last serialization data in {entity.AliasName}:{entity.instanceId} as\n {preparedData}");
@@ -238,7 +255,7 @@ namespace NECS.ECS.ECSCore
             if(Defines.LogECSEntitySerializationComponents)
             {
                 var preparedData = "";
-                data.Item2.ForEach(x => preparedData += ECSComponentManager.AllComponents[x.Key].ToString() + "\n");
+                data.Item2.ForEach(x => preparedData += EntitySerialization.TypeStorage[x.Key].ToString() + "\n");
                 if(preparedData != "")
                 {
                     NLogger.Log($"GDAP filtering result from base {toEntity.AliasName}:{toEntity.instanceId} to {fromEntity.AliasName}:{fromEntity.instanceId} as\n {preparedData}");
@@ -653,7 +670,7 @@ namespace NECS.ECS.ECSCore
         {
             foreach(var keypair in SerializationContainer)
             {
-                SerializationContainer[keypair.Key] = (object)(keypair.Value as JObject).ToObject(ECSComponentManager.AllComponents[keypair.Key].GetTypeFast());
+                SerializationContainer[keypair.Key] = (object)(keypair.Value as JObject).ToObject(EntitySerialization.TypeStorage[keypair.Key]);
             }
         }
     }
