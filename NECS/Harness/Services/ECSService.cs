@@ -154,5 +154,18 @@ namespace NECS.Harness.Services
         {
             
         }
+
+        protected override Action<int>[] GetInitializationSteps()
+        {
+            return new Action<int>[]
+            {
+                (step) => { InitializeProcess(); },
+            };
+        }
+
+        protected override void SetupCallbacks(List<IService> allServices)
+        {
+            
+        }
     }
 }

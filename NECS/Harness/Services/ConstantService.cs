@@ -27,10 +27,11 @@ namespace NECS.Harness.Services
     class ConstantService : IService
     {
         private static ConstantService cacheInstance;
-        public static ConstantService instance {
+        public static ConstantService instance
+        {
             get
             {
-                if(cacheInstance == null)
+                if (cacheInstance == null)
                     cacheInstance = SGT.Get<ConstantService>();
                 return cacheInstance;
             }
@@ -50,7 +51,7 @@ namespace NECS.Harness.Services
 
         public void PreInitialize()
         {
-            
+
         }
         /// <summary>
         /// can be running from another location, example for tech config loading
@@ -58,7 +59,7 @@ namespace NECS.Harness.Services
         /// <param name="config_path">path to techical config, like socket info</param>
         public void SetupConfigs(string config_path = "")
         {
-            lock(this)
+            lock (this)
             {
                 if (Loaded)
                     return;
@@ -80,15 +81,15 @@ namespace NECS.Harness.Services
                     if (DirectoryAdapter.Exists(GlobalProgramState.instance.GameConfigDir))
                         DirectoryAdapter.Delete(GlobalProgramState.instance.GameConfigDir, true);
 
-                    #if GODOT && !GODOT4_0_OR_GREATER
+#if GODOT && !GODOT4_0_OR_GREATER
                     var file = new Godot.File();
                     file.Open(FSExtensions.Combine(gamedatapath, "zippedconfig.zip"), Godot.File.ModeFlags.Write);
                     file.StoreBuffer(loadedConfigFile.ToArray());
                     file.Close();
                     file.Dispose();
-                    #else
+#else
                     File.WriteAllBytes(FSExtensions.Combine(gamedatapath, "zippedconfig.zip"), loadedConfigFile.ToArray());
-                    #endif
+#endif
 
                     var unzipFolder = FSExtensions.Combine(gamedatapath, "Unzipped");
                     if (DirectoryAdapter.Exists(unzipFolder))
@@ -98,10 +99,10 @@ namespace NECS.Harness.Services
                     var movingDir = DirectoryAdapter.EnumerateDirectories(unzipFolder).OrderBy(x => x.Length).First();
                     DirectoryAdapter.Move(movingDir, GlobalProgramState.instance.GameConfigDir);
                 }
-                if(config_path != "")
+                if (config_path != "")
                 {
 
-                    #if GODOT && !GODOT4_0_OR_GREATER
+#if GODOT && !GODOT4_0_OR_GREATER
                     var file = new Godot.File();
 
                     if(!file.FileExists(FSExtensions.Combine(gameConfDirectory, "baseconfig.json")))
@@ -120,20 +121,20 @@ namespace NECS.Harness.Services
                         }
                     }
                     file.Dispose();
-                    #else
+#else
 
-                    if(!File.Exists(FSExtensions.Combine(gameConfDirectory, "baseconfig.json")))
+                    if (!File.Exists(FSExtensions.Combine(gameConfDirectory, "baseconfig.json")))
                     {
                         File.WriteAllText(FSExtensions.Combine(gameConfDirectory, "baseconfig.json"), JsonUtil.JsonPrettify(GlobalProgramState.instance.BaseConfigDefault));
                     }
-                    if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+                    if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
                     {
                         if (!File.Exists(FSExtensions.Combine(gameConfDirectory, "loginconfig.json")))
                         {
                             File.WriteAllText(FSExtensions.Combine(gameConfDirectory, "loginconfig.json"), JsonUtil.JsonPrettify(GlobalProgramState.instance.BaseLoginConfig));
                         }
                     }
-                    #endif
+#endif
                 }
                 #region initload
                 var nowLib = "";
@@ -160,7 +161,7 @@ namespace NECS.Harness.Services
                         }
                     }
                 }
-                if(LibFiles.Count > 0)
+                if (LibFiles.Count > 0)
                 {
                     Libs.Add(nowLib, LibFiles);
                     LibFiles = new List<string>();
@@ -202,7 +203,7 @@ namespace NECS.Harness.Services
 
                         if (libfiles.Value.Count() == 1)
                         {
-                            if(nowLib == gameConfDirectory)
+                            if (nowLib == gameConfDirectory)
                             {
                                 nowObject.Path = file.Replace(gameConfDirectory, "").Replace(FSExtensions.GetFileName(file), "").Substring(1).Replace(GlobalProgramState.instance.PathSystemSeparator, GlobalProgramState.instance.PathSeparator) + FSExtensions.GetFileNameWithoutExtension(file);
                             }
@@ -217,7 +218,7 @@ namespace NECS.Harness.Services
                             //}
                             #endregion
                         }
-                        if(libfiles.Value.Count() > 1)
+                        if (libfiles.Value.Count() > 1)
                         {
                             nowObject.Path = file.Replace(gameConfDirectory, "").Replace(FSExtensions.GetFileName(file), "").Substring(1).Replace(GlobalProgramState.instance.PathSystemSeparator, GlobalProgramState.instance.PathSeparator) + FSExtensions.GetFileNameWithoutExtension(file);
                         }
@@ -233,18 +234,18 @@ namespace NECS.Harness.Services
 
                 #region server pack
 
-                if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server && config_path == "")
+                if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server && config_path == "")
                 {
-                    #if GODOT && !GODOT4_0_OR_GREATER
+#if GODOT && !GODOT4_0_OR_GREATER
                     var file = new Godot.File();
 
                     if (!file.FileExists(GlobalProgramState.instance.GameDataDir + "zippedconfig.zip"))
                     {
                         file.Dispose();
-                    #else
+#else
                     if (!File.Exists(GlobalProgramState.instance.GameDataDir + "zippedconfig.zip"))
                     {
-                    #endif
+#endif
                         #region prepareZipTemp
 
                         var ziptempfolder = FSExtensions.Combine(GlobalProgramState.instance.GameDataDir, "ZipTemp");
@@ -258,18 +259,18 @@ namespace NECS.Harness.Services
                         }
                         FSExtensions.CopyFilesRecursively(new DirectoryInfo(GlobalProgramState.instance.GameConfigDir), new DirectoryInfo(ziptempgamedir));
                         #endregion
-                        
+
                         ZipExt.CompressDirectory(ziptempfolder, FSExtensions.Combine(GlobalProgramState.instance.GameDataDir, "zippedconfig.zip"), (prog) => { });
                     }
-                    #if GODOT && !GODOT4_0_OR_GREATER
+#if GODOT && !GODOT4_0_OR_GREATER
                     file = new Godot.File();
                     file.Open(FSExtensions.Combine(GlobalProgramState.instance.GameDataDir, "zippedconfig.zip"), Godot.File.ModeFlags.Read);
                     Byte[] bytes = file.GetBuffer(Convert.ToInt64(file.GetLen()));
                     file.Close();
                     file.Dispose();
-                    #else
+#else
                     Byte[] bytes = File.ReadAllBytes(FSExtensions.Combine(GlobalProgramState.instance.GameDataDir, "zippedconfig.zip"));
-                    #endif
+#endif
                     using (MD5CryptoServiceProvider CSP = new MD5CryptoServiceProvider())
                     {
                         var byteHash = CSP.ComputeHash(bytes);
@@ -286,13 +287,10 @@ namespace NECS.Harness.Services
                 #endregion
 
                 #region client
-                if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client && config_path == "")
+                if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client && config_path == "")
                 {
                     TemplateSetup();
                     Loaded = true;
-                    CustomSetupInitialized = false;
-                    ServiceInitialized = true;
-                    initializedCallbackCache();
                 }
                 #endregion
             }
@@ -357,9 +355,9 @@ namespace NECS.Harness.Services
                     if (configObj.LibTree.LibName == libName)
                         result.Add(configObj);
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
-                    if(Defines.HiddenKeyNotFoundLog)
+                    if (Defines.HiddenKeyNotFoundLog)
                         NLogger.LogError(e);
                 }
             }
@@ -412,12 +410,12 @@ namespace NECS.Harness.Services
 
         public override void InitializeProcess()
         {
-            if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
             {
                 hashConfig = 0;
                 byte[] configFile = null;
 
-                #if GODOT && !GODOT4_0_OR_GREATER
+#if GODOT && !GODOT4_0_OR_GREATER
                 var file = new Godot.File();
 
                 if (file.FileExists(FSExtensions.Combine(DirectoryAdapter.GetParent(GlobalProgramState.instance.GameConfigDir), "zippedconfig.zip")))
@@ -429,37 +427,15 @@ namespace NECS.Harness.Services
                     file.Close();
                     file.Dispose();
                 }
-                #else
+#else
 
                 if (File.Exists(FSExtensions.Combine(Directory.GetParent(GlobalProgramState.instance.GameConfigDir).FullName, "zippedconfig.zip")))
                 {
                     configFile = File.ReadAllBytes(FSExtensions.Combine(Directory.GetParent(GlobalProgramState.instance.GameConfigDir).FullName, "zippedconfig.zip"));
                     hashConfig = BitConverter.ToInt64(MD5.Create().ComputeHash(configFile), 0);
                 }
-                #endif
-                if(NetworkingService.instance != null)
-                {
-                    CustomSetupInitialized = true;
-                    Action<Network.NetworkModels.SocketAdapter> socketAction = (Network.NetworkModels.SocketAdapter socketAdapter) => {
-                        if (!Loaded)
-                        {
-                            ECSService.instance.eventManager.OnEventAdd(new ConfigCheckEvent()
-                            {
-                                configHash = hashConfig
-                            });
-                        }
-                    };
-                    if (NetworkingService.instance.SocketAdapters.Count() == 0)
-                        NetworkingService.instance.OnConnectExternal += new SocketHandler(socketAction);
-                    else
-                    {
-                        socketAction(NetworkingService.instance.ClientSocket);
-                    }
-                }
-                else
-                {
-                    NLogger.Log("ConstantService: Networking not initialized.");
-                }
+#endif
+                
             }
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
                 SetupConfigs();
@@ -475,6 +451,45 @@ namespace NECS.Harness.Services
         /// </summary>
         public override void PostInitializeProcess()
         {
+
+        }
+        
+        protected override Action<int>[] GetInitializationSteps()
+        {
+            return new Action<int>[]
+            {
+                (step) => { InitializeProcess(); },
+                (step) => { 
+                    Action<Network.NetworkModels.SocketAdapter> socketAction = (Network.NetworkModels.SocketAdapter socketAdapter) =>
+                    {
+                        ECSService.instance.eventManager.OnEventAdd(new ConfigCheckEvent()
+                            {
+                                configHash = hashConfig
+                            });
+                    };
+                    if (NetworkingService.instance.SocketAdapters.Count() == 0)
+                        NetworkingService.instance.OnConnectExternal += new SocketHandler(socketAction);
+                    else
+                    {
+                        socketAction(NetworkingService.instance.ClientSocket);
+                    }
+                }
+            };
+        }
+
+        protected override void SetupCallbacks(List<IService> allServices)
+        {
+            if (NetworkingService.instance != null)
+            {
+                this.RegisterCallbackUnsafe(NetworkingService.instance.GetSGTId(), 1, (d) => { return true; }, () =>
+                {
+                    //await for network initalization
+                }, 1);
+            }
+            else
+            {
+                NLogger.Log("ConstantService: Networking not initialized.");
+            }
 
         }
     }

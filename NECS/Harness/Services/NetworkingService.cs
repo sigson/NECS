@@ -55,10 +55,10 @@ namespace NECS.Harness.Services
         {
             get
             {
-                if(cachedClientSocket == null)
+                if (cachedClientSocket == null)
                 {
                     var socket = SocketAdapters.First().Value;
-                    if(socket != null)
+                    if (socket != null)
                         cachedClientSocket = socket;
                 }
                 return cachedClientSocket;
@@ -81,7 +81,7 @@ namespace NECS.Harness.Services
             switch (Protocol.ToLower())
             {
                 case "tcp":
-                    if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+                    if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
                     {
                         TaskEx.RunAsync(() =>
                         {
@@ -99,9 +99,9 @@ namespace NECS.Harness.Services
                     }
                     break;
             }
-            if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
             {
-                CustomSetupInitialized = true;
+                this.FreezeCurrentService();
             }
         }
 
@@ -111,7 +111,7 @@ namespace NECS.Harness.Services
             SocketAdapters[socketAdapter.Id] = socketAdapter;
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {
-                if(Defines.LowLevelNetworkEventsLogging)
+                if (Defines.LowLevelNetworkEventsLogging)
                 {
                     NLogger.LogNetwork($"Connection start from {socketAdapter.Address}:{socketAdapter.Port}");
                 }
@@ -123,8 +123,7 @@ namespace NECS.Harness.Services
                 {
                     NLogger.LogNetwork($"Connected to server on {socketAdapter.Address}:{socketAdapter.Port}");
                 }
-                ServiceInitialized = true;
-                initializedCallbackCache();
+                this.UnfreezeCurrentService();
                 OnConnectExternal.Invoke(socketAdapter);
             }
             Connected = true;
@@ -145,7 +144,7 @@ namespace NECS.Harness.Services
                 {
                     NLogger.LogNetwork($"Client {socketAdapter.Address}:{socketAdapter.Port} disconnected from server");
                 }
-                
+
             }
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
             {
@@ -174,7 +173,7 @@ namespace NECS.Harness.Services
         {
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {
-                
+
             }
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
             {
@@ -274,7 +273,7 @@ namespace NECS.Harness.Services
         {
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {
-                if(socketAdapter != null)
+                if (socketAdapter != null)
                 {
                     socketAdapter.Send(packet);
                 }
@@ -310,10 +309,23 @@ namespace NECS.Harness.Services
 
         public override void OnDestroyReaction()
         {
-            
+
         }
 
         public override void PostInitializeProcess()
+        {
+
+        }
+        
+        protected override Action<int>[] GetInitializationSteps()
+        {
+            return new Action<int>[]
+            {
+                (step) => { InitializeProcess(); },
+            };
+        }
+
+        protected override void SetupCallbacks(List<IService> allServices)
         {
             
         }

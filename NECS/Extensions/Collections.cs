@@ -1424,7 +1424,23 @@ namespace NECS.Extensions
 
         public void CopyTo(T[] array, int arrayIndex)
         {
-            throw new NotImplementedException();
+            // Validate input parameters
+            if (array == null)
+                throw new ArgumentNullException(nameof(array));
+
+            if (arrayIndex < 0 || arrayIndex > array.Length)
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex), "Index must be non-negative and within the bounds of the array.");
+
+            if (array.Length - arrayIndex < Count)
+                throw new ArgumentException("The array does not have enough space to copy all elements starting at the specified index.");
+
+            // Copy elements to the array
+            int index = arrayIndex;
+            foreach (T item in this)
+            {
+                array[index] = item;
+                index++;
+            }
         }
 
         public void ExceptWith(IEnumerable<T> other)

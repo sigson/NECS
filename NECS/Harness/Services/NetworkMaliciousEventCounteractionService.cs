@@ -65,20 +65,33 @@ namespace NECS.Harness.Services
 
         protected virtual void MaliciousScoreDecrease()
         {
-            foreach(var socket in maliciousScoringStorage)
+            foreach (var socket in maliciousScoringStorage)
             {
                 socket.Value.Score -= MaliciousScoreDecreaseValue;
-                if(socket.Value.Score <= 0)
+                if (socket.Value.Score <= 0)
                     socket.Value.Score = 0;
             }
         }
 
         public override void OnDestroyReaction()
         {
-            
+
         }
 
         public override void PostInitializeProcess()
+        {
+
+        }
+        
+        protected override Action<int>[] GetInitializationSteps()
+        {
+            return new Action<int>[]
+            {
+                (step) => { InitializeProcess(); },
+            };
+        }
+
+        protected override void SetupCallbacks(List<IService> allServices)
         {
             
         }

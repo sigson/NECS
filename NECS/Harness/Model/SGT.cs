@@ -4,6 +4,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -15,7 +16,9 @@ public abstract
 #endif
     class SGT : ProxyBehaviour
     {
-        private static Dictionary<Type, SGT> instances = new Dictionary<Type, SGT>();
+        private static Dictionary<string, SGT> instances = new Dictionary<string, SGT>();
+
+        public virtual string GetSGTId() => GetType().Name;
 
         public static T InitalizeSingleton<T>(EngineApiObjectBehaviour behaviour = null, bool packetInitialize = false) where T : SGT
         {
@@ -29,7 +32,7 @@ public abstract
             {
                 try
                 {
-                    instances.TryGetValue(singletonType, out instance);
+                    instances.TryGetValue(singletonType.Name, out instance);
                     if (instance == null)
                     {
                         if (behaviour != null)
@@ -50,7 +53,7 @@ public abstract
                         {
                             instance = (SGT)Activator.CreateInstance(singletonType);
                         }
-                        instances.Add(singletonType, instance);
+                        instances.Add(singletonType.Name, instance);
                     }
                 }
                 catch (Exception ex)
@@ -59,7 +62,7 @@ public abstract
                 }
             }
             if(!packetInitialize)
-                instance.InitializeProcess();
+                instance.BeginInitializationProcess();
             return instance;
         }
 
@@ -81,16 +84,29 @@ public abstract
             return null;
         }
 
-        public static T getInstance<T>(EngineApiObjectBehaviour behaviour = null) where T : SGT
+        public static T getInstance<T>(string SGTId) where T : SGT
+        {
+            if (SGTId != "")
+            {
+                return getInstance<T>(null, SGTId);
+            }
+            else
+            {
+                NLogger.Error("SGTId is empty - try get empty SGT");
+                return null; 
+            }
+        }
+
+        public static T getInstance<T>(EngineApiObjectBehaviour behaviour = null, string SGTId = "") where T : SGT
         {
             SGT instance = null;
-            instances.TryGetValue(typeof(T), out instance);
+            instances.TryGetValue(SGTId == "" ? typeof(T).Name : SGTId, out instance);
             if (instance == null)
             {
 #if UNITY_5_3_OR_NEWER
                 NLogger.Log($"Singleton {typeof(T)} not initialized");
 #else
-                if(!Defines.IgnoreNonDangerousExceptions)
+                if (!Defines.IgnoreNonDangerousExceptions)
                     throw new Exception($"Singleton {typeof(T)} not initialized");
 #endif
                 //return null;
@@ -98,6 +114,7 @@ public abstract
             return (T)instance;
         }
 
+        public abstract void BeginInitializationProcess();
         public abstract void InitializeProcess();
         public abstract void PostInitializeProcess();
         public abstract void OnDestroyReaction();
@@ -113,10 +130,10 @@ public abstract
                 try
                 {
                     SGT instance = null;
-                    instances.TryGetValue(this.GetType(), out instance);
+                    instances.TryGetValue(this.GetType().Name, out instance);
                     if (instance != null)
                     {
-                        instances.Remove(this.GetType());
+                        instances.Remove(this.GetType().Name);
                     }
                 }
                 catch (Exception ex)
@@ -138,7 +155,7 @@ public abstract
             {
                 try
                 {
-                    if (instances.TryGetValue(type, out var sgt))
+                    if (instances.TryGetValue(type.Name, out var sgt))
                     {
                         try
                         {
@@ -149,7 +166,7 @@ public abstract
 #endif
                         }
                         catch { }
-                        instances.Remove(type);
+                        instances.Remove(type.Name);
                     }
                 }
                 catch (Exception ex)

@@ -106,7 +106,8 @@ namespace NECS.Harness.Services
                 {
                     if (ManagersStorageObject != null)
                     {
-                        var cleanManager = this.ExecuteFunction<EngineApiObjectBehaviour>(() => {
+                        var cleanManager = this.ExecuteFunction<EngineApiObjectBehaviour>(() =>
+                        {
                             var newManager = ManagersStorageObject.AddComponent(managerType);
                             (newManager as IManager).isNoSetupChild = true;
                             (newManager as IManager).ConnectPoint = id;
@@ -239,6 +240,19 @@ namespace NECS.Harness.Services
         public override void PostInitializeProcess()
         {
 
+        }
+        
+        protected override Action<int>[] GetInitializationSteps()
+        {
+            return new Action<int>[]
+            {
+                (step) => { InitializeProcess(); },
+            };
+        }
+
+        protected override void SetupCallbacks(List<IService> allServices)
+        {
+            
         }
     }
 

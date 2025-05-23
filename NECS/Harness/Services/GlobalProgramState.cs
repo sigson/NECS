@@ -32,7 +32,8 @@ namespace NECS.Harness.Services
         public string persistentDataPath;
         public string streamingAssetsPath;
 
-        public string GameConfigDir {
+        public string GameConfigDir
+        {
             get
             {
 #if UNITY_5_3_OR_NEWER
@@ -87,46 +88,51 @@ namespace NECS.Harness.Services
         {
             get
             {
-                #if GODOT
+#if GODOT
                 return "/";
-                #else
+#else
                 return Path.DirectorySeparatorChar.ToString();
-                #endif
+#endif
             }
         }
 
         private string _pathSeparator = "";
-        public string PathSeparator {
-            get{
-                if(_pathSeparator == "")
+        public string PathSeparator
+        {
+            get
+            {
+                if (_pathSeparator == "")
                 {
-                    #if GODOT
+#if GODOT
                     return "/";
-                    #else
+#else
                     return Path.DirectorySeparatorChar.ToString();
-                    #endif
+#endif
                 }
                 return _pathSeparator;
             }
-            set{
+            set
+            {
                 _pathSeparator = value;
             }
         }//"\\";
         private string _pathAltSeparator = "";
         public string PathAltSeparator
         {
-            get{
-                if(_pathAltSeparator == "")
+            get
+            {
+                if (_pathAltSeparator == "")
                 {
-                    #if GODOT
+#if GODOT
                     return "\\";
-                    #else
+#else
                     return Path.AltDirectorySeparatorChar.ToString();
-                    #endif
+#endif
                 }
                 return _pathAltSeparator;
             }
-            set{
+            set
+            {
                 _pathAltSeparator = value;
             }
         }//"/";
@@ -145,10 +151,23 @@ namespace NECS.Harness.Services
 
         public override void OnDestroyReaction()
         {
-            
+
         }
 
         public override void PostInitializeProcess()
+        {
+
+        }
+        
+        protected override Action<int>[] GetInitializationSteps()
+        {
+            return new Action<int>[]
+            {
+                
+            };
+        }
+
+        protected override void SetupCallbacks(List<IService> allServices)
         {
             
         }
