@@ -28,7 +28,7 @@ namespace UTanksServer
             IService.RegisterAllServices();
             GlobalProgramState.instance.ProgramType = GlobalProgramState.ProgramTypeEnum.Server;
             ConstantService.instance.SetupConfigs(GlobalProgramState.instance.TechConfigDir);
-            IService.InitializeService(ECSService.instance);
+            //IService.InitializeService(ECSService.instance);
             IService.InitializeAllServices();
             #region ClearScreen
             Func<Task> asyncUpd = async () =>

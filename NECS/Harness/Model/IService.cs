@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using NECS.Core.Logging;
 using NECS.ECS.ECSCore;
 using NECS.Extensions;
 using NECS.Extensions.ThreadingSync;
@@ -195,7 +196,9 @@ namespace NECS.Harness.Model
             
             // Основное состояние (обрабатывается только в мониторинговом потоке)
             private readonly Dictionary<string, ServiceStepInfo> _serviceStates = new Dictionary<string, ServiceStepInfo>();
-            private readonly Dictionary<int, List<ServiceCallback>> _stepCallbacks = new Dictionary<int, List<ServiceCallback>>();
+            
+            // ИСПРАВЛЕНИЕ: Callback'и теперь индексируются по комбинации serviceId + step
+            private readonly Dictionary<string, Dictionary<int, List<ServiceCallback>>> _serviceStepCallbacks = new Dictionary<string, Dictionary<int, List<ServiceCallback>>>();
             private readonly Dictionary<string, Action<int>[]> _serviceSteps = new Dictionary<string, Action<int>[]>();
             
             // Отслеживание callback'ов по сервисам-авторам
@@ -203,7 +206,7 @@ namespace NECS.Harness.Model
             
             private bool _isMonitoringRunning = false;
             private bool _stopMonitoring = false;
-            private int _currentMonitoringStep = 0;
+            // УДАЛЯЕМ: _currentMonitoringStep больше не нужен
             
             // События (потокобезопасные)
             public event Action<string, int, string> OnServiceStepChanged;
@@ -256,7 +259,7 @@ namespace NECS.Harness.Model
             }
 
             // Запуск Event Loop мониторинга
-            public void StartAllServices()
+            public void StartAllServices(int awaitServicesCount = 0)
             {
                 bool shouldStart = false;
                 
@@ -265,13 +268,12 @@ namespace NECS.Harness.Model
                 {
                     _isMonitoringRunning = true;
                     _stopMonitoring = false;
-                    _currentMonitoringStep = 0;
                     shouldStart = true;
                 }
                 
                 if (shouldStart)
                 {
-                    TaskEx.RunAsync(EventLoopMonitoring);
+                    TaskEx.RunAsync(() => EventLoopMonitoring(awaitServicesCount));
                 }
             }
             
@@ -282,9 +284,9 @@ namespace NECS.Harness.Model
             }
             
             // Основной Event Loop мониторинг (выполняется в одном потоке)
-            private void EventLoopMonitoring()
+            private void EventLoopMonitoring(int awaitServicesCount)
             {
-                while (!_stopMonitoring && !AreAllServicesCompleted())
+                while (!_stopMonitoring && (!AreAllServicesCompleted() || _serviceStates.Count < awaitServicesCount))
                 {
                     // Обрабатываем все события из очереди
                     ProcessEventQueue();
@@ -357,6 +359,12 @@ namespace NECS.Harness.Model
                 _serviceSteps[eventItem.ServiceId] = eventItem.Steps;
                 _serviceStates[eventItem.ServiceId] = new ServiceStepInfo(eventItem.ServiceId, eventItem.Steps.Length);
                 
+                // ИСПРАВЛЕНИЕ: Инициализируем структуру callback'ов для каждого сервиса
+                if (!_serviceStepCallbacks.ContainsKey(eventItem.ServiceId))
+                {
+                    _serviceStepCallbacks[eventItem.ServiceId] = new Dictionary<int, List<ServiceCallback>>();
+                }
+                
                 // Инициализируем список callback'ов для этого сервиса-автора
                 if (!_authorCallbacks.ContainsKey(eventItem.ServiceId))
                 {
@@ -368,12 +376,19 @@ namespace NECS.Harness.Model
                 OnServiceStepChanged?.Invoke(eventItem.ServiceId, 0, "Service registered");
             }
             
-            // Обработка регистрации callback-а (синхронно)
+            // ИСПРАВЛЕНИЕ: Обработка регистрации callback-а (синхронно)
             public void ProcessRegisterCallback(RegisterCallbackEvent eventItem)
             {
-                if (!_stepCallbacks.ContainsKey(eventItem.TargetStep))
+                // Инициализируем структуру для целевого сервиса, если её нет
+                if (!_serviceStepCallbacks.ContainsKey(eventItem.TargetServiceId))
                 {
-                    _stepCallbacks[eventItem.TargetStep] = new List<ServiceCallback>();
+                    _serviceStepCallbacks[eventItem.TargetServiceId] = new Dictionary<int, List<ServiceCallback>>();
+                }
+                
+                // Инициализируем список для конкретного шага целевого сервиса
+                if (!_serviceStepCallbacks[eventItem.TargetServiceId].ContainsKey(eventItem.TargetStep))
+                {
+                    _serviceStepCallbacks[eventItem.TargetServiceId][eventItem.TargetStep] = new List<ServiceCallback>();
                 }
                 
                 var callback = new ServiceCallback(
@@ -384,7 +399,7 @@ namespace NECS.Harness.Model
                     eventItem.Condition, 
                     eventItem.Callback);
                 
-                _stepCallbacks[eventItem.TargetStep].Add(callback);
+                _serviceStepCallbacks[eventItem.TargetServiceId][eventItem.TargetStep].Add(callback);
                 
                 // Добавляем callback в список callback'ов автора
                 if (!_authorCallbacks.ContainsKey(eventItem.AuthorServiceId))
@@ -479,48 +494,52 @@ namespace NECS.Harness.Model
             // Логика мониторинга (синхронно, без блокировок)
             private void ProcessMonitoringStep()
             {
-                // Шаг 1: Проверяем и запускаем callback-и
-                ProcessCallbacksForCurrentStep();
+                // Шаг 1: Проверяем и запускаем callback-и для всех сервисов
+                ProcessCallbacksForAllServices();
                 
                 // Шаг 2: Запускаем готовые сервисы
                 StartReadyServices();
             }
             
-            // Обработка callback-ов (синхронно)
-            private void ProcessCallbacksForCurrentStep()
+            // ИСПРАВЛЕНИЕ: Обработка callback-ов для всех сервисов (синхронно)
+            private void ProcessCallbacksForAllServices()
             {
-                List<ServiceCallback> hiddenOldCallbacks = new List<ServiceCallback>();
-                _stepCallbacks.Where(x => x.Key < _currentMonitoringStep).ForEach(x => x.Value.ForEach(y => y.IsCompleted = false));
-                if (!_stepCallbacks.ContainsKey(_currentMonitoringStep))
-                    return;
-
-                _stepCallbacks[_currentMonitoringStep].AddRange(hiddenOldCallbacks);
-
-                
                 var currentStates = GetCurrentStatesSnapshot();
                 
-                foreach (var callback in _stepCallbacks[_currentMonitoringStep])
+                // Проходим по всем сервисам и их шагам
+                foreach (var serviceCallbacks in _serviceStepCallbacks)
                 {
-                    if (!callback.IsCompleted && !callback.IsRunning)
+                    string serviceId = serviceCallbacks.Key;
+                    
+                    // Проверяем, не заморожен ли сервис
+                    if (currentStates.ContainsKey(serviceId) && currentStates[serviceId].IsFrozen)
                     {
-                        // Проверяем, не заморожен ли целевой сервис
-                        if (currentStates.ContainsKey(callback.ServiceId) && currentStates[callback.ServiceId].IsFrozen)
+                        continue; // Пропускаем callback'и для замороженных сервисов
+                    }
+                    
+                    foreach (var stepCallbacks in serviceCallbacks.Value)
+                    {
+                        int step = stepCallbacks.Key;
+                        var callbacks = stepCallbacks.Value;
+                        
+                        foreach (var callback in callbacks)
                         {
-                            continue; // Пропускаем callback'и для замороженных сервисов
-                        }
-
-                        try
-                        {
-                            if (callback.Condition(currentStates))
+                            if (!callback.IsCompleted && !callback.IsRunning)
                             {
-                                callback.IsRunning = true;
-                                StartCallbackAsync(callback);
+                                try
+                                {
+                                    if (callback.Condition(currentStates) && this._serviceStates[callback.ServiceId].CurrentStep >= callback.TargetStep)
+                                    {
+                                        callback.IsRunning = true;
+                                        StartCallbackAsync(callback);
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    ProcessFailService(new FailServiceEvent(callback.ServiceId, 
+                                        $"Error in callback condition for step {step}: {ex.Message}"));
+                                }
                             }
-                        }
-                        catch (Exception ex)
-                        {
-                            ProcessFailService(new FailServiceEvent(callback.ServiceId, 
-                                $"Error in callback condition for step {_currentMonitoringStep}: {ex.Message}"));
                         }
                     }
                 }
@@ -575,20 +594,21 @@ namespace NECS.Harness.Model
                 }
             }
             
-            // Проверка готовности сервиса (синхронно)
+            // ИСПРАВЛЕНИЕ: Проверка готовности сервиса (синхронно)
             private bool IsServiceReadyForStep(string serviceId, int step)
             {
-                // Проверяем callback'и для текущего шага
-                if (_stepCallbacks.ContainsKey(step))
+                // ИСПРАВЛЕНИЕ: Проверяем callback'и для конкретного сервиса и шага
+                if (_serviceStepCallbacks.ContainsKey(serviceId) && 
+                    _serviceStepCallbacks[serviceId].ContainsKey(step))
                 {
-                    var serviceCallbacks = _stepCallbacks[step].Where(cb => cb.ServiceId == serviceId).ToList();
+                    var serviceCallbacks = _serviceStepCallbacks[serviceId][step];
                     if (serviceCallbacks.Any(cb => !cb.IsCompleted))
                     {
                         return false;
                     }
                 }
                 
-                // НОВАЯ ЛОГИКА: Проверяем, что все callback'и, созданные этим сервисом, завершены
+                // Проверяем, что все callback'и, созданные этим сервисом, завершены
                 // НО ТОЛЬКО если текущий шаг >= AuthorBlockingStep для каждого callback'а
                 if (_authorCallbacks.ContainsKey(serviceId))
                 {
@@ -638,19 +658,25 @@ namespace NECS.Harness.Model
                 serviceState.StepEndTime = null;
                 
                 OnServiceStepChanged?.Invoke(serviceId, stepToExecute, $"Starting step {stepToExecute}");
-                
+
                 // Выполняем шаг последовательно
-                try
+                TaskEx.RunAsync(() =>
                 {
-                    serviceSteps[stepToExecute](stepToExecute);
-                    
-                    // Автоматически завершаем шаг
-                    ProcessCompleteStep(new CompleteStepEvent(serviceId));
-                }
-                catch (Exception ex)
-                {
-                    ProcessFailService(new FailServiceEvent(serviceId, $"Error in step {stepToExecute}: {ex.Message}"));
-                }
+                    try
+                    {
+                        serviceSteps[stepToExecute](stepToExecute);
+
+                        // Автоматически завершаем шаг
+                        //ProcessCompleteStep();
+                        this.CompleteCurrentStep(serviceId);
+                    }
+                    catch (Exception ex)
+                    {
+                        // ProcessFailService(new FailServiceEvent(serviceId, $"Error in step {stepToExecute}: {ex.Message}"));
+                        this.FailService(serviceId, $"Error in step {stepToExecute}: {ex.Message}");
+                    }
+                });
+                
             }
             
             // Получение снимка состояний (синхронно)
@@ -692,10 +718,7 @@ namespace NECS.Harness.Model
                 return _isMonitoringRunning;
             }
             
-            public int GetCurrentMonitoringStep()
-            {
-                return _currentMonitoringStep;
-            }
+            // УДАЛЯЕМ: GetCurrentMonitoringStep больше не актуален
             
             // Получение размера очереди событий
             public int GetEventQueueSize()
@@ -757,26 +780,51 @@ namespace NECS.Harness.Model
                 GodotRootStorage.globalRoot.AddChild(ServiceStorage);
             }
 #endif
-            if(ServiceStorage != null)
+            if (ServiceStorage != null)
                 ServiceStorage.AddComponent<ProxyMockComponent>();
-                
+
             if (excludeServices == null)
             {
                 excludeServices = new List<Type>();
             }
-            
+
             AllServiceList = new ConcurrentHashSet<IService>(ECSAssemblyExtensions.GetAllSubclassOf(typeof(IService))
                 .Where(x => !x.IsAbstract && !excludeServices.Contains(x))
                 .Select(x => IService.InitalizeSingleton(x, ServiceStorage, true))
                 .Cast<IService>()
                 .ToList());
+                
+            SyncManager.OnServiceStepChanged += (serviceid, step, message) =>
+            {
+                NLogger.LogService($"Service {serviceid} step {step}: {message}");
+            };
+            SyncManager.OnServiceFailed += (serviceid, reason) =>
+            {
+                NLogger.LogService($"Service {serviceid} failed: {reason}");
+            };
+            SyncManager.OnServiceCompleted += (serviceid) =>
+            {
+                NLogger.LogService($"Service {serviceid} completed");
+            };
+            SyncManager.OnAllServicesCompleted += () =>
+            {
+                NLogger.LogService($"All services is initialized");
+            };
+            SyncManager.OnServiceFrozen += (serviceid) =>
+            {
+                NLogger.LogService($"Service {serviceid} frozen");
+            };
+            SyncManager.OnServiceUnfrozen += (serviceid) =>
+            {
+                NLogger.LogService($"Service {serviceid} unfrozen");
+            };
         }
 
         public static void InitializeAllServices(List<IService> selectedServices = null)
         {
             var serviceList = selectedServices == null ? AllServiceList : new ConcurrentHashSet<IService>(selectedServices);
             serviceList.ForEach(x => x.BeginInitializationProcess());
-            _syncManager.StartAllServices();
+            _syncManager.StartAllServices(serviceList.Count);
         }
 
         #endregion

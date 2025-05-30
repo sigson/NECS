@@ -246,13 +246,17 @@ namespace NECS.Harness.Services
         {
             return new Action<int>[]
             {
+                (step) => {  },
                 (step) => { InitializeProcess(); },
             };
         }
 
         protected override void SetupCallbacks(List<IService> allServices)
         {
-            
+            this.RegisterCallbackUnsafe(ECSService.instance.GetSGTId(), 1, (d) => { return true; }, () =>
+            {
+                //await for ecs initalization
+            }, 0);
         }
     }
 

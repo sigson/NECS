@@ -458,6 +458,7 @@ namespace NECS.Harness.Services
         {
             return new Action<int>[]
             {
+                (step) => {  },
                 (step) => { InitializeProcess(); },
                 (step) => { 
                     Action<Network.NetworkModels.SocketAdapter> socketAction = (Network.NetworkModels.SocketAdapter socketAdapter) =>
@@ -479,6 +480,10 @@ namespace NECS.Harness.Services
 
         protected override void SetupCallbacks(List<IService> allServices)
         {
+            this.RegisterCallbackUnsafe(ECSService.instance.GetSGTId(), 1, (d) => { return true; }, () =>
+            {
+                //await for ecs initalization
+            }, 0);
             if (NetworkingService.instance != null)
             {
                 this.RegisterCallbackUnsafe(NetworkingService.instance.GetSGTId(), 1, (d) => { return true; }, () =>
