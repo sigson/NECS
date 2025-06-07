@@ -47,7 +47,7 @@ namespace NECS.Extensions.ThreadingSync
             };
             asyncUpd();
 #else
-            
+
 #endif
         }
 
@@ -80,7 +80,7 @@ namespace NECS.Extensions.ThreadingSync
             }
             else
             {
-                if(Defines.ThreadsMode)
+                if (Defines.ThreadsMode)
                 {
                     Thread thread = new Thread(() =>
                     {
@@ -127,7 +127,7 @@ namespace NECS.Extensions.ThreadingSync
         }
     }
 
-    #if UNITY_5_3_OR_NEWER
+#if UNITY_5_3_OR_NEWER
     public static class Lambda
     {
         public static UnityEngine.Events.UnityEvent<T> AddListener<T>(this UnityEngine.Events.UnityEvent<T> unityEvent, System.Action<T> action)
@@ -236,4 +236,23 @@ namespace NECS.Extensions.ThreadingSync
         }
     }
 #endif
+
+    public static class LockEx
+    {
+        public static void Lock(object lockobj, Func<bool> conditionlocking, Action action)
+        {
+            if (conditionlocking())
+            {
+                lock (lockobj)
+                {
+                    action();
+                }
+            }
+            else
+            {
+                action();
+            }
+        }
+    }
+
 }

@@ -1540,7 +1540,7 @@ namespace NECS.Extensions
         }
         private int OpenedDownGates;
         private Func<int, int> GatesCounter;
-        private readonly Dictionary<TKey, SynchronizedList<ActionWrapper>> _eventLists;
+        private readonly ConcurrentDictionary<TKey, SynchronizedList<ActionWrapper>> _eventLists;
         private readonly List<PriorityWrapper> _priorityOrder;
         private readonly object _lock = new object();
         private StackTrace creationStackTrace;
@@ -1576,7 +1576,7 @@ namespace NECS.Extensions
             // if (priorityOrder.Distinct().Count() != _priorityOrder.Count)
             //     throw new ArgumentException("Priority order must contain unique keys", nameof(priorityOrder));
 
-            _eventLists = new Dictionary<TKey, SynchronizedList<ActionWrapper>>();
+            _eventLists = new ConcurrentDictionary<TKey, SynchronizedList<ActionWrapper>>();
             foreach (var key in priorityOrder)
             {
                 _priorityOrder.Add(new PriorityWrapper() { priorityValue = key, GateOpened = false });
@@ -1612,7 +1612,7 @@ namespace NECS.Extensions
                             eventItem.inAction = true;
                             TaskEx.RunAsync(() =>
                             {
-                                lock (prioritynow)
+                                LockEx.Lock(prioritynow, () => !Defines.OneThreadMode, () =>
                                 {
                                     eventItem.actionEvent.DynamicInvoke();
                                     if (!prioritynow.GateOpened)
@@ -1620,7 +1620,7 @@ namespace NECS.Extensions
                                         prioritynow.GateOpened = true;
                                         OpenedDownGates = GatesCounter(OpenedDownGates);
                                     }
-                                    lock (_lock)
+                                    LockEx.Lock(_lock, () => !Defines.OneThreadMode, () =>
                                     {
                                         try
                                         {
@@ -1630,9 +1630,9 @@ namespace NECS.Extensions
                                         {
                                             NLogger.Log($"Error in priority event queue (Maybe you start already executed only one execution method (OnAdded as example)) - {ex.Message}\n in type {this.ownerType} \n{this.creationStackTrace}");
                                         }
-                                    }
+                                    });
                                     ProcessEvents();
-                                }
+                                });
                             });
                         }
                     }
@@ -1642,11 +1642,11 @@ namespace NECS.Extensions
 
         private void ProcessEvents()
         {
-            lock (_lock)
+            LockEx.Lock(_lock, () => !Defines.OneThreadMode, () =>
             {
                 for (int i = 0; i < OpenedDownGates; i++)
                 {
-                    if(i >= _priorityOrder.Count)
+                    if (i >= _priorityOrder.Count)
                         break;
                     var prioritynow = _priorityOrder[i];
                     if (_eventLists.TryGetValue(prioritynow.priorityValue, out var prioritystorage))
@@ -1659,7 +1659,7 @@ namespace NECS.Extensions
                                 priorevent.inAction = true;
                                 TaskEx.RunAsync(() =>
                                 {
-                                    lock (prioritynow)
+                                    LockEx.Lock(prioritynow, () => !Defines.OneThreadMode, () =>
                                     {
                                         priorevent.actionEvent.DynamicInvoke();
                                         if (!prioritynow.GateOpened)
@@ -1667,7 +1667,7 @@ namespace NECS.Extensions
                                             prioritynow.GateOpened = true;
                                             OpenedDownGates = GatesCounter(OpenedDownGates);
                                         }
-                                        lock (_lock)
+                                        LockEx.Lock(_lock, () => !Defines.OneThreadMode, () =>
                                         {
                                             //_eventLists[prioritynow.priorityValue].RemoveAt(0);
                                             try
@@ -1678,16 +1678,16 @@ namespace NECS.Extensions
                                             {
                                                 NLogger.Log($"Error in priority event queue (Maybe you start already executed only one execution method (OnAdded as example)) - {ex.Message}\n in type {this.ownerType} \n{this.creationStackTrace}");
                                             }
-                                        }
+                                        });
 
                                         ProcessEvents();
-                                    }
+                                    });
                                 });
                             }
                         }
                     }
                 }
-            }
+            });
         }
     }
 }
