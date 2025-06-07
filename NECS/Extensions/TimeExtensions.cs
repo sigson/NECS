@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using NECS.Core.Logging;
 using NECS.Extensions.ThreadingSync;
 
 namespace NECS.Extensions
@@ -203,6 +204,7 @@ namespace NECS.Extensions
 
     public class TimerCompat : IDisposable
     {
+        public static Func<(Action, Action)> TimerThreadOverridable = () => { NLogger.LogError("TimerThreadOverridable not set"); return (null, null); };
         public static int baseTick => Defines.TimerMinimumMSTick;
         public double Interval
         {
@@ -213,6 +215,8 @@ namespace NECS.Extensions
                 timerData.MSInterval = Convert.ToInt64(value);
             }
         }
+        
+        public static void InitTimerInfrastructure() { new TimerCompat().Dispose(); }
 
         public class TimerInstance
         {
@@ -222,8 +226,8 @@ namespace NECS.Extensions
             public long TicksInterval;
             public long RemainingTicks;
 
-            public EventHandler Elapsed { get; set; }= (sender, e) => { };
-            public  EventHandler Disposed { get; set; }= (sender, e) => { };
+            public EventHandler Elapsed { get; set; } = (sender, e) => { };
+            public EventHandler Disposed { get; set; } = (sender, e) => { };
             public bool AutoReset { get; set; }
             public bool IsPaused { get; set; }
             public bool IsAsync { get; set; } = true;
@@ -257,24 +261,42 @@ namespace NECS.Extensions
 
             private GlobalTimerManager()
             {
-                _isRunning = true;
-                _timerThread = new Thread(TimerLoop)
+                if (Defines.OneThreadMode)
                 {
-                    IsBackground = true,
-                    Name = "GlobalTimerThread",
-                    Priority = ThreadPriority.AboveNormal
-                };
-                _timerThread.Start();
+                    TimerCompat.TimerThreadOverridable = GetTimerLoop;
+                }
+                else
+                {
+                    _timerThread = new Thread(TimerLoop)
+                    {
+                        IsBackground = true,
+                        Name = "GlobalTimerThread",
+                        Priority = ThreadPriority.AboveNormal
+                    };
+                    _timerThread.Start();
+                }
             }
 
             private void TimerLoop()
             {
+                var loop = GetTimerLoop();
+                while (_isRunning)
+                {
+                    loop.Item1();
+                    Thread.Sleep(baseTick);
+                    loop.Item2();
+                }
+            }
+
+            private (Action, Action) GetTimerLoop()
+            {
+                _isRunning = true;
                 TimerDateTime.DateTimeNowTicks = DateTime.Now.Ticks;
                 long offset = 0;
                 long externalTimeCache = TimerDateTime.DateTimeNowTicks;
                 Stopwatch externalStopwatch = new Stopwatch();
                 Stopwatch internalStopwatch = new Stopwatch();
-                while (_isRunning)
+                var tickAction = () =>
                 {
                     internalStopwatch.Start();
                     try
@@ -286,12 +308,12 @@ namespace NECS.Extensions
                             {
                                 if (timer.IsEnabled && !timer.IsPaused)
                                 {
-                                    timer.RemainingTicks-=TimerDateTime.DateTimeNowTicks - externalTimeCache + offset;
+                                    timer.RemainingTicks -= TimerDateTime.DateTimeNowTicks - externalTimeCache + offset;
                                     if (timer.RemainingTicks <= 0)
                                     {
                                         try
                                         {
-                                            if(timer.IsAsync)
+                                            if (timer.IsAsync)
                                                 TaskEx.RunAsync(() => timer.Elapsed?.Invoke(timer, EventArgs.Empty));
                                             else
                                                 timer.Elapsed?.Invoke(timer, EventArgs.Empty);
@@ -317,22 +339,25 @@ namespace NECS.Extensions
                     finally
                     {
                         internalStopwatch.Stop();
-                        if(internalStopwatch.ElapsedMilliseconds < 100)//NOT DEBUGGED
+                        if (internalStopwatch.ElapsedMilliseconds < 100)//NOT DEBUGGED
                             TimerDateTime.DateTimeNowTicks += (internalStopwatch.ElapsedTicks / 100);
                         internalStopwatch.Reset();
                         externalTimeCache = TimerDateTime.DateTimeNowTicks;
                         externalStopwatch.Start();
-                        Thread.Sleep(baseTick);
-                        externalStopwatch.Stop();
-                        if(externalStopwatch.ElapsedMilliseconds < baseTick + 100)//NOT DEBUGGED
-                        {
-                            TimerDateTime.DateTimeNowTicks += (externalStopwatch.ElapsedTicks / 100);
-                        }
-                        else
-                            TimerDateTime.UpdateTicks();
-                        externalStopwatch.Reset();
                     }
-                }
+                };
+                var fixTick = () =>
+                {
+                    externalStopwatch.Stop();
+                    if (externalStopwatch.ElapsedMilliseconds < baseTick + 100)//NOT DEBUGGED
+                    {
+                        TimerDateTime.DateTimeNowTicks += (externalStopwatch.ElapsedTicks / 100);
+                    }
+                    else
+                        TimerDateTime.UpdateTicks();
+                    externalStopwatch.Reset();
+                };
+                return (tickAction, fixTick);
             }
 
             internal void RegisterTimer(TimerInstance timer)
@@ -368,7 +393,7 @@ namespace NECS.Extensions
 
         public TimerCompat()
         {
-
+            var initTimer = Manager.ToString();
         }
 
         public TimerCompat(TimerInstance timerInstance)
