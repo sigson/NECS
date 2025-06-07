@@ -408,30 +408,30 @@ namespace NECS.Harness.Model
                 }
                 _authorCallbacks[eventItem.AuthorServiceId].Add(callback);
             }
-            
+
             // Обработка завершения шага (синхронно)
             private void ProcessCompleteStep(CompleteStepEvent eventItem)
             {
                 if (!_serviceStates.ContainsKey(eventItem.ServiceId))
                     return;
-                    
+
                 var serviceState = _serviceStates[eventItem.ServiceId];
                 if (serviceState.IsServiceFailed || serviceState.IsFrozen) // Проверяем заморозку
                     return;
-                    
-                serviceState.IsStepCompleted = true;
-                serviceState.IsStepRunning = false;
-                serviceState.StepEndTime = DateTime.Now;
-                
+
                 int currentStep = serviceState.CurrentStep;
-                
+
                 OnServiceStepChanged?.Invoke(eventItem.ServiceId, currentStep, $"Step {currentStep} completed");
-                
+
                 // Проверяем, завершен ли сервис
                 if (currentStep >= serviceState.TotalSteps - 1)
                 {
                     OnServiceCompleted?.Invoke(eventItem.ServiceId);
                 }
+                
+                serviceState.IsStepCompleted = true;
+                serviceState.IsStepRunning = false;
+                serviceState.StepEndTime = DateTime.Now;
             }
             
             // Обработка ошибки сервиса (синхронно)
@@ -494,75 +494,62 @@ namespace NECS.Harness.Model
             // Логика мониторинга (синхронно, без блокировок)
             private void ProcessMonitoringStep()
             {
-                // Шаг 1: Проверяем и запускаем callback-и для всех сервисов
-                ProcessCallbacksForAllServices();
+                
                 
                 // Шаг 2: Запускаем готовые сервисы
                 StartReadyServices();
             }
-            
+
             // ИСПРАВЛЕНИЕ: Обработка callback-ов для всех сервисов (синхронно)
-            private void ProcessCallbacksForAllServices()
+            private void ProcessCallbacksForService(string serviceId, Dictionary<string, ServiceStepInfo> currentStates, Dictionary<int, List<ServiceCallback>> serviceCallbacks, int hiddenStep)
             {
-                var currentStates = GetCurrentStatesSnapshot();
-                
-                // Проходим по всем сервисам и их шагам
-                foreach (var serviceCallbacks in _serviceStepCallbacks)
+                //string serviceId = serviceCallbacks.Key;
+
+                // Проверяем, не заморожен ли сервис
+                if (currentStates.ContainsKey(serviceId) && currentStates[serviceId].IsFrozen)
                 {
-                    string serviceId = serviceCallbacks.Key;
-                    
-                    // Проверяем, не заморожен ли сервис
-                    if (currentStates.ContainsKey(serviceId) && currentStates[serviceId].IsFrozen)
+                    return; // Пропускаем callback'и для замороженных сервисов
+                }
+
+                foreach (var stepCallbacks in serviceCallbacks)
+                {
+                    int step = stepCallbacks.Key;
+                    var callbacks = stepCallbacks.Value;
+
+                    foreach (var callback in callbacks)
                     {
-                        continue; // Пропускаем callback'и для замороженных сервисов
-                    }
-                    
-                    foreach (var stepCallbacks in serviceCallbacks.Value)
-                    {
-                        int step = stepCallbacks.Key;
-                        var callbacks = stepCallbacks.Value;
-                        
-                        foreach (var callback in callbacks)
+                        if (!callback.IsCompleted && !callback.IsRunning)
                         {
-                            if (!callback.IsCompleted && !callback.IsRunning)
+                            try
                             {
-                                try
+                                if (callback.Condition(currentStates) && hiddenStep >= callback.TargetStep)
                                 {
-                                    if (callback.Condition(currentStates) && this._serviceStates[callback.ServiceId].CurrentStep >= callback.TargetStep)
+                                    callback.IsRunning = true;
+                                    TaskEx.RunAsync(() =>
                                     {
-                                        callback.IsRunning = true;
-                                        StartCallbackAsync(callback);
-                                    }
+                                        try
+                                        {
+                                            callback.Callback();
+                                            NotifyCallbackCompleted(callback, true);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            NotifyCallbackCompleted(callback, false,
+                                                $"Error in callback execution for step {callback.TargetStep}: {ex.Message}");
+                                        }
+                                    });
                                 }
-                                catch (Exception ex)
-                                {
-                                    ProcessFailService(new FailServiceEvent(callback.ServiceId, 
-                                        $"Error in callback condition for step {step}: {ex.Message}"));
-                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                ProcessFailService(new FailServiceEvent(callback.ServiceId,
+                                    $"Error in callback condition for step {step}: {ex.Message}"));
                             }
                         }
                     }
                 }
             }
-            
-            // Асинхронный запуск callback-а
-            private void StartCallbackAsync(ServiceCallback callback)
-            {
-                TaskEx.RunAsync(() =>
-                {
-                    try
-                    {
-                        callback.Callback();
-                        NotifyCallbackCompleted(callback, true);
-                    }
-                    catch (Exception ex)
-                    {
-                        NotifyCallbackCompleted(callback, false, 
-                            $"Error in callback execution for step {callback.TargetStep}: {ex.Message}");
-                    }
-                });
-            }
-            
+
             // Запуск готовых сервисов (синхронно)
             private void StartReadyServices()
             {
@@ -597,8 +584,10 @@ namespace NECS.Harness.Model
             // ИСПРАВЛЕНИЕ: Проверка готовности сервиса (синхронно)
             private bool IsServiceReadyForStep(string serviceId, int step)
             {
+                ProcessCallbacksForService(serviceId, _serviceStates, _serviceStepCallbacks[serviceId], step);
+
                 // ИСПРАВЛЕНИЕ: Проверяем callback'и для конкретного сервиса и шага
-                if (_serviceStepCallbacks.ContainsKey(serviceId) && 
+                if (_serviceStepCallbacks.ContainsKey(serviceId) &&
                     _serviceStepCallbacks[serviceId].ContainsKey(step))
                 {
                     var serviceCallbacks = _serviceStepCallbacks[serviceId][step];
