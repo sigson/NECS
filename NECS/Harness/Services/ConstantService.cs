@@ -460,19 +460,22 @@ namespace NECS.Harness.Services
             {
                 (step) => {  },
                 (step) => { InitializeProcess(); },
-                (step) => { 
-                    Action<Network.NetworkModels.SocketAdapter> socketAction = (Network.NetworkModels.SocketAdapter socketAdapter) =>
+                (step) => {
+                    if (NetworkingService.instance != null)
                     {
-                        ECSService.instance.eventManager.OnEventAdd(new ConfigCheckEvent()
-                            {
-                                configHash = hashConfig
-                            });
-                    };
-                    if (NetworkingService.instance.SocketAdapters.Count() == 0)
-                        NetworkingService.instance.OnConnectExternal += new SocketHandler(socketAction);
-                    else
-                    {
-                        socketAction(NetworkingService.instance.ClientSocket);
+                        Action<Network.NetworkModels.SocketAdapter> socketAction = (Network.NetworkModels.SocketAdapter socketAdapter) =>
+                        {
+                            ECSService.instance.eventManager.OnEventAdd(new ConfigCheckEvent()
+                                {
+                                    configHash = hashConfig
+                                });
+                        };
+                        if (NetworkingService.instance.SocketAdapters.Count() == 0)
+                            NetworkingService.instance.OnConnectExternal += new SocketHandler(socketAction);
+                        else
+                        {
+                            socketAction(NetworkingService.instance.ClientSocket);
+                        }
                     }
                 }
             };
@@ -493,7 +496,8 @@ namespace NECS.Harness.Services
             }
             else
             {
-                NLogger.Log("ConstantService: Networking not initialized.");
+                if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+                    NLogger.Log("ConstantService: Networking not initialized.");
             }
 
         }

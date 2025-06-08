@@ -1,3 +1,5 @@
+using System;
+using System.Threading;
 using KPreisser;
 using NECS.Core.Logging;
 
@@ -153,13 +155,17 @@ namespace NECS.Extensions.ThreadingSync
             }
             else
             {
-                if(Defines.ThreadsMode)
+                if (Defines.ThreadsMode)
                 {
                     lockobj = new LocalReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
                 }
                 else
                 {
+#if NET || UNITY || GODOT4
                     lockobj = new AsyncReaderWriterLockSlim();
+#else
+                    NLogger.Error("AsyncReaderWriterLockSlim not supported, enable Defines.ThreadsMode or Defines.OneThread");
+                    #endif
                 }
             }
         }

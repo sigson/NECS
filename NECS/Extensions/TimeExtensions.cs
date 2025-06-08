@@ -1,4 +1,7 @@
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using NECS.Core.Logging;
 using NECS.Extensions.ThreadingSync;
 
@@ -296,7 +299,7 @@ namespace NECS.Extensions
                 long externalTimeCache = TimerDateTime.DateTimeNowTicks;
                 Stopwatch externalStopwatch = new Stopwatch();
                 Stopwatch internalStopwatch = new Stopwatch();
-                var tickAction = () =>
+                Action tickAction = () =>
                 {
                     internalStopwatch.Start();
                     try
@@ -346,7 +349,7 @@ namespace NECS.Extensions
                         externalStopwatch.Start();
                     }
                 };
-                var fixTick = () =>
+                Action fixTick = () =>
                 {
                     externalStopwatch.Stop();
                     if (externalStopwatch.ElapsedMilliseconds < baseTick + 100)//NOT DEBUGGED

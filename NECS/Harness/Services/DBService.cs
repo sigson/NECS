@@ -1,6 +1,8 @@
 ﻿#if NET && !GODOT
 using NECS.DB.SQLite;
 #endif
+using System;
+using System.Collections.Generic;
 using NECS.Harness.Model;
 
 namespace NECS.Harness.Services

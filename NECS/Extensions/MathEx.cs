@@ -1,3 +1,4 @@
+using System;
 using System.Numerics;
 using NECS.ECS.Types.AtomicType;
 

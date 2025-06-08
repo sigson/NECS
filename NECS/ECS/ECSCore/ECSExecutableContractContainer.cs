@@ -395,16 +395,19 @@ namespace NECS.ECS.ECSCore
                     {
                         var allentities = ContractConditions.Keys.ToList();
                         allentities.AddRange(this.EntityComponentPresenceSign.Keys);
-                        var getContractLockFunc = GetContractLockers;
+
+                        bool contractResult = false;
+                        List<RWLock.LockToken> lockers = null;
+                        List<ECSEntity> executionEntities = null;
                         if (Defines.OneThreadMode)
                         {
-                            getContractLockFunc = GetContractLockersOneThread;
+                            contractResult = GetContractLockersOneThread(allentities, this.ContractConditions, this.EntityComponentPresenceSign, false, out lockers, out executionEntities);
                         }
                         else
                         {
-                            getContractLockFunc = GetContractLockers;
+                            contractResult = GetContractLockers(allentities, this.ContractConditions, this.EntityComponentPresenceSign, false, out lockers, out executionEntities);
                         }
-                        if (getContractLockFunc(allentities, this.ContractConditions, this.EntityComponentPresenceSign, false, out var lockers, out var executionEntities) && lockers != null)
+                        if (contractResult && lockers != null)
                         {
                             var errorState = false;
                             if (ExecuteContract)

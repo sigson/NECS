@@ -1,3 +1,4 @@
+#if NET || UNITY || GODOT4
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -578,3 +579,5 @@ namespace NeoSmart.AsyncLock
         }
     }
 }
+
+#endif

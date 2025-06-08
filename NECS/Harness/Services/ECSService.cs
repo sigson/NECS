@@ -159,10 +159,12 @@ namespace NECS.Harness.Services
         {
             return new Action<int>[]
             {
-                (step) => {  },
                 (step) => {
                     InitializeProcess();
                 },
+                (step) => {
+                    PostInitializeProcess();
+                }
             };
         }
 
