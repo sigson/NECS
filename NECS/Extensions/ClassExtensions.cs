@@ -105,6 +105,19 @@ namespace NECS
             return default;
         }
 
+        public static long TypeId(this Type id)
+        {
+            try
+            {
+                return id.GetCustomAttribute<ECS.ECSCore.TypeUidAttribute>().Id;
+            }
+            catch
+            {
+                NLogger.Error(id.ToString() + " no have static id field or ID attribute");    
+            }
+            return default;
+        }
+
         public static long IdToECSType(this Type id)
         {
             if (NECS.ECS.ECSCore.EntitySerialization.TypeIdStorage.TryGetValue(id, out var result))

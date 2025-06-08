@@ -12,6 +12,7 @@ namespace NECS.ECS.Types.AtomicType
     [TypeUid(100)]
     public class Vector2S : BaseCustomType
     {
+        static new public long Id { get; set; } = 100;
         public float x;
         public float y;
 

@@ -24,7 +24,7 @@ namespace NECS.ECS.ECSCore
     [TypeUid(11)]
     public class DBComponent : ECSComponent
     {
-        static public new long Id { get; set; }
+        static public new long Id { get; set; } = 11;
         static public new System.Collections.Generic.List<System.Action> StaticOnChangeHandlers { get; set; }
 
         public Dictionary<IECSObjectPathContainer, List<dbRow>> serializedDB = new Dictionary<IECSObjectPathContainer, List<dbRow>>();
@@ -62,7 +62,7 @@ namespace NECS.ECS.ECSCore
     [TypeUid(12)]
     public class ComponentsDBComponent : DBComponent
     {
-        static public new long Id { get; set; }
+        static public new long Id { get; set; } = 12;
         static public new System.Collections.Generic.List<System.Action> StaticOnChangeHandlers { get; set; }
 
         public enum ComponentState

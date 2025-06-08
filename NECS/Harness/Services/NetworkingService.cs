@@ -73,6 +73,10 @@ namespace NECS.Harness.Services
 
         public override void InitializeProcess()
         {
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Offline)
+            {
+                return;
+            }
             HostAddress = ConstantService.instance.GetByConfigPath("baseconfig").GetObject<string>("Networking/HostAddress");
             Port = ConstantService.instance.GetByConfigPath("baseconfig").GetObject<int>("Networking/Port");
             BufferSize = ConstantService.instance.GetByConfigPath("baseconfig").GetObject<int>("Networking/BufferSize");

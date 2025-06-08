@@ -30,7 +30,7 @@ namespace NECS.Harness.Services
         {
             DBPath = ConstantService.instance.GetByConfigPath("baseconfig").GetObject<string>("DataBase/DBPath");
             DBType = ConstantService.instance.GetByConfigPath("baseconfig").GetObject<string>("DataBase/DBType");
-            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server || GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Offline )
             {
 #if NET && !GODOT
                 switch (DBType.ToLower())

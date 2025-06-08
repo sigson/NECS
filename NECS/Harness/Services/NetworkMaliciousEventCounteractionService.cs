@@ -49,6 +49,10 @@ namespace NECS.Harness.Services
         public ConcurrentDictionary<string, int> SocketInfoDB = new ConcurrentDictionary<string, int>();
         public override void InitializeProcess()
         {
+            if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Offline)
+            {
+                return;
+            }
             MaliciousScoreDecreaseIntervalInSec = ConstantService.instance.GetByConfigPath("baseconfig").GetObject<int>("NetworkMaliciousEventCounteraction/MaliciousScoreDecreaseIntervalInSec");
             MaliciousScoreDecreaseValue = ConstantService.instance.GetByConfigPath("baseconfig").GetObject<int>("NetworkMaliciousEventCounteraction/MaliciousScoreDecreaseValue");
             MaxNetworkMaliciousScore = ConstantService.instance.GetByConfigPath("baseconfig").GetObject<int>("NetworkMaliciousEventCounteraction/MaxNetworkMaliciousScore");

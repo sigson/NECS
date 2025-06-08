@@ -20,7 +20,7 @@ namespace NECS.ECS.ECSCore
     /// <param name="entity"></param>
     public class ECSComponent : IECSObject, ICloneable
     {
-        static new public long Id { get; set; } = 0;
+        static new public long Id { get; set; } = 3;
 
         [System.NonSerialized]
         public ECSEntity ownerEntity;

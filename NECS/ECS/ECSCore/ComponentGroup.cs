@@ -18,6 +18,6 @@ namespace NECS.ECS.ECSCore
     [TypeUid(6)]
     public class ECSComponentGroup : ECSComponent
     {
-        public static new long Id { get; set; }
+        public static new long Id { get; set; } = 6;
     }
 }

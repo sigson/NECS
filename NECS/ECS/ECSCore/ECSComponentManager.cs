@@ -32,7 +32,7 @@ namespace NECS.ECS.ECSCore
             this.world = world;
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
                 GlobalProgramComponentGroup = new ClientComponentGroup();
-            else if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
+            else if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server || GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Offline )
                 GlobalProgramComponentGroup = new ServerComponentGroup();
         }
     }

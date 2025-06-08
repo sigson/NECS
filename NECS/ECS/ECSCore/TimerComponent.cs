@@ -20,7 +20,7 @@ namespace NECS.ECS.ECSCore
     [TypeUid(10)]
     public class TimerComponent : ECSComponent
     {
-        static public new long Id { get; set; }
+        static public new long Id { get; set; } = 10;
         static public new System.Collections.Generic.List<System.Action> StaticOnChangeHandlers { get; set; }
         [System.NonSerialized]
         [Newtonsoft.Json.JsonIgnore]

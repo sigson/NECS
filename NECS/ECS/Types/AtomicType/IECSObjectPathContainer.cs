@@ -14,6 +14,7 @@ namespace NECS.ECS.Types.AtomicType
     [TypeUid(105)]
     public class IECSObjectPathContainer : BaseCustomType
     {
+        static new public long Id { get; set; } = 105;
         public List<string> pathToECSObject = new List<string>();
 
         public long serializableInstanceId = -1;

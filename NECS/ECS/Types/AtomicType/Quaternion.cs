@@ -12,6 +12,7 @@ namespace NECS.ECS.Types.AtomicType
     [TypeUid(101)]
     public class QuaternionS : BaseCustomType
     {
+        static new public long Id { get; set; } = 101;
         public float x = 0f;
         public float y = 0f;
         public float z = 0f;

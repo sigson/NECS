@@ -11,6 +11,6 @@ namespace NECS.ECS.Components.ECSComponentsGroup
     [TypeUid(7)]
     public class ServerComponentGroup : ECSComponentGroup
     {
-        static public new long Id { get; set; }
+        static public new long Id { get; set; } = 7;
     }
 }

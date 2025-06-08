@@ -287,7 +287,7 @@ namespace NECS.Harness.Services
                 #endregion
 
                 #region client
-                if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client && config_path == "")
+                if ((GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client || GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Offline) && config_path == "")
                 {
                     TemplateSetup();
                     Loaded = true;
@@ -437,7 +437,7 @@ namespace NECS.Harness.Services
 #endif
                 
             }
-            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server || GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Offline )
                 SetupConfigs();
         }
 

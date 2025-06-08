@@ -141,7 +141,8 @@ namespace NECS.Harness.Services
         public enum ProgramTypeEnum
         {
             Server,
-            Client
+            Client,
+            Offline
         }
 
         public override void InitializeProcess()

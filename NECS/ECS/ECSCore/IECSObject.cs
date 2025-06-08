@@ -22,7 +22,7 @@ using NECS.Harness.Services;
 namespace NECS.ECS.ECSCore
 {
     [System.Serializable]
-    [TypeUid(1)]
+    [TypeUid(0)]
     public class IECSObject
     {
         static public long Id { get; set; } = 0;
