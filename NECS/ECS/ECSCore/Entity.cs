@@ -68,8 +68,9 @@ namespace NECS.ECS.ECSCore
             this.instanceId = instanceid;
         }
 
-        public ECSEntity(EntityTemplate userTemplate, ECSComponent[] eCSComponents)
+        public ECSEntity(ECSWorld world, EntityTemplate userTemplate, ECSComponent[] eCSComponents)
         {
+            this.ECSWorldOwner = world;
             entityComponents = new EntityComponentStorage(this);
             fastEntityComponentsId = new Dictionary<long, int>();
             dataAccessPolicies = new SynchronizedList<GroupDataAccessPolicy>();

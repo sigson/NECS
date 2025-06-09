@@ -112,6 +112,7 @@ namespace NECS.Harness.Services
                     {
                         world = new ECSWorld();
                         world.InitWorldScope(null);
+                        world.instanceId = worldId;
                         WorldDB.TryAdd(worldId, world);
                     }
                     return gworld;
@@ -129,7 +130,7 @@ namespace NECS.Harness.Services
         {
             var world = new ECSWorld();
             world.InitWorldScope(null);
-            WorldDB.TryAdd(Guid.NewGuid().GuidToLong(), world);
+            WorldDB.TryAdd(world.instanceId, world);
             return world;
         }
 
