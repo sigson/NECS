@@ -162,6 +162,22 @@ namespace NECS.ECS.ECSCore
             }
         }
 
+        protected bool _noPresenceSignAllowed = true;
+        /// <summary>
+        /// Set FALSE if contract is time depend
+        /// </summary>
+        public bool NoPresenceSignAllowed
+        {
+            get => _noPresenceSignAllowed;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _noPresenceSignAllowed = value;
+                }
+            }
+        }
+
         protected bool _removeAfterExecution = true;
         /// <summary>
         /// Set FALSE if contract is time depend
@@ -464,7 +480,20 @@ namespace NECS.ECS.ECSCore
                                 filledEntityComponentPresenceSign[contractEntity] = presenceSign.Value;
                             }
                         }
-                        if(GetContractLockers(contractEntities, filledContractConditions, filledEntityComponentPresenceSign, true, out var lockers, out var executionEntities) && lockers != null)
+                        
+                        bool contractResult = false;
+                        List<RWLock.LockToken> lockers = null;
+                        List<ECSEntity> executionEntities = null;
+                        if (Defines.OneThreadMode)
+                        {
+                            contractResult = GetContractLockersOneThread(contractEntities, filledContractConditions, filledEntityComponentPresenceSign, true, out lockers, out executionEntities);
+                        }
+                        else
+                        {
+                            contractResult = GetContractLockers(contractEntities, filledContractConditions, filledEntityComponentPresenceSign, true, out lockers, out executionEntities);
+                        }
+
+                        if (contractResult && lockers != null)
                         {
                             var errorState = false;
                             if (ExecuteContract)
@@ -477,11 +506,11 @@ namespace NECS.ECS.ECSCore
                                 catch (Exception ex)
                                 {
                                     NLogger.LogError(ex);
-                                    ErrorExecution(this, executionEntities.Select(x=>x.instanceId).ToArray());
+                                    ErrorExecution(this, executionEntities.Select(x => x.instanceId).ToArray());
                                     errorState = true;
                                 }
                                 lockers.ForEach(x => x.Dispose());
-                                if(!ManualExitFromWorkingState)
+                                if (!ManualExitFromWorkingState)
                                 {
                                     this.LastEndExecutionTimestamp = DateTime.Now.Ticks;
                                     this.InWork = false;
@@ -493,7 +522,7 @@ namespace NECS.ECS.ECSCore
                             }
                             // if(ExecuteContract)
                             //     ContractExecuted = true;
-                            if(!errorState)
+                            if (!errorState)
                                 return true;
                         }
                         else
@@ -563,7 +592,7 @@ namespace NECS.ECS.ECSCore
 
                 // Handle entity based on violation status
                 if (!violationSeizure || (partialEntityTargetListLockingAllowed &&
-                    _partialEntityFiltering && yescomponent))
+                    _partialEntityFiltering && (yescomponent || (NoPresenceSignAllowed && !yescomponent))))
                 {
                     executionEntities.Add(entity);
                     lockTokens.AddRange(entityTokens);
@@ -644,7 +673,7 @@ namespace NECS.ECS.ECSCore
 
                     if (violationSeizure)
                     {
-                        if (partialEntityTargetListLockingAllowed && this._partialEntityFiltering && Lockers[entid].Count > 0)
+                        if (partialEntityTargetListLockingAllowed && this._partialEntityFiltering && (Lockers[entid].Count > 1 || (NoPresenceSignAllowed && neededComponents.Count > 0)))
                         {
                             localExecutionEntities.Add(contentity);
                         }

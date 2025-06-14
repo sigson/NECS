@@ -343,7 +343,11 @@ namespace NECS.Extensions
                     {
                         internalStopwatch.Stop();
                         if (internalStopwatch.ElapsedMilliseconds < 100)//NOT DEBUGGED
+#if NET || UNITY || GODOT_4_0_OR_GREATER
                             TimerDateTime.DateTimeNowTicks += (internalStopwatch.ElapsedTicks / 100);
+#else
+                            TimerDateTime.DateTimeNowTicks += (internalStopwatch.ElapsedTicks);
+#endif
                         internalStopwatch.Reset();
                         externalTimeCache = TimerDateTime.DateTimeNowTicks;
                         externalStopwatch.Start();
@@ -354,7 +358,12 @@ namespace NECS.Extensions
                     externalStopwatch.Stop();
                     if (externalStopwatch.ElapsedMilliseconds < baseTick + 100)//NOT DEBUGGED
                     {
+                        
+#if NET || UNITY || GODOT_4_0_OR_GREATER
                         TimerDateTime.DateTimeNowTicks += (externalStopwatch.ElapsedTicks / 100);
+#else
+                        TimerDateTime.DateTimeNowTicks += (externalStopwatch.ElapsedTicks);
+#endif
                     }
                     else
                         TimerDateTime.UpdateTicks();
