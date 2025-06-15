@@ -1,5 +1,6 @@
 ﻿using NECS.Core.Logging;
 using NECS.ECS.ECSCore;
+using NECS.ECS.Types.AtomicType;
 using NECS.Extensions;
 using NECS.GameEngineAPI;
 using System;
@@ -40,21 +41,33 @@ public abstract
             }
         }
         #endregion
-        private IECSObject _ConnectPoint;
+        private IECSObjectPathContainer _ConnectPoint = new IECSObjectPathContainer();
         public IECSObject ConnectPoint
         {
             get
             {
-                return _ConnectPoint;
+                return _ConnectPoint.ECSObject;
             }
             set
             {
+                if (this is IEntityManager && value is IECSObjectPathContainer && (value as IECSObjectPathContainer).ECSObject is ECSEntity)
+                {
+                    (this as IEntityManager).ManagerEntity = (value as IECSObjectPathContainer).ECSObject as ECSEntity;
+                }
                 if (this is IEntityManager && value is ECSEntity)
                 {
                     (this as IEntityManager).ManagerEntity = value as ECSEntity;
                 }
-                value.connectPoints.Add(this);
-                _ConnectPoint = value;
+                if (value is IECSObjectPathContainer)
+                {
+                    value.connectPoints.Add(this);
+                    _ConnectPoint.ECSObject = (value as IECSObjectPathContainer).ECSObject;
+                }
+                else if (value is IECSObject)
+                {
+                    value.connectPoints.Add(this);
+                    _ConnectPoint.ECSObject = value;
+                }
             }
         }
 

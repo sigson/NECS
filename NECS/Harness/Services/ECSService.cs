@@ -37,17 +37,19 @@ namespace NECS.Harness.Services
             }
         }
 
+        public ConcurrentDictionary<long, ECSEntity> EntityCache = new ConcurrentDictionary<long, ECSEntity>();
+
         private ConcurrentDictionary<long, long> EntityWorldOwnerCache = new ConcurrentDictionary<long, long>();
 
         public ECSEventManager eventManager;
 
         public (ECSWorld world, ECSEntity entity) GetWorldAndEntity(long entityId)
         {
-            if(EntityWorldOwnerCache.TryGetValue(entityId, out var worldId))
+            if (EntityWorldOwnerCache.TryGetValue(entityId, out var worldId))
             {
-                if(WorldDB.TryGetValue(worldId, out var world))
+                if (WorldDB.TryGetValue(worldId, out var world))
                 {
-                    if(world.entityManager.EntityStorage.TryGetValue(entityId, out var entity))
+                    if (world.entityManager.EntityStorage.TryGetValue(entityId, out var entity))
                     {
                         return (world, entity);
                     }
@@ -61,15 +63,22 @@ namespace NECS.Harness.Services
                     EntityWorldOwnerCache.TryRemove(entityId, out _);
                 }
             }
-            foreach(var world in WorldDB.Values)
+            foreach (var world in WorldDB.Values)
             {
-                if(world.entityManager.EntityStorage.TryGetValue(entityId, out var entity))
+                if (world.entityManager.EntityStorage.TryGetValue(entityId, out var entity))
                 {
                     EntityWorldOwnerCache.TryAdd(entityId, world.instanceId);
                     return (world, entity);
                 }
             }
-            return (null, null);
+            if (EntityCache.TryGetValue(entityId, out var cachedentity))
+            {
+                return (cachedentity.ECSWorldOwner, cachedentity);
+            }
+            else
+            {
+                return (null, null);
+            }
         }
 
         public ECSWorld GetEntityWorld(long entityId)

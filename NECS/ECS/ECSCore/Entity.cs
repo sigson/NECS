@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using NECS.Harness.Services;
 
 namespace NECS.ECS.ECSCore
 {
@@ -52,11 +53,13 @@ namespace NECS.ECS.ECSCore
         [System.NonSerialized]
         public bool Alive = false;
 
-        public ECSEntity() {
+        public ECSEntity()
+        {
             entityComponents = new EntityComponentStorage(this);
             fastEntityComponentsId = new Dictionary<long, int>();
             dataAccessPolicies = new SynchronizedList<GroupDataAccessPolicy>();
             entityGroups = new ConcurrentDictionary<long, ECSEntityGroup>();
+            ECSService.instance.EntityCache.TryAdd(this.instanceId,this);
         }
 
         public ECSEntity(long instanceid)
@@ -66,6 +69,7 @@ namespace NECS.ECS.ECSCore
             dataAccessPolicies = new SynchronizedList<GroupDataAccessPolicy>();
             entityGroups = new ConcurrentDictionary<long, ECSEntityGroup>();
             this.instanceId = instanceid;
+            ECSService.instance.EntityCache.TryAdd(this.instanceId,this);
         }
 
         public ECSEntity(ECSWorld world, EntityTemplate userTemplate, ECSComponent[] eCSComponents)
@@ -75,6 +79,7 @@ namespace NECS.ECS.ECSCore
             fastEntityComponentsId = new Dictionary<long, int>();
             dataAccessPolicies = new SynchronizedList<GroupDataAccessPolicy>();
             entityGroups = new ConcurrentDictionary<long, ECSEntityGroup>();
+            ECSService.instance.EntityCache.TryAdd(this.instanceId,this);
             foreach (var component in eCSComponents)
             {
                 this.AddComponentSilent(component);
