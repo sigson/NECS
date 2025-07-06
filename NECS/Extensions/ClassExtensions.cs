@@ -82,6 +82,11 @@ namespace NECS
                 .Select(s => s[random.Next(s.Length)]).ToArray());
         }
 
+        public static ConfigObj GetConfig(this string str)
+        {
+            return ConstantService.instance.GetByConfigPath(str);
+        }
+
         public static float FastFloat(this string str)
         {
             return float.Parse(str, System.Globalization.CultureInfo.InvariantCulture);

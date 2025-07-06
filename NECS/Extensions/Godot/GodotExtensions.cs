@@ -47,6 +47,18 @@ public static class GodotExtensions
         mocknode.AddChild(node);
         return mocknode;
     }
+
+    public static T GetChild<T>(this Node node) where T : Godot.Node, new()
+    {
+        foreach (Node child in node.GetChildren())
+        {
+            if (child is T)
+            {
+                return (T)child;
+            }
+        }
+        return null;
+    }
     public static Vector3 MoveTowardDistance(this Vector3 from, Vector3 to, float distance_delta)
     {
         return from.MoveToward(to, distance_delta * from.DistanceTo(to));

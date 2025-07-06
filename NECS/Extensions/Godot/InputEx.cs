@@ -74,7 +74,7 @@ public partial class InputEx : Node
             }
         }
 
-        if(@event is InputEventScreenTouch)
+        if(@event is InputEventScreenTouch && false)//need fix
         {
             TouchpadPositionsCache[(@event as InputEventScreenTouch).Index] = new TouchRecord()
             {
@@ -83,7 +83,7 @@ public partial class InputEx : Node
             };
         }
 
-        if (@event is InputEventScreenDrag)
+        if (@event is InputEventScreenDrag && false)//need fix
         {
             TouchpadPositionsCache[(@event as InputEventScreenDrag).Index] = new TouchRecord()
             {
@@ -103,6 +103,7 @@ public partial class InputEx : Node
                     InputMapState[@event.GetType().ToString() + (@event as InputEventMouseButton).ButtonIndex.ToString()] = InputObjectState.NoSyncEntered;
                     break;
                 case var type when type == typeof(InputEventScreenTouch):
+                    break;//need fix
                     InputMapState[@event.GetType().ToString() + (@event as InputEventScreenTouch).Index.ToString()] = InputObjectState.NoSyncEntered;
                     break;
                 default:
@@ -121,6 +122,7 @@ public partial class InputEx : Node
                     InputMapState[@event.GetType().ToString() + (@event as InputEventMouseButton).ButtonIndex.ToString()] = InputObjectState.NoSyncReleased;
                     break;
                 case var type when type == typeof(InputEventScreenTouch):
+                    break;//need fix
                     InputMapState[@event.GetType().ToString() + (@event as InputEventScreenTouch).Index.ToString()] = InputObjectState.NoSyncReleased;
                     break;
                 default:
@@ -242,7 +244,8 @@ public partial class InputEx : Node
 
     public InputObjectState GetMouseState(ButtonList button)
     {
-        if (InputMapState.TryGetValue(typeof(InputEventMouseButton).ToString() + button.ToString(), out var lastState))
+        var buttonn = typeof(InputEventMouseButton).ToString() + ((int)button).ToString();
+        if (InputMapState.TryGetValue(buttonn, out var lastState))
         {
             return NonSyncReplacer(lastState);
         }

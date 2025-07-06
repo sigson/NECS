@@ -285,6 +285,7 @@ namespace NECS.ECS.ECSCore
             this.dataAccessPolicies.Clear();
             this.entityComponents.OnEntityDelete();
             this.entityGroups.Clear();
+            this.entityComponents.ComponentsManagers.ForEach(x => x.Value.Clear());
             this.fastEntityComponentsId.ClearI(this.SerialLocker);
         }
 

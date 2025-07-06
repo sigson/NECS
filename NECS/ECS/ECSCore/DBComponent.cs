@@ -470,6 +470,26 @@ namespace NECS.ECS.ECSCore
                 NLogger.LogError("error remove components from db by owner");
             }
         }
+
+        public virtual void ClearDB()
+        {
+            try
+            {
+                var dbsnap = this.DB.SnapshotI(this.SerialLocker);
+                foreach (var dbinter in dbsnap)
+                {
+                    foreach (var inter in dbinter.Value.SnapshotI(this.SerialLocker))
+                    {
+                        this.RemoveComponent(inter.Value.Item1.instanceId);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                NLogger.LogError("error remove components from db by owner");
+            }
+        }
+
         #endregion
 
         public override void SerializeDB(bool serializeOnlyChanged = false, bool clearChanged = true)

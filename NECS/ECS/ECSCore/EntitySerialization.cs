@@ -63,7 +63,14 @@ namespace NECS.ECS.ECSCore
             ecsObjects.Add(typeof(SerializedEntity));
             ecsObjects.Add(typeof(SerializedEvent));
 
-            NetSerializer.Serializer.Default = new NetSerializer.Serializer(ecsObjects);
+            try
+            {
+                NetSerializer.Serializer.Default = new NetSerializer.Serializer(ecsObjects);
+            }
+            catch(Exception ex)
+            {
+                NLogger.Error("error init serializer " + ex.Message + " \n" + ex.StackTrace);
+            }
         }
         [System.Serializable]
         public class SerializedEntity
