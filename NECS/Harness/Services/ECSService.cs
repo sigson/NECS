@@ -37,9 +37,9 @@ namespace NECS.Harness.Services
             }
         }
 
-        public ConcurrentDictionary<long, ECSEntity> EntityCache = new ConcurrentDictionary<long, ECSEntity>();
+        public DictionaryWrapper<long, ECSEntity> EntityCache = new DictionaryWrapper<long, ECSEntity>();
 
-        private ConcurrentDictionary<long, long> EntityWorldOwnerCache = new ConcurrentDictionary<long, long>();
+        private DictionaryWrapper<long, long> EntityWorldOwnerCache = new DictionaryWrapper<long, long>();
 
         public ECSEventManager eventManager;
 
@@ -55,12 +55,12 @@ namespace NECS.Harness.Services
                     }
                     else
                     {
-                        EntityWorldOwnerCache.TryRemove(entityId, out _);
+                        EntityWorldOwnerCache.Remove(entityId, out _);
                     }
                 }
                 else
                 {
-                    EntityWorldOwnerCache.TryRemove(entityId, out _);
+                    EntityWorldOwnerCache.Remove(entityId, out _);
                 }
             }
             foreach (var world in WorldDB.Values)
@@ -91,11 +91,11 @@ namespace NECS.Harness.Services
                     {
                         return world;
                     }
-                    EntityWorldOwnerCache.TryRemove(entityId, out _);
+                    EntityWorldOwnerCache.Remove(entityId, out _);
                 }
                 else
                 {
-                    EntityWorldOwnerCache.TryRemove(entityId, out _);
+                    EntityWorldOwnerCache.Remove(entityId, out _);
                 }
             }
             
@@ -143,7 +143,7 @@ namespace NECS.Harness.Services
             return world;
         }
 
-        private static ConcurrentDictionary<long, ECSWorld> WorldDB = new ConcurrentDictionary<long, ECSWorld>();
+        private static DictionaryWrapper<long, ECSWorld> WorldDB = new DictionaryWrapper<long, ECSWorld>();
 
         public IEnumerable<ECSWorld> GetAllWorlds() => WorldDB.Values;
         

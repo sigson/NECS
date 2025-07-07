@@ -25,9 +25,9 @@ namespace NECS.ECS.ECSCore
     public class EntitySerialization
     {
         #region setupData
-        public static ConcurrentDictionary<long, Type> TypeStorage = new ConcurrentDictionary<long, Type>();
-        public static ConcurrentDictionary<string, Type> TypeStringStorage = new ConcurrentDictionary<string, Type>();
-        public static ConcurrentDictionary<Type, long> TypeIdStorage = new ConcurrentDictionary<Type, long>();
+        public static DictionaryWrapper<long, Type> TypeStorage = new DictionaryWrapper<long, Type>();
+        public static DictionaryWrapper<string, Type> TypeStringStorage = new DictionaryWrapper<string, Type>();
+        public static DictionaryWrapper<Type, long> TypeIdStorage = new DictionaryWrapper<Type, long>();
 
         public static void InitSerialize()
         {
@@ -79,7 +79,7 @@ namespace NECS.ECS.ECSCore
             [System.NonSerialized]
             public ECSEntity desEntity = null;
             [System.NonSerialized]
-            public ConcurrentDictionary<long, ECSComponent> SerializationContainer = new ConcurrentDictionary<long, ECSComponent>();
+            public DictionaryWrapper<long, ECSComponent> SerializationContainer = new DictionaryWrapper<long, ECSComponent>();
             public Dictionary<long, byte[]> Components = new Dictionary<long, byte[]>();
 
             public void DeserializeEntity()

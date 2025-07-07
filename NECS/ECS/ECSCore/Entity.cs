@@ -33,7 +33,7 @@ namespace NECS.ECS.ECSCore
         public ECSEntityManager manager;
         [ServerOnlyData]
         [System.NonSerialized]
-        public ConcurrentDictionary<long, ECSEntityGroup> entityGroups;
+        public DictionaryWrapper<long, ECSEntityGroup> entityGroups;
         [System.NonSerialized]
         public EntityComponentStorage entityComponents;
         
@@ -58,7 +58,7 @@ namespace NECS.ECS.ECSCore
             entityComponents = new EntityComponentStorage(this);
             fastEntityComponentsId = new Dictionary<long, int>();
             dataAccessPolicies = new SynchronizedList<GroupDataAccessPolicy>();
-            entityGroups = new ConcurrentDictionary<long, ECSEntityGroup>();
+            entityGroups = new DictionaryWrapper<long, ECSEntityGroup>();
             ECSService.instance.EntityCache.TryAdd(this.instanceId,this);
         }
 
@@ -67,7 +67,7 @@ namespace NECS.ECS.ECSCore
             entityComponents = new EntityComponentStorage(this);
             fastEntityComponentsId = new Dictionary<long, int>();
             dataAccessPolicies = new SynchronizedList<GroupDataAccessPolicy>();
-            entityGroups = new ConcurrentDictionary<long, ECSEntityGroup>();
+            entityGroups = new DictionaryWrapper<long, ECSEntityGroup>();
             this.instanceId = instanceid;
             ECSService.instance.EntityCache.TryAdd(this.instanceId,this);
         }
@@ -78,7 +78,7 @@ namespace NECS.ECS.ECSCore
             entityComponents = new EntityComponentStorage(this);
             fastEntityComponentsId = new Dictionary<long, int>();
             dataAccessPolicies = new SynchronizedList<GroupDataAccessPolicy>();
-            entityGroups = new ConcurrentDictionary<long, ECSEntityGroup>();
+            entityGroups = new DictionaryWrapper<long, ECSEntityGroup>();
             ECSService.instance.EntityCache.TryAdd(this.instanceId,this);
             foreach (var component in eCSComponents)
             {

@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using NECS.ECS.ECSCore;
+using NECS.Extensions;
 
 namespace NECS.ECS.ECSCore
 {
@@ -8,9 +9,9 @@ namespace NECS.ECS.ECSCore
         /// <summary>
         /// <entity instance id,<id = Entity.instanceid + IECSObject.GetId , lock object>>
         /// </summary>
-        private static ConcurrentDictionary<long, ConcurrentDictionary<long, object>> MutexStorage = new ConcurrentDictionary<long, ConcurrentDictionary<long, object>>();
+        private static DictionaryWrapper<long, DictionaryWrapper<long, object>> MutexStorage = new DictionaryWrapper<long, DictionaryWrapper<long, object>>();
 
-        private static ConcurrentDictionary<object, object> objectLock = new ConcurrentDictionary<object, object>();
+        private static DictionaryWrapper<object, object> objectLock = new DictionaryWrapper<object, object>();
 
         public static object GetSimpleMutex(object lockableObject)
         {
@@ -29,10 +30,10 @@ namespace NECS.ECS.ECSCore
             var id = lockEntity.instanceId + lockObjectPair.GetId();
             lock (MutexStorage)
             {
-                ConcurrentDictionary<long, object> entityMutex = null;
+                DictionaryWrapper<long, object> entityMutex = null;
                 if (!MutexStorage.TryGetValue(lockEntity.instanceId, out entityMutex))
                 {
-                    entityMutex = new ConcurrentDictionary<long, object>();
+                    entityMutex = new DictionaryWrapper<long, object>();
                     MutexStorage.TryAdd(lockEntity.instanceId, entityMutex);
                 }
                 if (!entityMutex.TryGetValue(id, out mutex))
@@ -51,7 +52,7 @@ namespace NECS.ECS.ECSCore
         {
             lock(MutexStorage)
             {
-                MutexStorage.TryRemove(removedEntity.instanceId, out _);
+                MutexStorage.Remove(removedEntity.instanceId, out _);
             }
         }
     }

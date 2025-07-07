@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using NECS.Extensions;
 
 namespace NECS.Core.Logging
 {
     public static class NLogger
     {
         private static readonly object _lock = new object();
-        private static ConcurrentDictionary<string, List<string>> logs_stack = new ConcurrentDictionary<string, List<string>>();
+        private static DictionaryWrapper<string, List<string>> logs_stack = new DictionaryWrapper<string, List<string>>();
 
         private static void Write(string type, ConsoleColor color, object content, string logstack = "")
         {

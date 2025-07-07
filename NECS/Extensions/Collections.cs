@@ -1524,6 +1524,143 @@ namespace NECS.Extensions
         }
     }
 
+    public class DictionaryWrapper<TKey, TValue> : IDictionary<TKey, TValue>
+    {
+        private Dictionary<TKey, TValue> SimpleDictionary = null;
+        private ConcurrentDictionary<TKey, TValue> ConcurrentDictionary = null;
+
+        private IDictionary<TKey, TValue> dictionary
+        {
+            get
+            {
+                if (Defines.OneThreadMode)
+                {
+                    if (SimpleDictionary == null)
+                    {
+                        SimpleDictionary = new Dictionary<TKey, TValue>();
+                    }
+                    return SimpleDictionary;
+                }
+                else
+                {
+                    if (ConcurrentDictionary == null)
+                    {
+                        ConcurrentDictionary = new ConcurrentDictionary<TKey, TValue>();
+                    }
+                    return ConcurrentDictionary;
+                }
+            }
+        }
+
+        private void AddImpl(TKey key, TValue value)
+        {
+            //lock (dictionary)
+            {
+                dictionary.Add(key, value);
+            }
+        }
+
+        private TValue GetImpl(TKey key)
+        {
+            //lock (dictionary)
+            return dictionary[key];
+        }
+
+        private void SetImpl(TKey key, TValue value)
+        {
+            //lock (dictionary)
+            {
+                if (dictionary.ContainsKey(key))
+                    dictionary[key] = value;
+                else
+                {
+                    dictionary.Add(key, value);
+                }
+            }
+        }
+
+        private bool RemoveImpl(TKey key)
+        {
+            //lock (dictionary)
+            {
+                return dictionary.Remove(key);
+            }
+        }
+
+        private void ClearImpl()
+        {
+            //lock (dictionary)
+            {
+                dictionary.Clear();
+            }
+        }
+
+        public TValue this[TKey key] { get => GetImpl(key); set => SetImpl(key, value); }
+
+        public ICollection<TKey> Keys => dictionary.Keys;
+
+        public ICollection<TValue> Values => dictionary.Values;
+
+        public int Count => dictionary.Count;
+
+        public bool IsReadOnly => false;
+
+        public void Add(TKey key, TValue value)
+        {
+            AddImpl(key, value);
+        }
+
+        public void Add(KeyValuePair<TKey, TValue> item)
+        {
+            AddImpl(item.Key, item.Value);
+        }
+
+        public void Clear()
+        {
+            ClearImpl();
+        }
+
+        public bool Contains(KeyValuePair<TKey, TValue> item)
+        {
+            return dictionary.ContainsKey(item.Key);
+        }
+
+        public bool ContainsKey(TKey key)
+        {
+            return dictionary.ContainsKey(key);
+        }
+
+        public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
+        {
+            dictionary.CopyTo(array, arrayIndex);
+        }
+
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+        {
+            return dictionary.GetEnumerator();
+        }
+
+        public bool Remove(TKey key)
+        {
+            return RemoveImpl(key);
+        }
+
+        public bool Remove(KeyValuePair<TKey, TValue> item)
+        {
+            return RemoveImpl(item.Key);
+        }
+
+        public bool TryGetValue(TKey key, out TValue value)
+        {
+            return dictionary.TryGetValue(key, out value);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return dictionary.GetEnumerator();
+        }
+    }
+
     public class PriorityEventQueue<TKey, TEvent> where TEvent : System.Delegate
     {
         private struct ActionWrapper
@@ -1562,7 +1699,7 @@ namespace NECS.Extensions
             creationStackTrace = new StackTrace();
             this.ownerType = ownerType;
             OpenedDownGates = gatesOpened;
-            if(gatesCounter == null)
+            if (gatesCounter == null)
             {
                 GatesCounter = x => x + 1;
             }
@@ -1590,9 +1727,9 @@ namespace NECS.Extensions
             {
                 if (!_eventLists.ContainsKey(key))
                     throw new ArgumentException("Key is not part of the priority order", nameof(key));
-                var newAction = new ActionWrapper(){actionId = Guid.NewGuid(), actionEvent = eventItem, inAction = false};
+                var newAction = new ActionWrapper() { actionId = Guid.NewGuid(), actionEvent = eventItem, inAction = false };
                 _eventLists[key].Add(newAction);
-                IncludeEvent(key, newAction); 
+                IncludeEvent(key, newAction);
             }
         }
 
@@ -1600,7 +1737,7 @@ namespace NECS.Extensions
         {
             for (int i = 0; i < OpenedDownGates; i++)
             {
-                if(i >= _priorityOrder.Count)
+                if (i >= _priorityOrder.Count)
                     break;
                 var prioritynow = _priorityOrder[i];
                 if (_eventLists.TryGetValue(prioritynow.priorityValue, out var prioritystorage))

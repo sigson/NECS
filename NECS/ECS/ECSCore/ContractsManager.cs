@@ -24,12 +24,12 @@ namespace NECS.ECS.ECSCore
 {
     public class ECSContractsManager
     {
-        public IDictionary<long, ConcurrentHashSet<ECSExecutableContractContainer>> AwaitingContractDatabase = new ConcurrentDictionary<long, ConcurrentHashSet<ECSExecutableContractContainer>>();
+        public IDictionary<long, ConcurrentHashSet<ECSExecutableContractContainer>> AwaitingContractDatabase = new DictionaryWrapper<long, ConcurrentHashSet<ECSExecutableContractContainer>>();
         //public IDictionary<ECSExecutableContractContainer, ConcurrentDictionary<long, bool>> ContractExecutionArgsDatabase = new ConcurrentDictionary<ECSExecutableContractContainer, ConcurrentDictionary<long, bool>>(); // list of entity id in conditions and action
 
         public List<ECSExecutableContractContainer> EventHandlerCacheSystems = new List<ECSExecutableContractContainer>();
 
-        public IDictionary<ECSExecutableContractContainer, ConcurrentDictionary<long, int>> TimeDependContractEntityDatabase = new ConcurrentDictionary<ECSExecutableContractContainer, ConcurrentDictionary<long, int>>();//List of interested entity Instance ID
+        public IDictionary<ECSExecutableContractContainer, DictionaryWrapper<long, int>> TimeDependContractEntityDatabase = new DictionaryWrapper<ECSExecutableContractContainer, DictionaryWrapper<long, int>>();//List of interested entity Instance ID
         //fill all id before running ecs
 
         private ECSWorld world;
@@ -56,7 +56,7 @@ namespace NECS.ECS.ECSCore
                 if (system.TimeDependExecution)
                 {
                     if (system.ContractConditions != null && system.EntityComponentPresenceSign != null)
-                        TimeDependContractEntityDatabase.TryAdd(system, new ConcurrentDictionary<long, int>());
+                        TimeDependContractEntityDatabase.TryAdd(system, new DictionaryWrapper<long, int>());
                     else
                         NLogger.Error($"System {system.GetType().Name} has not initialized conditions.");
                 }
@@ -180,17 +180,17 @@ namespace NECS.ECS.ECSCore
 
         public void OnEntityComponentAddedReaction(ECSEntity entity, ECSComponent component)
         {
-            foreach (KeyValuePair<ECSExecutableContractContainer, ConcurrentDictionary<long, int>> pair in this.TimeDependContractEntityDatabase)
+            foreach (KeyValuePair<ECSExecutableContractContainer, DictionaryWrapper<long, int>> pair in this.TimeDependContractEntityDatabase)
             {
                 if (pair.Key.TryExecuteContract(false, new List<long> { entity.instanceId }))
                 {
-                    ConcurrentDictionary<long, int> bufDict;
+                    DictionaryWrapper<long, int> bufDict;
                     if (TimeDependContractEntityDatabase.TryGetValue(pair.Key, out bufDict))
                         bufDict.TryAdd(entity.instanceId, 0);
                 }
                 else
                 {
-                    ConcurrentDictionary<long, int> bufDict;
+                    DictionaryWrapper<long, int> bufDict;
                     if (TimeDependContractEntityDatabase.TryGetValue(pair.Key, out bufDict))
                         bufDict.Remove(entity.instanceId, out _);
                 }
@@ -207,17 +207,17 @@ namespace NECS.ECS.ECSCore
         }
         public void OnEntityComponentRemovedReaction(ECSEntity entity, ECSComponent component)
         {
-            foreach (KeyValuePair<ECSExecutableContractContainer, ConcurrentDictionary<long, int>> pair in this.TimeDependContractEntityDatabase)
+            foreach (KeyValuePair<ECSExecutableContractContainer, DictionaryWrapper<long, int>> pair in this.TimeDependContractEntityDatabase)
             {
                 if (pair.Key.TryExecuteContract(false, new List<long> { entity.instanceId }))
                 {
-                    ConcurrentDictionary<long, int> bufDict;
+                    DictionaryWrapper<long, int> bufDict;
                     if (TimeDependContractEntityDatabase.TryGetValue(pair.Key, out bufDict))
                         bufDict.TryAdd(entity.instanceId, 0);
                 }
                 else
                 {
-                    ConcurrentDictionary<long, int> bufDict;
+                    DictionaryWrapper<long, int> bufDict;
                     if (TimeDependContractEntityDatabase.TryGetValue(pair.Key, out bufDict))
                         bufDict.Remove(entity.instanceId, out _);
                 }
@@ -231,12 +231,12 @@ namespace NECS.ECS.ECSCore
         public void OnEntityDestroyed(ECSEntity entity)
         {
             bool cleared = false;
-            foreach (KeyValuePair<ECSExecutableContractContainer, ConcurrentDictionary<long, int>> pair in this.TimeDependContractEntityDatabase)
+            foreach (KeyValuePair<ECSExecutableContractContainer, DictionaryWrapper<long, int>> pair in this.TimeDependContractEntityDatabase)
             {
                 int nulled = 0;
-                ConcurrentDictionary<long, int> bufDict;
+                DictionaryWrapper<long, int> bufDict;
                 if(TimeDependContractEntityDatabase.TryGetValue(pair.Key, out bufDict))
-                    if(pair.Value.TryRemove(entity.instanceId, out nulled))
+                    if(pair.Value.Remove(entity.instanceId, out nulled))
                     {
                         cleared = true;
                     }
@@ -253,17 +253,17 @@ namespace NECS.ECS.ECSCore
 
         public void OnEntityCreated(ECSEntity entity)
         {
-            foreach (KeyValuePair<ECSExecutableContractContainer, ConcurrentDictionary<long, int>> pair in this.TimeDependContractEntityDatabase)
+            foreach (KeyValuePair<ECSExecutableContractContainer, DictionaryWrapper<long, int>> pair in this.TimeDependContractEntityDatabase)
             {
                 if (pair.Key.TryExecuteContract(false, new List<long> { entity.instanceId }))
                 {
-                    ConcurrentDictionary<long, int> bufDict;
+                    DictionaryWrapper<long, int> bufDict;
                     if (TimeDependContractEntityDatabase.TryGetValue(pair.Key, out bufDict))
                         bufDict.TryAdd(entity.instanceId, 0);
                 }
                 else
                 {
-                    ConcurrentDictionary<long, int> bufDict;
+                    DictionaryWrapper<long, int> bufDict;
                     if (TimeDependContractEntityDatabase.TryGetValue(pair.Key, out bufDict))
                         bufDict.Remove(entity.instanceId, out _);
                 }
@@ -284,7 +284,7 @@ namespace NECS.ECS.ECSCore
 
         public void AppendSystemInRuntime(ECSExecutableContractContainer system)
         {
-            TimeDependContractEntityDatabase.TryAdd(system, new ConcurrentDictionary<long, int>());
+            TimeDependContractEntityDatabase.TryAdd(system, new DictionaryWrapper<long, int>());
         }
 
         public void UpdateSystemListOfInterestECSComponents(ECSExecutableContractContainer system, List<long> updatedIds)

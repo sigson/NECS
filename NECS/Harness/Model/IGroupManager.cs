@@ -1,5 +1,6 @@
 ﻿using NECS.Core.Logging;
 using NECS.ECS.ECSCore;
+using NECS.Extensions;
 using NECS.Harness.Services;
 using System;
 using System.Collections;
@@ -18,7 +19,7 @@ public abstract
 #endif
     class IGroupManager<T> : IManager, IDictionary<long, T> where T : IECSObject
     {
-        protected IDictionary<long, T> entityStorage = new ConcurrentDictionary<long, T>();
+        protected IDictionary<long, T> entityStorage = new DictionaryWrapper<long, T>();
 
         protected abstract void OnAdd(T entity);
         protected abstract void OnGet(T entity);

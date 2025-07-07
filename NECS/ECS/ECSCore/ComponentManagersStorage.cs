@@ -26,7 +26,7 @@ namespace NECS.ECS.ECSCore
         static public new System.Collections.Generic.List<System.Action> StaticOnChangeHandlers { get; set; }
         public IECSObjectPathContainer ownerComponent = new IECSObjectPathContainer();
 
-        IDictionary<Type, IComponentManager> managersStorage = new ConcurrentDictionary<Type, IComponentManager>();
+        IDictionary<Type, IComponentManager> managersStorage = new DictionaryWrapper<Type, IComponentManager>();
 
         protected virtual void AddImpl(Type key, IComponentManager value)
         {

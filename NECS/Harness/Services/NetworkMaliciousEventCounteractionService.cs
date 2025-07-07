@@ -27,8 +27,8 @@ namespace NECS.Harness.Services
                 return cacheInstance;
             }
         }
-        public ConcurrentDictionary<long, ScoreObject> maliciousScoringStorage = new ConcurrentDictionary<long, ScoreObject>();
-        public ConcurrentDictionary<string, long> UnwantedSocketInfo = new ConcurrentDictionary<string, long>();
+        public DictionaryWrapper<long, ScoreObject> maliciousScoringStorage = new DictionaryWrapper<long, ScoreObject>();
+        public DictionaryWrapper<string, long> UnwantedSocketInfo = new DictionaryWrapper<string, long>();
 
         public int MaliciousScoreDecreaseIntervalInSec = 10;
         /// <summary>
@@ -46,7 +46,7 @@ namespace NECS.Harness.Services
         /// <summary>
         /// if any want to attack with Multiple-Session DoS Attack - this storage save all of sockets info and if count session from one resource will more then 1000 - all clients will be banned
         /// </summary>
-        public ConcurrentDictionary<string, int> SocketInfoDB = new ConcurrentDictionary<string, int>();
+        public DictionaryWrapper<string, int> SocketInfoDB = new DictionaryWrapper<string, int>();
         public override void InitializeProcess()
         {
             if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Offline)

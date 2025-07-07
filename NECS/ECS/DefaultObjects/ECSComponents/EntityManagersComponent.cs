@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using NECS.Harness.Model;
+using NECS.Extensions;
 
 namespace NECS.ECS.DefaultsDB.ECSComponents
 {
@@ -19,7 +20,7 @@ namespace NECS.ECS.DefaultsDB.ECSComponents
         static public new long Id { get; set; }
         static public new System.Collections.Generic.List<System.Action> StaticOnChangeHandlers { get; set; }
 
-        IDictionary<Type, IEntityManager> managersStorage = new ConcurrentDictionary<Type, IEntityManager>();
+        IDictionary<Type, IEntityManager> managersStorage = new DictionaryWrapper<Type, IEntityManager>();
 
         protected override void OnRemoved(ECSEntity entity)
         {

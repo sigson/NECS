@@ -361,7 +361,7 @@ namespace NECS.ECS.ECSCore
         ///         }
         ///     });
         /// </summary>
-        public IDictionary<long, List<Func<ECSEvent, object>>> SystemEventHandler = new ConcurrentDictionary<long, List<Func<ECSEvent, object>>>();//id of event and func
+        public IDictionary<long, List<Func<ECSEvent, object>>> SystemEventHandler = new DictionaryWrapper<long, List<Func<ECSEvent, object>>>();//id of event and func
         /// <summary>
         /// Need to setup in initalize method. Setting up look like is:
         /// ComponentsOnChangeCallbacks.Add(GameComponent.Id, new List<Action<ECSEntity, ECSComponent>>() {
@@ -370,7 +370,7 @@ namespace NECS.ECS.ECSCore
         ///         }
         ///     });
         /// </summary>
-        public IDictionary<long, List<Action<ECSEntity, ECSComponent>>> ComponentsOnChangeCallbacks = new ConcurrentDictionary<long, List<Action<ECSEntity, ECSComponent>>>();//id of component and func
+        public IDictionary<long, List<Action<ECSEntity, ECSComponent>>> ComponentsOnChangeCallbacks = new DictionaryWrapper<long, List<Action<ECSEntity, ECSComponent>>>();//id of component and func
 
         public ECSExecutableContractContainer()
         {
@@ -729,7 +729,7 @@ namespace NECS.ECS.ECSCore
         /// <returns></returns>
         public virtual IDictionary<long, int> GetInterestedEventsList()
         {
-            var result = new ConcurrentDictionary<long, int>();
+            var result = new DictionaryWrapper<long, int>();
             foreach (var eventid in SystemEventHandler)
             {
                 result.TryAdd(eventid.Key, 0);

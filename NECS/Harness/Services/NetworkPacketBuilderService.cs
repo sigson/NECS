@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using YamlDotNet.Core;
 using System.IO;
+using NECS.Extensions;
 
 namespace NECS.Harness.Services
 {
@@ -27,7 +28,7 @@ namespace NECS.Harness.Services
             }
         }
 
-        public ConcurrentDictionary<long, ConcurrentDictionary<long, byte[]>> SlicedReceivedStorage = new ConcurrentDictionary<long, ConcurrentDictionary<long, byte[]>>();
+        public DictionaryWrapper<long, DictionaryWrapper<long, byte[]>> SlicedReceivedStorage = new DictionaryWrapper<long, DictionaryWrapper<long, byte[]>>();
         public override void InitializeProcess()
         {
         }
@@ -54,7 +55,7 @@ namespace NECS.Harness.Services
             {
                 //lock(receiveLocker)
                 {
-                    ConcurrentDictionary<long, byte[]> bufPackets;
+                    DictionaryWrapper<long, byte[]> bufPackets;
                     var getResult = SlicedReceivedStorage.TryGetValue(guid, out bufPackets);
                     if (getResult && packetSize - bufPackets.Count * networkBufferSize <= networkBufferSize)
                     {
@@ -70,7 +71,7 @@ namespace NECS.Harness.Services
                             //}
                             resultBuffer.AddRange(bufPackets[i].SubArray(headerSize, bufPackets[i].Length - headerSize));
                         }
-                        SlicedReceivedStorage.TryRemove(guid, out _);
+                        SlicedReceivedStorage.Remove(guid, out _);
                     }
                     else
                     {
@@ -80,7 +81,7 @@ namespace NECS.Harness.Services
                         }
                         else
                         {
-                            bufPackets = new ConcurrentDictionary<long, byte[]>();
+                            bufPackets = new DictionaryWrapper<long, byte[]>();
                             SlicedReceivedStorage.TryAdd(guid, bufPackets);
                             bufPackets.TryAdd(packetNumber, packetBuffer);
                         }

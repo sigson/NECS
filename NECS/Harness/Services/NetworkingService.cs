@@ -38,7 +38,7 @@ namespace NECS.Harness.Services
         public int Port = 6667;
         public int BufferSize = 1024;
         public string Protocol = "tcp";
-        public ConcurrentDictionary<long, SocketAdapter> SocketAdapters = new ConcurrentDictionary<long, SocketAdapter>();
+        public DictionaryWrapper<long, SocketAdapter> SocketAdapters = new DictionaryWrapper<long, SocketAdapter>();
         #region client
         [System.NonSerialized] public bool AuthError;
         [System.NonSerialized] public string AuthErrorReason;

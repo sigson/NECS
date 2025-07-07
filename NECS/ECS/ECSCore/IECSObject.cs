@@ -263,7 +263,7 @@ namespace NECS.ECS.ECSCore
 
         private void DeserializationProcess()
         {
-            var newchildECSObjects = new ConcurrentDictionary<long, IECSObject>();
+            var newchildECSObjects = new DictionaryWrapper<long, IECSObject>();
             foreach (var entry in childECSObjectsId)
             {   
                 if(childECSObjects.ContainsKey(entry.Key))

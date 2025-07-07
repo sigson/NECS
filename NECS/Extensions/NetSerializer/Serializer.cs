@@ -70,7 +70,7 @@ namespace NetSerializer
 			lock (m_modifyLock)
 			{
 				m_runtimeTypeMap = new TypeDictionary();
-				m_runtimeTypeIDList = new ConcurrentDictionary<uint, TypeData>();
+				m_runtimeTypeIDList = new DictionaryWrapper<uint, TypeData>();
 
 				AddTypesInternal(new Dictionary<Type, uint>()
 				{
@@ -116,7 +116,7 @@ namespace NetSerializer
 			lock (m_modifyLock)
 			{
 				m_runtimeTypeMap = new TypeDictionary();
-				m_runtimeTypeIDList = new ConcurrentDictionary<uint, TypeData>();
+				m_runtimeTypeIDList = new DictionaryWrapper<uint, TypeData>();
 
 				AddTypesInternal(new Dictionary<Type, uint>()
 				{
@@ -282,8 +282,8 @@ namespace NetSerializer
 		}
 
 		readonly TypeDictionary m_runtimeTypeMap;
-		readonly ConcurrentDictionary<uint, TypeData> m_runtimeTypeIDList;
-		private ConcurrentDictionary<string,(string, uint)> DebugTypeMap = new ConcurrentDictionary<string, (string, uint)>();
+		readonly DictionaryWrapper<uint, TypeData> m_runtimeTypeIDList;
+		private DictionaryWrapper<string,(string, uint)> DebugTypeMap = new DictionaryWrapper<string, (string, uint)>();
 		public string storeTypesCSV = "";
 		public string storeNamespacesCSV = "";
         public string DebugTypeMapCSV

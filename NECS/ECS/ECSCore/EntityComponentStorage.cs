@@ -24,8 +24,8 @@ namespace NECS.ECS.ECSCore
         public static Type StorageType;
         public int ChangedComponent => changedComponents.Count;
         private readonly LockedDictionary<Type, ECSComponent> components = new LockedDictionary<Type, ECSComponent>(true);
-        private readonly IDictionary<Type, int> changedComponents = new ConcurrentDictionary<Type, int>();
-        public readonly IDictionary<long, Type> IdToTypeComponent = new ConcurrentDictionary<long, Type>();
+        private readonly IDictionary<Type, int> changedComponents = new DictionaryWrapper<Type, int>();
+        public readonly IDictionary<long, Type> IdToTypeComponent = new DictionaryWrapper<long, Type>();
         public LockedDictionary<long, object> SerializationContainer = new LockedDictionary<long, object>();
         public List<long> RemovedComponents = new List<long>();
         //public object serializationLocker = new object();
@@ -33,7 +33,7 @@ namespace NECS.ECS.ECSCore
         [System.NonSerialized]
         public RWLock StabilizationLocker = new RWLock();
 
-        public ConcurrentDictionary<long, ComponentManagersStorage> ComponentsManagers = new ConcurrentDictionary<long, ComponentManagersStorage>();
+        public DictionaryWrapper<long, ComponentManagersStorage> ComponentsManagers = new DictionaryWrapper<long, ComponentManagersStorage>();
 
         public EntityComponentStorage(ECSEntity entity)
         {
@@ -50,7 +50,7 @@ namespace NECS.ECS.ECSCore
             {
                 //using (this.StabilizationLocker.ReadLock())//lock (this.serializationLocker)
                 {
-                    ConcurrentDictionary<Type, ECSComponent> serializedContainer = new ConcurrentDictionary<Type, ECSComponent>();
+                    DictionaryWrapper<Type, ECSComponent> serializedContainer = new DictionaryWrapper<Type, ECSComponent>();
                     Dictionary<long, byte[]> slicedComponents = new Dictionary<long, byte[]>();
                     var cachedChangedComponents = changedComponents.Keys.ToList();
                     List<Type> errorList = new List<Type>();
@@ -189,7 +189,7 @@ namespace NECS.ECS.ECSCore
                 {
                     using (this.StabilizationLocker.ReadLock())//lock (this.serializationLocker)
                     {
-                        ConcurrentDictionary<long, object> serializeContainer = new ConcurrentDictionary<long, object>();
+                        DictionaryWrapper<long, object> serializeContainer = new DictionaryWrapper<long, object>();
                         Dictionary<long, string> slicedComponents = new Dictionary<long, string>();
                         var cachedChangedComponents = changedComponents.Keys.ToList();
                         List<Type> errorList = new List<Type>();
@@ -281,7 +281,7 @@ namespace NECS.ECS.ECSCore
             {
                 if (serializeOnlyChanged)
                 {
-                    ConcurrentDictionary<long, object> serializeContainer = new ConcurrentDictionary<long, object>();
+                    DictionaryWrapper<long, object> serializeContainer = new DictionaryWrapper<long, object>();
                     foreach (var changedComponent in changedComponents)
                     {
                         var component = components[changedComponent.Key];
