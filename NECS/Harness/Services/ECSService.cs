@@ -120,9 +120,9 @@ namespace NECS.Harness.Services
                     if (!WorldDB.TryGetValue(worldId, out var gworld))
                     {
                         world = new ECSWorld();
-                        world.InitWorldScope(null);
                         world.instanceId = worldId;
                         WorldDB.TryAdd(worldId, world);
+                        world.InitWorldScope(null);
                     }
                     return gworld;
                 }
@@ -138,14 +138,14 @@ namespace NECS.Harness.Services
         public ECSWorld GetWorld()
         {
             var world = new ECSWorld();
-            world.InitWorldScope(null);
             WorldDB.TryAdd(world.instanceId, world);
+            world.InitWorldScope(null);
             return world;
         }
 
         private static DictionaryWrapper<long, ECSWorld> WorldDB = new DictionaryWrapper<long, ECSWorld>();
 
-        public IEnumerable<ECSWorld> GetAllWorlds() => WorldDB.Values;
+        public IEnumerable<ECSWorld> GetAllWorlds(bool onlyNonInitialized = false) => WorldDB.Values.Where(x => onlyNonInitialized ? !x.Initialized : x.Initialized);
         
         public override void InitializeProcess()
         {

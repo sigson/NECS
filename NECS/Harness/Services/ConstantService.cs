@@ -463,7 +463,7 @@ namespace NECS.Harness.Services
                 (step) => {
                     if (NetworkingService.instance != null)
                     {
-                        Action<Network.NetworkModels.SocketAdapter> socketAction = (Network.NetworkModels.SocketAdapter socketAdapter) =>
+                        Action<Network.NetworkModels.ISocketRealization> socketAction = (Network.NetworkModels.ISocketRealization socketAdapter) =>
                         {
                             ECSService.instance.eventManager.OnEventAdd(new ConfigCheckEvent()
                                 {

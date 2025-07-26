@@ -33,7 +33,7 @@ namespace NECS.ECS.ECSCore
         }
         [System.NonSerialized]
         [Newtonsoft.Json.JsonIgnore]
-        public SocketAdapter SocketSource;
+        public ISocketRealization SocketSource;
         [System.NonSerialized]
         [Newtonsoft.Json.JsonIgnore]
         public EventWatcher eventWatcher;

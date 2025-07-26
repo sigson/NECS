@@ -38,7 +38,7 @@ namespace NECS.Harness.Services
         public int Port = 6667;
         public int BufferSize = 1024;
         public string Protocol = "tcp";
-        public DictionaryWrapper<long, SocketAdapter> SocketAdapters = new DictionaryWrapper<long, SocketAdapter>();
+        public DictionaryWrapper<long, ISocketRealization> SocketAdapters = new DictionaryWrapper<long, ISocketRealization>();
         #region client
         [System.NonSerialized] public bool AuthError;
         [System.NonSerialized] public string AuthErrorReason;
@@ -47,11 +47,11 @@ namespace NECS.Harness.Services
         public bool LoggedInGame;
         public bool Connected = false;
         public bool ServerAvailable = false;
-        public delegate void SocketHandler(SocketAdapter socketAdapter);
+        public delegate void SocketHandler(ISocketRealization socketAdapter);
         public event SocketHandler OnConnectExternal = (socket) => { };
         public event SocketHandler OnDisconnectExternal = (socket) => { };
-        private SocketAdapter cachedClientSocket;
-        public SocketAdapter ClientSocket
+        private ISocketRealization cachedClientSocket;
+        public ISocketRealization ClientSocket
         {
             get
             {
@@ -67,7 +67,7 @@ namespace NECS.Harness.Services
         #endregion
         #region NetworkRealization
         private TCPGameClient tcpClient;
-        private TCPGameServer tcpServer;
+        private IServerRealization tcpServer;
         #endregion
 
 
@@ -109,7 +109,7 @@ namespace NECS.Harness.Services
             }
         }
 
-        public void OnConnected(SocketAdapter socketAdapter)
+        public void OnConnected(ISocketRealization socketAdapter)
         {
             stopDisconnectConnecting = false;
             SocketAdapters[socketAdapter.Id] = socketAdapter;
@@ -134,7 +134,7 @@ namespace NECS.Harness.Services
         }
 
         private bool stopDisconnectConnecting = false;
-        public void OnDisconnected(SocketAdapter socketAdapter)
+        public void OnDisconnected(ISocketRealization socketAdapter)
         {
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {
@@ -173,7 +173,7 @@ namespace NECS.Harness.Services
             }
         }
 
-        public void OnReceived(byte[] buffer, long offset, long size, SocketAdapter socketAdapter)
+        public void OnReceived(byte[] buffer, long offset, long size, ISocketRealization socketAdapter)
         {
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {
@@ -237,7 +237,7 @@ namespace NECS.Harness.Services
             //}
         }
 
-        public void OnError(System.Net.Sockets.SocketError error, SocketAdapter socketAdapter)
+        public void OnError(System.Net.Sockets.SocketError error, ISocketRealization socketAdapter)
         {
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {
@@ -254,7 +254,7 @@ namespace NECS.Harness.Services
 
         }
 
-        public void Connect(SocketAdapter socketAdapter)
+        public void Connect(ISocketRealization socketAdapter)
         {
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {
@@ -273,7 +273,7 @@ namespace NECS.Harness.Services
             }
         }
 
-        public void Send(SocketAdapter socketAdapter, byte[] packet)
+        public void Send(ISocketRealization socketAdapter, byte[] packet)
         {
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {
@@ -292,7 +292,7 @@ namespace NECS.Harness.Services
             }
         }
 
-        public void Disconnect(SocketAdapter socketAdapter)
+        public void Disconnect(ISocketRealization socketAdapter)
         {
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {

@@ -15,6 +15,7 @@ namespace NECS.ECS.ECSCore
         public ECSContractsManager contractsManager;
         public ECSEntityManager entityManager;
         public ECSComponentManager componentManager;
+        public bool Initialized = false;
 
         
         public void InitWorldScope(Func<Type, bool> staticContractFiltering)
@@ -22,10 +23,11 @@ namespace NECS.ECS.ECSCore
             entityManager = new ECSEntityManager(this);
             componentManager = new ECSComponentManager(this);
             contractsManager = new ECSContractsManager(this, staticContractFiltering);
-            ECSService.instance.eventManager.InitializeEventManager();
             contractsManager.InitializeSystems();
+            ECSService.instance.eventManager.InitializeEventManager();
             var timer = new TimerCompat(5, (obj, arg) => contractsManager.RunTimeDependContracts(), true);
             timer.Start();
+            Initialized = true;
         }
     }
 }

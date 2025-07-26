@@ -12,7 +12,7 @@ using NECS.Extensions;
 
 namespace NECS.Network.NetworkModels.TCP
 {
-    public class TCPGameServer
+    public class TCPGameServer : IServerRealization
     {
         public int Port { get; private set; }
         public Socket Socket { get; protected set; }
@@ -20,6 +20,9 @@ namespace NECS.Network.NetworkModels.TCP
         public string Address { get; private set; }
 
         CNetworkService serverService;
+
+        public event Action<ISocketRealization> Connected;
+        public event Action<ISocketRealization> Disconnected;
 
         public TCPGameServer(int bufferSize = 2048)
         {
@@ -61,6 +64,11 @@ namespace NECS.Network.NetworkModels.TCP
         {
             foreach (var user in NetworkingService.instance.SocketAdapters)
                 user.Value.SendAsync(packet);
+        }
+
+        public void StopListen()
+        {
+            
         }
     }
 }

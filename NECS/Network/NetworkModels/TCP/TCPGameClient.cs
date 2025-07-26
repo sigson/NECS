@@ -10,18 +10,23 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using NECS.Extensions.ThreadingSync;
+using NECS.ECS.ECSCore;
 
 namespace NECS.Network.NetworkModels.TCP
 {
-    public class TCPGameClient : IPeer
+    public class TCPGameClient : IPeer, ISocketRealization
     {
-        SocketAdapter socketAdapter;
+        //ISocketRealization socketAdapter;
         public long Id = 0;
-        public Socket Socket => token.socket;
         public bool IsConnected { get => token != null ? token.is_connected() : false; }
         public bool IsConnecting { get; private set; }
         public bool IsDisposed { get; private set; }
         public bool IsSocketDisposed { get; private set; }
+        long ISocketRealization.Id { get => this.Id; set => this.Id = value; }
+
+        string ISocketRealization.Address => this.Address;
+
+        int ISocketRealization.Port => this.Port;
 
         public CUserToken token;
         public CNetworkService service;
@@ -31,9 +36,14 @@ namespace NECS.Network.NetworkModels.TCP
         public int Port;
         public int BufferSize;
 
+        public event Action<ISocketRealization, byte[]> DataReceived;
+        public event Action<ISocketRealization, Exception> ErrorOccurred;
+        public event Action<ISocketRealization> Connected;
+        public event Action<ISocketRealization> Disconnected;
+
         private void Setup()
         {
-            socketAdapter = new SocketAdapter(this);
+            //socketAdapter = new ISocketRealization(this);
             Id = Guid.NewGuid().GuidToLong();
         }
 
@@ -61,7 +71,7 @@ namespace NECS.Network.NetworkModels.TCP
             this.token.set_peer(this);
             server_token.on_connected();
             Setup();
-            NetworkingService.instance.OnConnected(this.socketAdapter);
+            NetworkingService.instance.OnConnected(this);
         }
 
         public void on_message(CPacket msg)
@@ -101,7 +111,7 @@ namespace NECS.Network.NetworkModels.TCP
 
             if (result.Item2)
             {
-                NetworkingService.instance.OnReceived(result.Item1, 0, 0, this.socketAdapter);
+                NetworkingService.instance.OnReceived(result.Item1, 0, 0, this);
             }
         }
 
@@ -128,8 +138,8 @@ namespace NECS.Network.NetworkModels.TCP
             {
                 token.close();
             }
-            if (NetworkingService.instance.SocketAdapters.ContainsKey(this.socketAdapter.Id))
-                NetworkingService.instance.OnDisconnected(this.socketAdapter);
+            if (NetworkingService.instance.SocketAdapters.ContainsKey(this.Id))
+                NetworkingService.instance.OnDisconnected(this);
         }
 
         public bool Reconnect()
@@ -175,6 +185,21 @@ namespace NECS.Network.NetworkModels.TCP
         {
             this.token.close();
             DisconnectProcess();
+        }
+
+        public void Disconnect()
+        {
+            this.disconnect();
+        }
+
+        void ISocketRealization.Reconnect()
+        {
+            this.ReconnectAsync();
+        }
+
+        public void Send(ECSEvent ecsEvent)
+        {
+            this.Send(ecsEvent.GetNetworkPacket());
         }
     }
 }

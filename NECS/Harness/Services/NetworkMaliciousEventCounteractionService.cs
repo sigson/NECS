@@ -107,7 +107,7 @@ namespace NECS.Harness.Services
 
     public class ScoreObject
     {
-        public SocketAdapter SocketAdapter { get => Lambda.LineFunction(() => NetworkingService.instance.SocketAdapters[this.SocketId]); }
+        public ISocketRealization SocketAdapter { get => Lambda.LineFunction(() => NetworkingService.instance.SocketAdapters[this.SocketId]); }
         public long SocketId;
         private int score = 0;
         public int Score

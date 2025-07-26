@@ -12,16 +12,15 @@ using System.Threading.Tasks;
 using System.Threading;
 using NECS.Extensions;
 using NECS.Extensions.ThreadingSync;
+using NECS.ECS.ECSCore;
 
 namespace NECS.Network.NetworkModels.TCP
 {
-    public class TCPGameSession : IPeer
+    public class TCPGameSession : IPeer, ISocketRealization
     {
-        SocketAdapter socketAdapter;
+        ISocketRealization socketAdapter;
         public long Id = 0;
-
-        public Socket Socket => token.socket;
-        public bool IsConnected { get; private set; }
+        public bool IsConnected { get; set; }
         public bool IsDisposed { get; private set; }
         public bool IsSocketDisposed { get; private set; }
 
@@ -36,13 +35,26 @@ namespace NECS.Network.NetworkModels.TCP
         public Socket socket { get; protected set; }
         public int userPackets = 0;
         public int emitPackets = 0;
-        public TCPGameServer Server { get; protected set; }
+        public IServerRealization Server { get; protected set; }
+        long ISocketRealization.Id { get => this.Id; set => this.Id = value; }
+
+        string ISocketRealization.Address => this.Server.Address;
+
+        int ISocketRealization.Port => this.Server.Port;
+
+        public bool IsConnecting => IsConnected;
+
         byte[] buffer;
         Dictionary<long, object> Events = new Dictionary<long, object>();
 
+        public event Action<ISocketRealization, byte[]> DataReceived;
+        public event Action<ISocketRealization, Exception> ErrorOccurred;
+        public event Action<ISocketRealization> Connected;
+        public event Action<ISocketRealization> Disconnected;
+
         private void Setup()
         {
-            socketAdapter = new SocketAdapter(this);
+            //socketAdapter = new ISocketRealization(this);
             Id = Guid.NewGuid().GuidToLong();
         }
 
@@ -52,7 +64,7 @@ namespace NECS.Network.NetworkModels.TCP
             Setup();
         }
 
-        public TCPGameSession(CUserToken token, TCPGameServer server)
+        public TCPGameSession(CUserToken token, IServerRealization server)
         {
             NLogger.Log("Client accepted");
             this.Server = server;
@@ -60,7 +72,7 @@ namespace NECS.Network.NetworkModels.TCP
             this.token.set_peer(this);
             this.token.disable_auto_heartbeat();
             Setup();
-            NetworkingService.instance.OnConnected(this.socketAdapter);
+            NetworkingService.instance.OnConnected(this);
         }
 
         public void on_message(CPacket msg)
@@ -93,8 +105,8 @@ namespace NECS.Network.NetworkModels.TCP
             {
                 token.close();
             }
-            if (NetworkingService.instance.SocketAdapters.ContainsKey(this.socketAdapter.Id))
-                NetworkingService.instance.OnDisconnected(this.socketAdapter);
+            if (NetworkingService.instance.SocketAdapters.ContainsKey(this.Id))
+                NetworkingService.instance.OnDisconnected(this);
         }
 
         void OnReceive(byte[] newBuffer)
@@ -111,7 +123,7 @@ namespace NECS.Network.NetworkModels.TCP
 
             if(result.Item2)
             {
-                NetworkingService.instance.OnReceived(result.Item1, 0, 0, this.socketAdapter);
+                NetworkingService.instance.OnReceived(result.Item1, 0, 0, this);
             }
 
             //Array.Copy(buffer, newBuffer, newBuffer.Length);
@@ -184,6 +196,45 @@ namespace NECS.Network.NetworkModels.TCP
         public void Send(byte[] buffer)
         {
             SendImpl(buffer);
+        }
+
+        public void Connect()
+        {
+            NLogger.LogError("Try Connect from session socket");
+        }
+
+        public void Disconnect()
+        {
+            this.disconnect();
+        }
+
+        public void Reconnect()
+        {
+            NLogger.LogError("Try Reconnect from session socket");
+        }
+
+        public void ConnectAsync()
+        {
+            NLogger.LogError("Try ConnectAsync from session socket");
+        }
+
+        public void DisconnectAsync()
+        {
+            TaskEx.RunAsync(() =>
+            {
+                Disconnect();
+            });
+        }
+
+        public bool ReconnectAsync()
+        {
+            NLogger.LogError("Try ConnectAsync from session socket");
+            return false;
+        }
+
+        public void Send(ECSEvent ecsEvent)
+        {
+            this.Send(ecsEvent.GetNetworkPacket());
         }
     }
 }

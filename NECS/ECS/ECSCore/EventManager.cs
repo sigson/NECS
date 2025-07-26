@@ -60,7 +60,7 @@ namespace NECS.ECS.ECSCore
             var LocalSystemHandlers = new ConcurrentDictionaryEx<long, ConcurrentDictionaryEx<ECSExecutableContractContainer, List<Func<ECSEvent, object>>>>();
             var AllEvents = ECSAssemblyExtensions.GetAllSubclassOf(typeof(ECSEvent)).Select(x => (ECSEvent)Activator.CreateInstance(x));
 
-            foreach (ECSWorld world in ECSService.instance.GetAllWorlds())
+            foreach (ECSWorld world in ECSService.instance.GetAllWorlds(true))
             {
                 foreach (ECSExecutableContractContainer system in world.contractsManager.EventHandlerCacheSystems)
                 {
@@ -94,7 +94,7 @@ namespace NECS.ECS.ECSCore
             SystemHandlers = LocalSystemHandlers;
         }
 
-        public void OnEventAdd(ECSEvent ecsEvent, SocketAdapter SocketA)
+        public void OnEventAdd(ECSEvent ecsEvent, ISocketRealization SocketA)
         {
             ecsEvent.SocketSource = SocketA;
             OnEventAdd(ecsEvent);

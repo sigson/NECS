@@ -471,6 +471,20 @@ namespace NECS.Harness.Model
                         serviceState.IsFrozen = false;
                         serviceState.FrozenTime = null;
                         OnServiceUnfrozen?.Invoke(eventItem.ServiceId);
+
+                        int currentStep = serviceState.CurrentStep;
+
+                        OnServiceStepChanged?.Invoke(eventItem.ServiceId, currentStep, $"Step {currentStep} completed");
+
+                        // Проверяем, завершен ли сервис
+                        if (currentStep >= serviceState.TotalSteps - 1)
+                        {
+                            OnServiceCompleted?.Invoke(eventItem.ServiceId);
+                        }
+                        
+                        serviceState.IsStepCompleted = true;
+                        serviceState.IsStepRunning = false;
+                        serviceState.StepEndTime = DateTime.Now;
                     }
                 }
             }
