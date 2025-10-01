@@ -12,7 +12,7 @@ using System.IO;
 namespace NECS.ECS.ECSCore
 {
     [System.Serializable]
-    public class GroupDataAccessPolicy
+    public class GroupDataAccessPolicy : ICloneable
     {
         public static long Id;
         public long instanceId = Guid.NewGuid().GuidToLongR();
@@ -119,6 +119,10 @@ namespace NECS.ECS.ECSCore
         public object Clone()
         {
             var cloned =  MemberwiseClone() as GroupDataAccessPolicy;
+            cloned.AvailableComponents = new List<long>(AvailableComponents);
+            cloned.RestrictedComponents = new List<long>(RestrictedComponents);
+            cloned.BinAvailableComponents = new Dictionary<long, byte[]>();
+            cloned.BinRestrictedComponents = new Dictionary<long, byte[]>();
             return cloned;
         }
     }

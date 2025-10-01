@@ -427,7 +427,14 @@ namespace NECS.ECS.ECSCore
                     if (tComponent is DBComponent)
                     {
                         //TaskEx.RunAsync(() => (entity.GetComponent<DBComponent>(tComponent.GetId())).UnserializeDB());
-                        entity.GetComponent<DBComponent>(tComponent.GetId()).UnserializeDB();
+                        if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server || GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Offline)
+                        {
+                            entity.GetComponent<DBComponent>(tComponent.GetId()).UnserializeDB();
+                        }
+                        else
+                        {
+                            entity.GetComponent<DBComponent>(tComponent.GetId()).UnserializeDB(true);
+                        }
                     }
                     tComponent.AfterDeserialization();
                 });

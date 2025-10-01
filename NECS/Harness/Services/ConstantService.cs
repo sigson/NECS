@@ -344,6 +344,14 @@ namespace NECS.Harness.Services
             return null;
         }
 
+        public bool GetByConfigPath(string path, out ConfigObj result)
+        {
+            ConfigObj obj;
+            if (ConstantDB.TryGetValue(path.Replace(GlobalProgramState.instance.PathAltSeparator, GlobalProgramState.instance.PathSeparator), out result))
+                return true;
+            return false;
+        }
+
         public ConfigObj[] GetByLibName(string libName)
         {
             List<ConfigObj> result = new List<ConfigObj>();
@@ -453,6 +461,11 @@ namespace NECS.Harness.Services
         {
 
         }
+
+        public void UnfreezeConstantService()
+        {
+            this.UnfreezeCurrentService();
+        }
         
         protected override Action<int>[] GetInitializationSteps()
         {
@@ -463,21 +476,29 @@ namespace NECS.Harness.Services
                 (step) => {
                     if (NetworkingService.instance != null)
                     {
-                        Action<Network.NetworkModels.ISocketRealization> socketAction = (Network.NetworkModels.ISocketRealization socketAdapter) =>
-                        {
-                            ECSService.instance.eventManager.OnEventAdd(new ConfigCheckEvent()
-                                {
-                                    configHash = hashConfig
-                                });
-                        };
-                        if (NetworkingService.instance.SocketAdapters.Count() == 0)
-                            NetworkingService.instance.OnConnectExternal += new SocketHandler(socketAction);
-                        else
-                        {
-                            socketAction(NetworkingService.instance.ClientSocket);
-                        }
+                        this.FreezeCurrentService(() => {
+                            Action<Network.NetworkModels.ISocketRealization> socketAction = (Network.NetworkModels.ISocketRealization socketAdapter) =>
+                            {
+                                ECSService.instance.eventManager.OnEventAdd(new ConfigCheckEvent()
+                                    {
+                                        configHash = hashConfig
+                                    });
+                            };
+                            if (NetworkingService.instance.SocketAdapters.Count() == 0)
+                            {
+                                NetworkingService.instance.OnConnectExternal += new SocketHandler(socketAction);
+
+                            }
+                            else
+                            {
+                                socketAction(NetworkingService.instance.ClientSocket);
+                            }
+							if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server || GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Offline )
+                                this.UnfreezeCurrentService();
+                        });
                     }
-                }
+                },
+                (step) => {  }
             };
         }
 

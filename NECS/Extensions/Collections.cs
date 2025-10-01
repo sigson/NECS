@@ -1659,6 +1659,21 @@ namespace NECS.Extensions
         {
             return dictionary.GetEnumerator();
         }
+
+        public TValue GetOrAdd(TKey key, Func<TKey, TValue> value)
+        {
+            if (dictionary is ConcurrentDictionary<TKey, TValue> concurrentDictionary)
+            {
+                return concurrentDictionary.GetOrAdd(key, value);
+            }
+            else if (!dictionary.TryGetValue(key, out var invalue))
+            {
+                invalue = value(key);
+                dictionary.Add(key, invalue);
+                return invalue;
+            }
+            return default(TValue);
+        }
     }
 
     public class PriorityEventQueue<TKey, TEvent> where TEvent : System.Delegate

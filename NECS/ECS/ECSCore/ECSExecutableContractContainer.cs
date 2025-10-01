@@ -21,6 +21,25 @@ using NECS.Harness.Services;
 
 namespace NECS.ECS.ECSCore
 {
+    /// <summary>
+    /// Уровни логгирования для контрактов
+    /// </summary>
+    public enum ContractLoggingLevel
+    {
+        /// <summary>
+        /// Без логгирования
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Только ошибки
+        /// </summary>
+        ErrorsOnly = 1,
+        /// <summary>
+        /// Полная информация
+        /// </summary>
+        Verbose = 2
+    }
+
     public class ECSExecutableContractContainer
     {
         public long Id { get; set; }
@@ -47,6 +66,22 @@ namespace NECS.ECS.ECSCore
                 lock (ContractLocker)
                 {
                     genTrace = value;
+                }
+            }
+        }
+
+        protected ContractLoggingLevel _loggingLevel = ContractLoggingLevel.Verbose;
+        /// <summary>
+        /// Уровень логгирования для контракта
+        /// </summary>
+        public ContractLoggingLevel LoggingLevel
+        {
+            get => _loggingLevel;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _loggingLevel = value;
                 }
             }
         }
@@ -557,37 +592,112 @@ namespace NECS.ECS.ECSCore
             {
                 var entityManager = ECSService.instance.GetEntityWorld(entityId).entityManager;
                 if (!entityManager.EntityStorage.TryGetValue(entityId, out var entity))
+                {
+                    if (LoggingLevel == ContractLoggingLevel.Verbose)
+                    {
+                        NLogger.Log($"Contract {this.GetType().Name} (ID: {this.Id}): Entity {entityId} not found in EntityStorage");
+                    }
                     continue;
+                }
 
                 bool violationSeizure = false;
                 var entityTokens = new List<RWLock.LockToken>();
                 bool yescomponent = false;
+                
                 // Check component requirements
                 if (localEntityComponentPresenceSign.TryGetValue(entityId, out var neededComponents))
                 {
+                    var expectedPresent = new List<Type>();
+                    var expectedAbsent = new List<Type>();
+                    var actualComponents = new List<Type>();
+                    var missingExpected = new List<Type>();
+                    var unexpectedPresent = new List<Type>();
+
+                    // Собираем информацию о всех компонентах сущности
+                    if (LoggingLevel == ContractLoggingLevel.Verbose)
+                    {
+                        actualComponents = entity.entityComponents.ComponentClasses.ToList();
+                    }
+
                     foreach (var component in neededComponents)
                     {
-                        bool hasComponent = entity.entityComponents.HasComponent(component.Key.IdToECSType());
+                        var componentType = component.Key.IdToECSType();
+                        bool hasComponent = entity.entityComponents.HasComponent(componentType);
+
                         if (component.Value != hasComponent)
                         {
+                            //expectedPresent.Add(componentType);
+
+                            //missingExpected.Add(componentType);
                             violationSeizure = true;
                             globalViolationSeizure = true;
-                            break;
+
+                            if (component.Value)
+                            {
+                                missingExpected.Add(componentType);
+                            }
+                            else
+                            {
+                                unexpectedPresent.Add(componentType);
+                            }
                         }
-                        yescomponent = true;
-                        // if (component.Value && entity.entityComponents.GetReadLockedComponent(
-                        //     component.Key.IdToECSType(), out _, out var token))
-                        // {
-                        //     entityTokens.Add(token);
-                        // }
+                        else
+                        {
+                            if (component.Value)
+                            {
+                                expectedPresent.Add(componentType);
+                            }
+                            else
+                            {
+                                expectedAbsent.Add(componentType);
+                            }
+                        }
+                        
+                        if (!violationSeizure)
+                        {
+                            yescomponent = true;
+                        }
+                    }
+
+                    if (violationSeizure && LoggingLevel == ContractLoggingLevel.Verbose)
+                    {
+                        var logMessage = new StringBuilder();
+                        logMessage.AppendLine($"Contract {this.GetType().Name} (ID: {this.Id}): Component requirements violation for Entity {entityId}:");
+                        
+                        if (missingExpected.Count > 0)
+                        {
+                            logMessage.AppendLine($"  Missing expected components: {string.Join(", ", missingExpected.Select(t => t.Name))}");
+                        }
+                        
+                        if (unexpectedPresent.Count > 0)
+                        {
+                            logMessage.AppendLine($"  Unexpected present components: {string.Join(", ", unexpectedPresent.Select(t => t.Name))}");
+                        }
+                        
+                        logMessage.AppendLine($"  Expected present: {string.Join(", ", expectedPresent.Select(t => t.Name))}");
+                        logMessage.AppendLine($"  Expected absent: {string.Join(", ", expectedAbsent.Select(t => t.Name))}");
+                        logMessage.AppendLine($"  All entity components: {string.Join(", ", actualComponents.Select(t => t.Name))}");
+                        
+                        NLogger.Log(logMessage.ToString());
                     }
                 }
 
                 // Check conditions
                 if (!violationSeizure && localContractConditions.TryGetValue(entityId, out var conditions))
                 {
-                    violationSeizure = conditions.Any(condition => !condition(entity));
-                    globalViolationSeizure |= violationSeizure;
+                    for (int i = 0; i < conditions.Count; i++)
+                    {
+                        if (!conditions[i](entity))
+                        {
+                            violationSeizure = true;
+                            globalViolationSeizure = true;
+                            
+                            if (LoggingLevel == ContractLoggingLevel.Verbose)
+                            {
+                                NLogger.Log($"Contract {this.GetType().Name} (ID: {this.Id}): Condition #{i} failed for Entity {entityId}");
+                            }
+                        }
+                    }
                 }
 
                 // Handle entity based on violation status
@@ -621,52 +731,117 @@ namespace NECS.ECS.ECSCore
             executionEntities = null;
             var localExecutionEntities = new List<ECSEntity>();
             bool globalViolationSeizure = false;
+            
             foreach (var entityid in new HashSet<long>(contractEntities))
             {
-                ECSService.instance.GetEntityWorld(entityid).entityManager.EntityStorage.ExecuteReadLockedContinuously(entityid, (entid, contentity) =>
+                var entityWorld = ECSService.instance.GetEntityWorld(entityid);
+                if (entityWorld == null || entityWorld.entityManager == null)
+                {
+                    if (LoggingLevel == ContractLoggingLevel.Verbose)
+                    {
+                        NLogger.Log($"Contract {this.GetType().Name} (ID: {this.Id}): Entity {entityid} - world or entity manager not found");
+                    }
+                    continue;
+                }
+
+                entityWorld.entityManager.EntityStorage.ExecuteReadLockedContinuously(entityid, (entid, contentity) =>
                 {
                     bool violationSeizure = false;
                     Lockers.Add(entid, new List<RWLock.LockToken>());
+                    
                     if (LocalEntityComponentPresenceSign.TryGetValue(entid, out var neededComponents))
                     {
+                        var expectedPresent = new List<Type>();
+                        var expectedAbsent = new List<Type>();
+                        var actualComponents = new List<Type>();
+                        var missingExpected = new List<Type>();
+                        var unexpectedPresent = new List<Type>();
+
+                        // Собираем информацию о всех компонентах сущности для логгирования
+                        if (LoggingLevel == ContractLoggingLevel.Verbose)
+                        {
+                            actualComponents = contentity.entityComponents.ComponentClasses.ToList();
+                        }
+
                         foreach (var component in neededComponents)
                         {
+                            var componentType = component.Key.IdToECSType();
+
                             if (component.Value)
                             {
-                                if (contentity.entityComponents.GetReadLockedComponent(component.Key.IdToECSType(), out var componentInstance, out var token))
+                                
+                                if (contentity.entityComponents.GetReadLockedComponent(componentType, out var componentInstance, out var token))
                                 {
+                                    expectedPresent.Add(componentType);
                                     Lockers[entid].Add(token);
                                     continue;
+                                }
+                                else
+                                {
+                                    missingExpected.Add(componentType);
+                                    violationSeizure = true;
+                                    globalViolationSeizure = true;
                                 }
                             }
                             else
                             {
-                                if (contentity.entityComponents.HoldComponentAddition(component.Key.IdToECSType(), out var token))
+                                if (contentity.entityComponents.HoldComponentAddition(componentType, out var token))
                                 {
-                                    if (!contentity.entityComponents.HasComponent(component.Key.IdToECSType()))
+                                    if (!contentity.entityComponents.HasComponent(componentType))
                                     {
+                                        expectedAbsent.Add(componentType);
                                         Lockers[entid].Add(token);
                                         continue;
                                     }
                                     else
                                     {
                                         token.Dispose();
+                                        unexpectedPresent.Add(componentType);
+                                        violationSeizure = true;
+                                        globalViolationSeizure = true;
                                     }
                                 }
                             }
                             violationSeizure = true;
                             globalViolationSeizure = true;
                         }
+
+                        if (violationSeizure && LoggingLevel == ContractLoggingLevel.Verbose)
+                        {
+                            var logMessage = new StringBuilder();
+                            logMessage.AppendLine($"Contract {this.GetType().Name} (ID: {this.Id}): Component requirements violation for Entity {entid}:");
+                            
+                            if (missingExpected.Count > 0)
+                            {
+                                logMessage.AppendLine($"  Missing expected components: {string.Join(", ", missingExpected.Select(t => t.Name))}");
+                            }
+                            
+                            if (unexpectedPresent.Count > 0)
+                            {
+                                logMessage.AppendLine($"  Unexpected present components: {string.Join(", ", unexpectedPresent.Select(t => t.Name))}");
+                            }
+                            
+                            logMessage.AppendLine($"  Expected present: {string.Join(", ", expectedPresent.Select(t => t.Name))}");
+                            logMessage.AppendLine($"  Expected absent: {string.Join(", ", expectedAbsent.Select(t => t.Name))}");
+                            logMessage.AppendLine($"  All entity components: {string.Join(", ", actualComponents.Select(t => t.Name))}");
+                            
+                            NLogger.Log(logMessage.ToString());
+                        }
                     }
 
                     if (LocalContractConditions.TryGetValue(entid, out var conditions))
                     {
-                        foreach (var condition in conditions)
+                        for (int i = 0; i < conditions.Count; i++)
                         {
-                            if (!condition(contentity))
+                            if (!conditions[i](contentity))
                             {
                                 violationSeizure = true;
                                 globalViolationSeizure = true;
+                                
+                                if (LoggingLevel == ContractLoggingLevel.Verbose)
+                                {
+                                    NLogger.Log($"Contract {this.GetType().Name} (ID: {this.Id}): Condition #{i} failed for Entity {entid}");
+                                }
                             }
                         }
                     }
@@ -699,6 +874,10 @@ namespace NECS.ECS.ECSCore
             }
             if (localExecutionEntities.Count == 0)
             {
+                if (LoggingLevel == ContractLoggingLevel.Verbose)
+                {
+                    NLogger.Log($"Contract {this.GetType().Name} (ID: {this.Id}): No entities passed contract requirements");
+                }
                 return false;
             }
             lockTokens = Lockers.Values.SelectMany(x => x).ToList();

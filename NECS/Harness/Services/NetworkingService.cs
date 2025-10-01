@@ -15,6 +15,7 @@ using System.Reflection;
 using NECS.Harness.Serialization;
 using NECS.Extensions.ThreadingSync;
 using NECS.Extensions;
+using WebSocketRealization;
 
 namespace NECS.Harness.Services
 {
@@ -66,7 +67,7 @@ namespace NECS.Harness.Services
         }
         #endregion
         #region NetworkRealization
-        private TCPGameClient tcpClient;
+        private ISocketRealization tcpClient;
         private IServerRealization tcpServer;
         #endregion
 
@@ -98,6 +99,38 @@ namespace NECS.Harness.Services
                         TaskEx.RunAsync(() =>
                         {
                             tcpServer = new TCPGameServer(HostAddress, Port, BufferSize);
+                            tcpServer.Listen();
+                        });
+                    }
+                    break;
+                case "websocket":
+                    if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+                    {
+                        #if GODOT4_0_OR_GREATER || GODOT
+                        this.ExecuteInstruction(() =>
+                        {
+                            tcpClient = new NECS.Network.WebSocket.WSClientGodot();
+                            this.AddChild(tcpClient as NECS.Network.WebSocket.WSClientGodot);
+                            (tcpClient as NECS.Network.WebSocket.WSClientGodot).InitializeClient(HostAddress, Port, BufferSize);
+                            tcpClient.Connected += this.OnConnected;
+                            tcpClient.Disconnected += this.OnDisconnected;
+                            //tcpClient.ErrorOccurred += this.OnErrorOccurred;
+                            tcpClient.DataReceived += this.OnReceived;
+                            tcpClient.Connect();
+                        });
+                        #else
+                        TaskEx.RunAsync(() =>
+                        {
+                            tcpClient = new WSClient(HostAddress, Port, BufferSize);
+                            tcpClient.Connect();
+                        });
+                        #endif
+                    }
+                    else
+                    {
+                        TaskEx.RunAsync(() =>
+                        {
+                            tcpServer = new WSServer(HostAddress, Port, BufferSize);
                             tcpServer.Listen();
                         });
                     }
@@ -173,7 +206,7 @@ namespace NECS.Harness.Services
             }
         }
 
-        public void OnReceived(byte[] buffer, long offset, long size, ISocketRealization socketAdapter)
+        public void OnReceived(ISocketRealization socketAdapter, byte[] buffer)
         {
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server)
             {

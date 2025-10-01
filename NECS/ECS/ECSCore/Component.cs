@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using System.Threading;
+using NECS.Harness.Services;
 
 namespace NECS.ECS.ECSCore
 {
@@ -72,13 +73,25 @@ namespace NECS.ECS.ECSCore
         {
             get
             {
-                if (_stateReactionQueue == null)
+                if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+                    return ECSSharedField<PriorityEventQueue<StateReactionType, Action>>.GetOrAdd(instanceId, "connectPoints", new PriorityEventQueue<StateReactionType, Action>(new List<StateReactionType>() { StateReactionType.Added, StateReactionType.Changed, StateReactionType.Removed }, 1, x => x + 2, this.GetTypeFast()));
+                else
                 {
-                    _stateReactionQueue = new PriorityEventQueue<StateReactionType, Action>(new List<StateReactionType>() { StateReactionType.Added, StateReactionType.Changed, StateReactionType.Removed }, 1, x => x + 2, this.GetTypeFast());
+                    if (_stateReactionQueue == null)
+                    {
+                        _stateReactionQueue = new PriorityEventQueue<StateReactionType, Action>(new List<StateReactionType>() { StateReactionType.Added, StateReactionType.Changed, StateReactionType.Removed }, 1, x => x + 2, this.GetTypeFast());
+                    }
+                    return _stateReactionQueue;
                 }
-                return _stateReactionQueue;
+
             }
-            set => _stateReactionQueue = value;
+            set
+            {
+                if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+                    ECSSharedField<PriorityEventQueue<StateReactionType, Action>>.SetCachedValue(instanceId, "connectPoints", value);
+                else
+                    _stateReactionQueue = value;
+            }
         }
 
 

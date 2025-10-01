@@ -91,6 +91,8 @@ namespace NECS.Harness.Model
         public abstract class EventLoopEvent
         {
             public DateTime Timestamp { get; private set; }
+
+            public Action CallbackOnApply = () => {};
             
             protected EventLoopEvent()
             {
@@ -242,14 +244,14 @@ namespace NECS.Harness.Model
             }
 
             // Новые методы для заморозки/разморозки
-            public void FreezeServiceInitialization(string serviceId)
+            public void FreezeServiceInitialization(string serviceId, Action Callback)
             {
-                _eventQueue.Enqueue(new FreezeServiceEvent(serviceId));
+                _eventQueue.Enqueue(new FreezeServiceEvent(serviceId) { CallbackOnApply = Callback });
             }
 
-            public void UnfreezeServiceInitialization(string serviceId)
+            public void UnfreezeServiceInitialization(string serviceId, Action Callback)
             {
-                _eventQueue.Enqueue(new UnfreezeServiceEvent(serviceId));
+                _eventQueue.Enqueue(new UnfreezeServiceEvent(serviceId) {CallbackOnApply = Callback});
             }
             
             // Асинхронное уведомление о завершении callback-а через Event Loop
@@ -286,26 +288,58 @@ namespace NECS.Harness.Model
             // Основной Event Loop мониторинг (выполняется в одном потоке)
             private void EventLoopMonitoring(int awaitServicesCount)
             {
-                while (!_stopMonitoring && (!AreAllServicesCompleted() || _serviceStates.Count < awaitServicesCount))
+                TimerCompat timer = null;
+
+                Action eventAfterLoopFunc = () =>
+                {
+                    // Обрабатываем оставшиеся события
+                    ProcessEventQueue();
+                    
+                    _isMonitoringRunning = false;
+                    
+                    if (AreAllServicesCompleted())
+                    {
+                        OnAllServicesCompleted?.Invoke();
+                    }
+                };
+
+                Action eventLoopFunc = () =>
                 {
                     // Обрабатываем все события из очереди
                     ProcessEventQueue();
-                    
+
                     // Выполняем логику мониторинга
                     ProcessMonitoringStep();
-                    
+
                     // Небольшая задержка
-                    Thread.Sleep(10);
-                }
-                
-                // Обрабатываем оставшиеся события
-                ProcessEventQueue();
-                
-                _isMonitoringRunning = false;
-                
-                if (AreAllServicesCompleted())
+
+                    if (!(!_stopMonitoring && (!AreAllServicesCompleted() || _serviceStates.Count < awaitServicesCount)))
+                    {
+                        if (timer != null)
+                        {
+                            timer?.Stop();
+                            eventAfterLoopFunc();
+                        }
+                    }
+                };
+
+
+
+                if (Defines.OneThreadMode)
                 {
-                    OnAllServicesCompleted?.Invoke();
+                    timer = new TimerCompat(10, (obj, arg) => eventLoopFunc(), true);
+                    timer.Start();
+
+                }
+                else
+                {
+                    while (!_stopMonitoring && (!AreAllServicesCompleted() || _serviceStates.Count < awaitServicesCount))
+                    {
+                        eventLoopFunc();
+                        Thread.Sleep(10);
+                    }
+
+                    eventAfterLoopFunc();
                 }
             }
             
@@ -317,7 +351,7 @@ namespace NECS.Harness.Model
                     ProcessEvent(eventItem);
                 }
             }
-            
+
             // Обработка одного события (синхронно, без блокировок)
             private void ProcessEvent(EventLoopEvent eventItem)
             {
@@ -326,31 +360,32 @@ namespace NECS.Harness.Model
                     case RegisterServiceEvent registerEvent:
                         ProcessRegisterService(registerEvent);
                         break;
-                        
+
                     case RegisterCallbackEvent callbackEvent:
                         ProcessRegisterCallback(callbackEvent);
                         break;
-                        
+
                     case CompleteStepEvent completeEvent:
                         ProcessCompleteStep(completeEvent);
                         break;
-                        
+
                     case FailServiceEvent failEvent:
                         ProcessFailService(failEvent);
                         break;
-                        
+
                     case CallbackCompletedEvent callbackCompletedEvent:
                         ProcessCallbackCompleted(callbackCompletedEvent);
                         break;
-                        
+
                     case FreezeServiceEvent freezeEvent:
                         ProcessFreezeService(freezeEvent);
                         break;
-                        
+
                     case UnfreezeServiceEvent unfreezeEvent:
                         ProcessUnfreezeService(unfreezeEvent);
                         break;
                 }
+                eventItem.CallbackOnApply();
             }
             
             // Обработка регистрации сервиса (синхронно)
@@ -763,12 +798,12 @@ namespace NECS.Harness.Model
         // Новые статические методы для заморозки/разморозки
         public static void FreezeServiceInitialization(string serviceId)
         {
-            _syncManager.FreezeServiceInitialization(serviceId);
+            _syncManager.FreezeServiceInitialization(serviceId, () => {});
         }
 
         public static void UnfreezeServiceInitialization(string serviceId)
         {
-            _syncManager.UnfreezeServiceInitialization(serviceId);
+            _syncManager.UnfreezeServiceInitialization(serviceId, () => {});
         }
 
         public static void RegisterAllServices(List<Type> excludeServices = null)
@@ -879,14 +914,14 @@ namespace NECS.Harness.Model
         }
 
         // Методы для заморозки/разморозки текущего сервиса
-        protected void FreezeCurrentService()
+        protected void FreezeCurrentService(Action Callback = null)
         {
-            _syncManager.FreezeServiceInitialization(GetSGTId());
+            _syncManager.FreezeServiceInitialization(GetSGTId(), Callback == null ? () => { } : Callback);
         }
 
-        protected void UnfreezeCurrentService()
+        protected void UnfreezeCurrentService(Action Callback = null)
         {
-            _syncManager.UnfreezeServiceInitialization(GetSGTId());
+            _syncManager.UnfreezeServiceInitialization(GetSGTId(), Callback == null ? () => { } : Callback);
         }
 
         // Проверка состояния заморозки текущего сервиса

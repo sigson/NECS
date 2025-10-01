@@ -1,5 +1,4 @@
-﻿
-using NECS.Core.Logging;
+﻿using NECS.Core.Logging;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -27,6 +26,11 @@ namespace NECS.ECS.ECSCore
         static public new long Id { get; set; } = 11;
         static public new System.Collections.Generic.List<System.Action> StaticOnChangeHandlers { get; set; }
 
+        // Logging configuration
+        [NonSerialized]
+        [JsonIgnore]
+        public DBLoggingLevel LoggingLevel = DBLoggingLevel.None;
+
         public Dictionary<IECSObjectPathContainer, List<dbRow>> serializedDB = new Dictionary<IECSObjectPathContainer, List<dbRow>>();
 
         public virtual void SerializeDB(bool serializeOnlyChanged = false, bool clearChanged = true)
@@ -34,12 +38,12 @@ namespace NECS.ECS.ECSCore
             
         }
         
-        public virtual void AfterSerializationDB()
+        public virtual void AfterSerializationDB(bool clearAfterSerializaion = true)
         {
 
         }
         
-        public virtual void UnserializeDB()
+        public virtual void UnserializeDB(bool retryNullEntityOwner = false)
         {
 
         }
@@ -51,11 +55,20 @@ namespace NECS.ECS.ECSCore
     [System.Serializable]
     public class dbRow
     {
-        [System.NonSerialized]
+        //[System.NonSerialized]
         public long componentInstanceId;
         public long componentId;
         public object component;
         public ComponentState componentState;
+    }
+
+    // Logging level enum
+    public enum DBLoggingLevel
+    {
+        None = 0,           // No logging
+        CountOnly = 1,      // Only element counts
+        CountAndTypes = 2,  // Counts and component types
+        Full = 3           // Counts, types, and operation results
     }
 
     [System.Serializable]
@@ -82,13 +95,100 @@ namespace NECS.ECS.ECSCore
         [System.NonSerialized]
         public Dictionary<long, int> ChangedComponents = new Dictionary<long, int>();
 
+        #region Logging Helper Methods
+
+        private void LogDBState(string operation, List<(ECSComponent component, ComponentState state, string action)> changes = null)
+        {
+            if (LoggingLevel == DBLoggingLevel.None) return;
+
+            int totalComponents = 0;
+            Dictionary<Type, int> componentCounts = new Dictionary<Type, int>();
+            Dictionary<Type, Dictionary<ComponentState, int>> statesByType = new Dictionary<Type, Dictionary<ComponentState, int>>();
+
+            // Count all components and their states
+            foreach (var owner in DB)
+            {
+                foreach (var comp in owner.Value)
+                {
+                    if (comp.Value.Item2 != ComponentState.Removed)
+                    {
+                        totalComponents++;
+                        Type compType = comp.Value.Item1.GetType();
+                        
+                        if (!componentCounts.ContainsKey(compType))
+                            componentCounts[compType] = 0;
+                        componentCounts[compType]++;
+
+                        if (!statesByType.ContainsKey(compType))
+                            statesByType[compType] = new Dictionary<ComponentState, int>();
+                        
+                        if (!statesByType[compType].ContainsKey(comp.Value.Item2))
+                            statesByType[compType][comp.Value.Item2] = 0;
+                        statesByType[compType][comp.Value.Item2]++;
+                    }
+                }
+            }
+
+            StringBuilder logMessage = new StringBuilder();
+            logMessage.AppendLine($"[DB Operation: {operation}]");
+
+            // Level 1: Count only
+            logMessage.AppendLine($"Total Components: {totalComponents}");
+            logMessage.AppendLine($"Total Owners: {DB.Count}");
+            logMessage.AppendLine($"Changed Components: {ChangedComponents.Count}");
+
+            // Level 2: Count and types
+            if (LoggingLevel >= DBLoggingLevel.CountAndTypes)
+            {
+                logMessage.AppendLine("Components by Type:");
+                foreach (var kvp in componentCounts.OrderBy(x => x.Key.Name))
+                {
+                    logMessage.AppendLine($"  - {kvp.Key.Name}: {kvp.Value}");
+                }
+            }
+
+            // Level 3: Full details with operation results
+            if (LoggingLevel >= DBLoggingLevel.Full)
+            {
+                if (changes != null && changes.Count > 0)
+                {
+                    logMessage.AppendLine("Operation Results:");
+                    
+                    var grouped = changes.GroupBy(x => new { Type = x.component.GetType(), Action = x.action });
+                    foreach (var group in grouped)
+                    {
+                        logMessage.AppendLine($"  - {group.Key.Action} {group.Key.Type.Name} <{group.Count()}>");
+                    }
+                }
+
+                logMessage.AppendLine("Component States by Type:");
+                foreach (var typeStates in statesByType.OrderBy(x => x.Key.Name))
+                {
+                    logMessage.Append($"  - {typeStates.Key.Name}: ");
+                    var states = typeStates.Value.Select(x => $"{x.Key}={x.Value}");
+                    logMessage.AppendLine(string.Join(", ", states));
+                }
+            }
+
+            NLogger.Log(logMessage.ToString());
+        }
+
+        private string GetComponentTypeName(ECSComponent component)
+        {
+            return component?.GetType().Name ?? "Unknown";
+        }
+
+        #endregion
+
         #region add methods
 
         public virtual void AddComponent(IECSObject ownerComponent, ECSComponent component)
         {
             Dictionary<long, (ECSComponent, ComponentState)> components = new Dictionary<long, (ECSComponent, ComponentState)>();
             ECSComponent addedComponent = null;
-            using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())//lock (ownerEntity.entityComponents.serializationLocker)
+            var changes = new List<(ECSComponent, ComponentState, string)>();
+            
+            using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())
             {
                 lock (this.locker)
                 {
@@ -109,19 +209,25 @@ namespace NECS.ECS.ECSCore
                     ComponentOwners[component.instanceId] = ownerComponent.instanceId;
                     if(!OwnerPaths.ContainsKey(ownerComponent.instanceId))
                     {
-                        OwnerPaths[ownerComponent.instanceId] = new IECSObjectPathContainer(){ECSObject = ownerComponent};
+                        OwnerPaths[ownerComponent.instanceId] = new IECSObjectPathContainer(true){ECSObject = ownerComponent};
                     }
                     ChangedComponents[component.instanceId] = 1;
                     addedComponent = component;
+                    changes.Add((component, ComponentState.Created, "Added"));
+                    
+                    LogDBState($"AddComponent({GetComponentTypeName(component)})", changes);
                 }
             }
             addedComponent.AddedReaction(addedComponent.ownerEntity);
         }
+
         public virtual void AddOrChangeComponent(IECSObject ownerComponent, ECSComponent component)
         {
             Dictionary<long, (ECSComponent, ComponentState)> components = new Dictionary<long, (ECSComponent, ComponentState)>();
             bool change = false;
-            using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())//lock (ownerEntity.entityComponents.serializationLocker)
+            var changes = new List<(ECSComponent, ComponentState, string)>();
+            
+            using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())
             {
                 lock (this.locker)
                 {
@@ -131,30 +237,31 @@ namespace NECS.ECS.ECSCore
                     if (components.ContainsKey(component.instanceId))
                     {
                         change = true;
+                        changes.Add((component, ComponentState.Changed, "Changed"));
                     }
                     else
                     {
-                        //lock (ownerEntity.entityComponents.serializationLocker)
+                        if(ownerComponent is ECSEntity eCSEntity)
                         {
-                            if(ownerComponent is ECSEntity eCSEntity)
-                            {
-                                component.ownerEntity = eCSEntity;
-                            }
-                            else if (ownerComponent is ECSComponent eCSComponent)
-                            {
-                                component.ownerEntity = eCSComponent.ownerEntity;
-                            }
-                            component.ownerDB = this;
-                            components[component.instanceId] = (component, ComponentState.Created);
-                            ComponentOwners[component.instanceId] = ownerComponent.instanceId;
-                            if(!OwnerPaths.ContainsKey(ownerComponent.instanceId))
-                            {
-                                OwnerPaths[ownerComponent.instanceId] = new IECSObjectPathContainer(){ECSObject = ownerComponent};
-                            }
-                            ChangedComponents[component.instanceId] = 1;
+                            component.ownerEntity = eCSEntity;
                         }
+                        else if (ownerComponent is ECSComponent eCSComponent)
+                        {
+                            component.ownerEntity = eCSComponent.ownerEntity;
+                        }
+                        component.ownerDB = this;
+                        components[component.instanceId] = (component, ComponentState.Created);
+                        ComponentOwners[component.instanceId] = ownerComponent.instanceId;
+                        if(!OwnerPaths.ContainsKey(ownerComponent.instanceId))
+                        {
+                            OwnerPaths[ownerComponent.instanceId] = new IECSObjectPathContainer(true){ECSObject = ownerComponent};
+                        }
+                        ChangedComponents[component.instanceId] = 1;
+                        changes.Add((component, ComponentState.Created, "Added"));
                     }
                     DB[ownerComponent.instanceId] = components;
+                    
+                    LogDBState($"AddOrChangeComponent({GetComponentTypeName(component)})", changes);
                 }
             }
             if(change)
@@ -171,13 +278,16 @@ namespace NECS.ECS.ECSCore
                 }
             }
         }
+
         public virtual void AddComponents(IECSObject ownerComponent, params ECSComponent[] component)
         {
+            var changes = new List<(ECSComponent, ComponentState, string)>();
             foreach(var comp in component)
             {
                 AddComponent(ownerComponent, comp);
             }
         }
+
         public virtual void AddComponents(IECSObject ownerComponent, List<ECSComponent> component)
         {
             foreach (var comp in component)
@@ -190,10 +300,12 @@ namespace NECS.ECS.ECSCore
         {
             AddComponent(ownerComponentId.ECSObject, component);
         }
+
         public virtual void AddOrChangeComponent(IECSObjectPathContainer ownerComponentId, ECSComponent component)
         {
             AddOrChangeComponent(ownerComponentId.ECSObject, component);
         }
+
         public virtual void AddComponents(IECSObjectPathContainer ownerComponentId, params ECSComponent[] component)
         {
             foreach (var comp in component)
@@ -201,6 +313,7 @@ namespace NECS.ECS.ECSCore
                 AddComponent(ownerComponentId.ECSObject, comp);
             }
         }
+
         public virtual void AddComponents(IECSObjectPathContainer ownerComponentId, List<ECSComponent> component)
         {
             foreach (var comp in component)
@@ -212,6 +325,7 @@ namespace NECS.ECS.ECSCore
         #endregion
 
         #region edit methods
+        
         public virtual (ECSComponent, ComponentState) GetComponent(long componentId, IECSObject ownerComponent = null)
         {
             lock (this.locker)
@@ -231,7 +345,13 @@ namespace NECS.ECS.ECSCore
                 }
                 (ECSComponent, ComponentState) comp;
                 if (DB[owner].TryGetValue(componentId, out comp))
+                {
+                    if (LoggingLevel >= DBLoggingLevel.Full)
+                    {
+                        NLogger.Log($"[DB GetComponent] Retrieved {GetComponentTypeName(comp.Item1)} (State: {comp.Item2})");
+                    }
                     return comp;
+                }
                 else
                 {
                     NLogger.LogError("error get component from db");
@@ -239,6 +359,7 @@ namespace NECS.ECS.ECSCore
                 }
             }
         }
+
         public virtual List<(ECSComponent, ComponentState)> GetComponentsByType(List<long> componentTypeId, IECSObject ownerComponent = null)
         {
             List<(ECSComponent, ComponentState)> result = new List<(ECSComponent, ComponentState)>();
@@ -265,6 +386,11 @@ namespace NECS.ECS.ECSCore
                         }
                     }
                 }
+                
+                if (LoggingLevel >= DBLoggingLevel.Full)
+                {
+                    NLogger.Log($"[DB GetComponentsByType] Found {result.Count} components");
+                }
             }
             return result;
         }
@@ -276,7 +402,10 @@ namespace NECS.ECS.ECSCore
                 NLogger.LogError("error change component from db");
                 return;
             }
-            using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())//lock (ownerEntity.entityComponents.serializationLocker)
+            
+            var changes = new List<(ECSComponent, ComponentState, string)>();
+            
+            using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())
             {
                 lock (this.locker)
                 {
@@ -292,10 +421,14 @@ namespace NECS.ECS.ECSCore
                         owner = ownerComponent.instanceId;
                     DB[owner][component.instanceId] = (component, ComponentState.Changed);
                     ChangedComponents[component.instanceId] = 1;
+                    changes.Add((component, ComponentState.Changed, "Changed"));
+                    
+                    LogDBState($"ChangeComponent({GetComponentTypeName(component)})", changes);
                 }
             }
             
         }
+        
         #endregion
 
         #region remove methods
@@ -308,7 +441,9 @@ namespace NECS.ECS.ECSCore
                 return;
             }
             ECSComponent removedComponent = null;
-            using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())//lock (ownerEntity.entityComponents.serializationLocker)
+            var changes = new List<(ECSComponent, ComponentState, string)>();
+            
+            using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())
             {
                 lock (this.locker)
                 {
@@ -328,6 +463,9 @@ namespace NECS.ECS.ECSCore
                         DB[owner][componentId] = (comp.Item1, ComponentState.Removed);
                         ChangedComponents[componentId] = 1;
                         removedComponent = comp.Item1;
+                        changes.Add((comp.Item1, ComponentState.Removed, "Removed"));
+                        
+                        LogDBState($"RemoveComponent({GetComponentTypeName(comp.Item1)})", changes);
                     }
                     else
                     {
@@ -340,6 +478,7 @@ namespace NECS.ECS.ECSCore
                 removedComponent.RemovingReaction(removedComponent.ownerEntity);
             }
         }
+
         public virtual void RemoveComponent(params long[] componentsId)
         {
             foreach(var comp in componentsId)
@@ -347,6 +486,7 @@ namespace NECS.ECS.ECSCore
                 RemoveComponent(comp);
             }
         }
+
         public virtual void RemoveComponent(List<long> componentsId, IECSObject ownerComponent = null)
         {
             foreach (var comp in componentsId)
@@ -354,6 +494,7 @@ namespace NECS.ECS.ECSCore
                 RemoveComponent(comp);
             }
         }
+
         public virtual void RemoveComponent(List<ECSComponent> components, IECSObject ownerComponent = null)
         {
             foreach (var comp in components)
@@ -361,10 +502,13 @@ namespace NECS.ECS.ECSCore
                 RemoveComponent(comp.instanceId);
             }
         }
+
         public virtual void RemoveComponentsByType(List<Type> componentTypeId, bool includeInherit, List<IECSObject> ownerComponent = null)
         {
             List<ECSComponent> removedComponents = new List<ECSComponent>();
-            using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())//lock (ownerEntity.entityComponents.serializationLocker)
+            var changes = new List<(ECSComponent, ComponentState, string)>();
+            
+            using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())
             {
                 lock (this.locker)
                 {
@@ -400,19 +544,25 @@ namespace NECS.ECS.ECSCore
                             components[removedComp.Item1.instanceId] = (removedComp.Item1, ComponentState.Removed);
                             ChangedComponents[removedComp.Item1.instanceId] = 1;
                             removedComponents.Add(removedComp.Item1);
+                            changes.Add((removedComp.Item1, ComponentState.Removed, "Removed"));
                         }
                         DB[dbOwner] = components;
                     }
+                    
+                    LogDBState($"RemoveComponentsByType({string.Join(", ", componentTypeId.Select(t => t.Name))})", changes);
                 }
             }
             removedComponents.ForEach(x => {
                 x.RemovingReaction(x.ownerEntity);
             });
         }
+
         public virtual void RemoveComponentsByType(List<long> componentTypeId, List<IECSObject> ownerComponent = null)
         {
             List<ECSComponent> removedComponents = new List<ECSComponent>();
-            using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())//lock (ownerEntity.entityComponents.serializationLocker)
+            var changes = new List<(ECSComponent, ComponentState, string)>();
+            
+            using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())
             {
                 lock (this.locker)
                 {
@@ -445,9 +595,12 @@ namespace NECS.ECS.ECSCore
                             components[removedComp.Item1.instanceId] = (removedComp.Item1, ComponentState.Removed);
                             ChangedComponents[removedComp.Item1.instanceId] = 1;
                             removedComponents.Add(removedComp.Item1);
+                            changes.Add((removedComp.Item1, ComponentState.Removed, "Removed"));
                         }
                         DB[dbOwner] = components;
                     }
+                    
+                    LogDBState($"RemoveComponentsByType(IDs: {string.Join(", ", componentTypeId)})", changes);
                 }
             }
             removedComponents.ForEach(x => {
@@ -459,10 +612,17 @@ namespace NECS.ECS.ECSCore
         {
             try
             {
+                var changes = new List<(ECSComponent, ComponentState, string)>();
                 var dbsnap = this.DB.SnapshotI(this.SerialLocker)[instanceId];
-                foreach (var inter in dbsnap)
+                foreach (var inter in dbsnap.ToList())
                 {
+                    changes.Add((inter.Value.Item1, ComponentState.Removed, "Removed"));
                     this.RemoveComponent(inter.Value.Item1.instanceId);
+                }
+                
+                if (LoggingLevel >= DBLoggingLevel.CountAndTypes)
+                {
+                    LogDBState($"RemoveComponentsByOwner(Owner: {instanceId})", changes);
                 }
             }
             catch (Exception e)
@@ -475,14 +635,19 @@ namespace NECS.ECS.ECSCore
         {
             try
             {
+                var changes = new List<(ECSComponent, ComponentState, string)>();
                 var dbsnap = this.DB.SnapshotI(this.SerialLocker);
+                
                 foreach (var dbinter in dbsnap)
                 {
                     foreach (var inter in dbinter.Value.SnapshotI(this.SerialLocker))
                     {
+                        changes.Add((inter.Value.Item1, ComponentState.Removed, "Cleared"));
                         this.RemoveComponent(inter.Value.Item1.instanceId);
                     }
                 }
+                
+                LogDBState("ClearDB", changes);
             }
             catch (Exception e)
             {
@@ -498,6 +663,12 @@ namespace NECS.ECS.ECSCore
             {
                 serializedDB.Clear();
                 List<long> errorChanged = new List<long>();
+                
+                if (LoggingLevel >= DBLoggingLevel.CountOnly)
+                {
+                    NLogger.Log($"[DB SerializeDB] Starting serialization (OnlyChanged: {serializeOnlyChanged}, ClearChanged: {clearChanged})");
+                }
+                
                 if (serializeOnlyChanged)
                 {
                     Dictionary<long, List<dbRow>> serializedComp = new Dictionary<long, List<dbRow>>();
@@ -556,39 +727,128 @@ namespace NECS.ECS.ECSCore
                         serializedDB[this.OwnerPaths[entityRow.Key]] = components;
                     }
                 }
+                
+                if (LoggingLevel >= DBLoggingLevel.CountOnly)
+                {
+                    NLogger.Log($"[DB SerializeDB] Serialized {serializedDB.Count} owners, {errorChanged.Count} errors");
+                }
+                
                 if (clearChanged)
                     ChangedComponents.Clear();
                 errorChanged.ForEach(x => ChangedComponents[x] = 1);
             }
         }
 
-        public override void AfterSerializationDB()
+        public override void AfterSerializationDB(bool clearAfterSerializaion = true)
         {
             lock (this.locker)
             {
-                foreach (var entityRow in serializedDB)
+                if (clearAfterSerializaion)
                 {
-                    var entityRowValues = entityRow.Value.ToList();
-                    for (int i = 0; i < entityRowValues.Count; i++)
+                    int removedCount = 0;
+                    foreach (var entityRow in serializedDB)
                     {
-                        var ownerList = DB[entityRow.Key.ECSObject.instanceId];
-                        var ecsComponent = ownerList[entityRowValues[i].componentInstanceId];
-                        if (ecsComponent.Item2 == ComponentState.Removed)
+                        var entityRowValues = entityRow.Value.ToList();
+                        for (int i = 0; i < entityRowValues.Count; i++)
                         {
-                            ecsComponent.Item1.RemovingReaction(ecsComponent.Item1.ownerEntity);
-                            ownerList.Remove(ecsComponent.Item1.instanceId);
-                            //i--;
+                            var ownerList = DB[entityRow.Key.ECSObject.instanceId];
+                            var ecsComponent = ownerList[entityRowValues[i].componentInstanceId];
+                            if (ecsComponent.Item2 == ComponentState.Removed)
+                            {
+                                ecsComponent.Item1.RemovingReaction(ecsComponent.Item1.ownerEntity);
+                                ownerList.Remove(ecsComponent.Item1.instanceId);
+                                removedCount++;
+                            }
                         }
+                    }
+                    
+                    if (LoggingLevel >= DBLoggingLevel.CountOnly)
+                    {
+                        NLogger.Log($"[DB AfterSerializationDB] Cleaned up {removedCount} removed components");
                     }
                 }
             }
         }
 
-        public override void UnserializeDB()
+        [System.NonSerialized]
+        private int unserializeCheckCount = 0;
+        
+        [System.NonSerialized]
+        public DictionaryWrapper<IECSObjectPathContainer, (List<dbRow>, int)> serializedDBNonEO = new DictionaryWrapper<IECSObjectPathContainer, (List<dbRow>, int)>();
+
+        [System.NonSerialized]
+        public Dictionary<IECSObjectPathContainer, List<dbRow>> afterDeserializedDB = new Dictionary<IECSObjectPathContainer, List<dbRow>>();
+
+        public override void UnserializeDB(bool retryNullEntityOwner = false)
         {
-            lock (serializedDB)//race fix
+            lock (serializedDB)
             {
+                if (LoggingLevel >= DBLoggingLevel.CountOnly)
+                {
+                    NLogger.Log($"[DB UnserializeDB] Starting deserialization of {serializedDB.Count} owners");
+                }
+
+                if (retryNullEntityOwner)
+                {
+                    serializedDBNonEO.ForEach(x => serializedDB[x.Key] = x.Value.Item1);
+
+                    foreach (var serializedRow in serializedDB)
+                    {
+                        Dictionary<long, (ECSComponent, ComponentState)> components = new Dictionary<long, (ECSComponent, ComponentState)>();
+                        DB.TryGetValue(serializedRow.Key.CacheInstanceId, out components);
+                        if (components == null)
+                            components = new Dictionary<long, (ECSComponent, ComponentState)>();
+                        IECSObject entityOwner = serializedRow.Key.ECSObject;
+                        if (entityOwner == null)
+                        {
+                            if (!serializedDBNonEO.ContainsKey(serializedRow.Key))
+                            {
+                                serializedDBNonEO[serializedRow.Key] = (serializedRow.Value, 0);
+                            }
+
+                            if (serializedDBNonEO[serializedRow.Key].Item2 >= 10)
+                            {
+                                NLogger.Log("client: error unserialize: no entity");
+                                var lostInstanceId = serializedRow.Key.serializableInstanceId;
+                                if (DB.ContainsKey(lostInstanceId))
+                                {
+                                    this.RemoveComponentsByOwner(lostInstanceId);
+                                }
+                                NLogger.Log("lost components destroyed");
+                                return;
+                            }
+
+                            serializedDBNonEO[serializedRow.Key] = (serializedRow.Value, serializedDBNonEO[serializedRow.Key].Item2 + 1);
+
+                        }
+                        else
+                        {
+                            if (serializedDBNonEO.ContainsKey(serializedRow.Key))
+                            {
+                                serializedDBNonEO.Remove(serializedRow.Key);
+                            }
+                        }
+                    }
+                    if (serializedDBNonEO.Count > 0)
+                    {
+                        serializedDBNonEO.ForEach(x => serializedDB.Remove(x.Key));
+                        serializedDBNonEO.Where(x => x.Value.Item2 > 10).ToList().ForEach(x => serializedDBNonEO.Remove(x.Key));
+
+                        var timer = new TimerCompat();
+                        timer.TimerCompatInit(200, (obj, arg) =>
+                        {
+                            timer.Stop();
+                            timer.Dispose();
+                            UnserializeDB(true);
+                        }, false);
+                        timer.Start();
+                    }
+                }
+
                 ChangedComponents.Clear();
+                int addedCount = 0;
+                int updatedCount = 0;
+
                 foreach (var serializedRow in serializedDB)
                 {
                     Dictionary<long, (ECSComponent, ComponentState)> components = new Dictionary<long, (ECSComponent, ComponentState)>();
@@ -604,7 +864,7 @@ namespace NECS.ECS.ECSCore
                             component.componentInstanceId = unserComp.instanceId;
                             if (!OwnerPaths.ContainsKey(entityOwner.instanceId))
                             {
-                                OwnerPaths[entityOwner.instanceId] = new IECSObjectPathContainer() { ECSObject = entityOwner };
+                                OwnerPaths[entityOwner.instanceId] = new IECSObjectPathContainer(true) { ECSObject = entityOwner };
                             }
                             if (entityOwner is ECSEntity eCSEntity)
                             {
@@ -625,6 +885,7 @@ namespace NECS.ECS.ECSCore
                                 {
                                     unserComp.AddedReaction(unserComp.ownerEntity);
                                 }
+                                addedCount++;
                             }
                             else
                             {
@@ -632,6 +893,7 @@ namespace NECS.ECS.ECSCore
                                 components[unserComp.instanceId] = (unserComp, component.componentState);
                                 unserComp.componentManagers.ForEach(x => x.Value.ConnectPoint = unserComp);
                                 unserComp.AfterDeserialization();
+                                updatedCount++;
                             }
                             ChangedComponents[unserComp.instanceId] = 1;
                         }
@@ -642,24 +904,40 @@ namespace NECS.ECS.ECSCore
                         NLogger.Error("error unserialize: no entity");
                     }
                 }
+
+                if (LoggingLevel >= DBLoggingLevel.CountOnly)
+                {
+                    NLogger.Log($"[DB UnserializeDB] Deserialized - Added: {addedCount}, Updated: {updatedCount}");
+                }
+
                 AfterDeserializeDB();
+                afterDeserializedDB = serializedDB;
+                serializedDB = new Dictionary<IECSObjectPathContainer, List<dbRow>>();
             }
         }
 
         public override void AfterDeserializeDB()
         {
+            int createdCount = 0;
+            int changedCount = 0;
+            int removedCount = 0;
+            
             foreach (var entityRow in serializedDB)
             {
                 var entityRowValues = entityRow.Value.ToList();
                 for (int i = 0; i < entityRowValues.Count; i++)
                 {
                     var ownerList = DB[entityRow.Key.CacheInstanceId];
+                    if (entityRowValues[i].componentState == ComponentState.Removed && !ownerList.ContainsKey(entityRowValues[i].componentInstanceId))
+                    {
+                        NLogger.LogError("remove db component duplicate");
+                        continue;
+                    }
                     var ecsComponent = ownerList[entityRowValues[i].componentInstanceId];
                     if (ecsComponent.Item2 == ComponentState.Created)
                     {
                         ecsComponent.Item1.AddedReaction(ecsComponent.Item1.ownerEntity);
-                        //ownerList.Remove(ecsComponent.Item1.InstanceId);
-                        //i--;
+                        createdCount++;
                     }
                     if (ecsComponent.Item2 == ComponentState.Changed)
                     {
@@ -668,16 +946,22 @@ namespace NECS.ECS.ECSCore
                         {
                             ecsComponent.Item1.ChangeReaction(ecsComponent.Item1.ownerEntity);
                         });
-                        //i--;
+                        changedCount++;
                     }
                     if (ecsComponent.Item2 == ComponentState.Removed)
                     {
                         ecsComponent.Item1.RemovingReaction(ecsComponent.Item1.ownerEntity);
                         ownerList.Remove(ecsComponent.Item1.instanceId);
-			            ComponentOwners.Remove(ecsComponent.Item1.instanceId);
-                        //i--;
+                        ComponentOwners.Remove(ecsComponent.Item1.instanceId);
+                        removedCount++;
                     }
                 }
+            }
+            
+            if (LoggingLevel >= DBLoggingLevel.CountOnly)
+            {
+                NLogger.Log($"[DB AfterDeserializeDB] Processed - Created: {createdCount}, Changed: {changedCount}, Removed: {removedCount}");
+                LogDBState("AfterDeserializeDB Complete");
             }
         }
     }

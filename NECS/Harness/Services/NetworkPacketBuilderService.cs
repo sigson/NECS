@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using YamlDotNet.Core;
 using System.IO;
 using NECS.Extensions;
+using NECS.Core.Logging;
 
 namespace NECS.Harness.Services
 {
@@ -63,15 +64,27 @@ namespace NECS.Harness.Services
 
                         for (int i = 0; i < bufPackets.Count; i++)
                         {
-                            //if (i == 0)
-                            //    resultBuffer.AddRange(bufPackets[i]);
-                            //else
-                            //{
-
-                            //}
                             resultBuffer.AddRange(bufPackets[i].SubArray(headerSize, bufPackets[i].Length - headerSize));
                         }
                         SlicedReceivedStorage.Remove(guid, out _);
+                    }
+                    else if (packetBuffer.Length == packetSize)
+                    {
+                        int offsetPerPack = 0;
+                        offsetPerPack += headerSize;
+                        for (int i = 0; i < Math.Ceiling(((float)packetBuffer.Length) / ((float)networkBufferSize)); i++)
+                        {
+                            if (offsetPerPack + networkBufferSize > packetBuffer.Length)
+                            {
+                                resultBuffer.AddRange(packetBuffer.SubArray(offsetPerPack, packetBuffer.Length - offsetPerPack));
+                            }
+                            else
+                            {
+                                resultBuffer.AddRange(packetBuffer.SubArray(offsetPerPack, networkBufferSize - headerSize));
+                            }
+
+                            offsetPerPack += networkBufferSize;
+                        }
                     }
                     else
                     {
@@ -86,12 +99,6 @@ namespace NECS.Harness.Services
                             bufPackets.TryAdd(packetNumber, packetBuffer);
                         }
                     }
-                    //if (SlicedReceivedStorage.TryGetValue(guid, out _))
-                    //{
-                    //    //try { socket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, OnReceive, socket); }
-                    //    //catch { return; }
-                    //    return;
-                    //}
                 }
             }
             else
@@ -104,6 +111,18 @@ namespace NECS.Harness.Services
             }
             else
             {
+                // using (System.Security.Cryptography.SHA256 sha256 = System.Security.Cryptography.SHA256.Create())
+                // {
+                //     byte[] hashBytes = sha256.ComputeHash(packetBuffer);
+                //     string hashString = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+                //     NLogger.LogNetwork($"Original: {packetBuffer.Length} Hash: {hashString}");
+                // }
+                // using (System.Security.Cryptography.SHA256 sha256 = System.Security.Cryptography.SHA256.Create())
+                // {
+                //     byte[] hashBytes = sha256.ComputeHash(resultBuffer.ToArray());
+                //     string hashString = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+                //     NLogger.LogNetwork($"Unpacked: {resultBuffer.ToArray().Length} Hash: {hashString}");
+                // }
                 return (resultBuffer.ToArray(), true);
             }
         }
@@ -158,6 +177,20 @@ namespace NECS.Harness.Services
                 //packetPosition++;
             }
             //Logger.Log(result.Count);
+
+            // using (System.Security.Cryptography.SHA256 sha256 = System.Security.Cryptography.SHA256.Create())
+            // {
+            //     byte[] hashBytes = sha256.ComputeHash(packetBuffer);
+            //     string hashString = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+            //     NLogger.LogNetwork($"Original: {packetBuffer.Length} Hash: {hashString}");
+            // }
+            // using (System.Security.Cryptography.SHA256 sha256 = System.Security.Cryptography.SHA256.Create())
+            // {
+            //     byte[] hashBytes = sha256.ComputeHash(result.ToArray());
+            //     string hashString = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+            //     NLogger.LogNetwork($"Packed: {result.ToArray().Length} Hash: {hashString}");
+            // }
+
             return result.ToArray();
         }
 

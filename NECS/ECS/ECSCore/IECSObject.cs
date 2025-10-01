@@ -28,8 +28,14 @@ namespace NECS.ECS.ECSCore
         static public long Id { get; set; } = 0;
         static public long GId<T>() => EntitySerialization.TypeIdStorage[typeof(T)];
         public long instanceId = Guid.NewGuid().GuidToLongR();
-        [System.NonSerialized]
-        public List<IManager> connectPoints = new List<IManager>();
+        
+        public List<IManager> connectPoints
+        {
+            get
+            {
+                return ECSSharedField<List<IManager>>.GetOrAdd(instanceId, "connectPoints", new List<IManager>());
+            }
+        }
         public List<T> GetConnectPoints<T>() where T : IManager
         {
             var result = new List<T>();
@@ -67,8 +73,9 @@ namespace NECS.ECS.ECSCore
 
         [System.NonSerialized]
         RWLock NodeLock = new RWLock();
-        [System.NonSerialized]
+        //[System.NonSerialized]
         public bool ChildDispose = false; //for db component may be true
+        public bool RebaseChildren = true;
 
         [System.NonSerialized]
         private IECSObject ownerECSObjectStorage = null;
@@ -229,9 +236,19 @@ namespace NECS.ECS.ECSCore
             }
             else
             {
-                foreach (var childpair in childECSObjects)
+                if (RebaseChildren)
                 {
-                    childpair.Value.ownerECSObject = this.ownerECSObject;
+                    foreach (var childpair in childECSObjects)
+                    {
+                        if (this.ownerECSObject != null)
+                        {
+                            childpair.Value.ownerECSObject = this.ownerECSObject;
+                        }
+                        else
+                        {
+                            NLogger.Error($"IECSObject '{instanceId}: {this.GetType().Name}': no has ownerECSObject");
+                        }
+                    }
                 }
                 ClearChildObjects();
             }
@@ -254,34 +271,51 @@ namespace NECS.ECS.ECSCore
                 childECSObjectsId.Clear();
                 foreach (var childpair in childECSObjects)
                 {
-                    childECSObjectsId[childpair.Key] = new IECSObjectPathContainer(){ECSObject = childpair.Value};
+                    childECSObjectsId[childpair.Key] = new IECSObjectPathContainer(true){ECSObject = childpair.Value};
                 }
                 ChangesState = IECSObjectSerializedStateMode.Freezed;
                 HasChildChanges = true;
             }
         }
 
-        private void DeserializationProcess()
+        private bool DeserializationProcess(bool retryGetECSObjects = false)
         {
             var newchildECSObjects = new DictionaryWrapper<long, IECSObject>();
+
+            if (retryGetECSObjects)
+            {
+                foreach (var entry in childECSObjectsId)
+                {
+                    if (childECSObjects.ContainsKey(entry.Key))
+                        continue;
+
+                    if (entry.Value.ECSObject == null)
+                    {
+                        return false;
+                    }
+                }
+            }
+
             foreach (var entry in childECSObjectsId)
-            {   
-                if(childECSObjects.ContainsKey(entry.Key))
+            {
+                if (childECSObjects.ContainsKey(entry.Key))
                     continue;
-                
+
                 newchildECSObjects[entry.Key] = entry.Value.ECSObject;
-                if(entry.Value.ECSObject != null)
+                if (entry.Value.ECSObject != null)
                 {
                     this.AddChildObject(entry.Value.ECSObject);
                 }
             }
-            foreach(var entry in childECSObjects)
+            foreach (var entry in childECSObjects)
             {
-                if(!newchildECSObjects.ContainsKey(entry.Key))
+                if (!newchildECSObjects.ContainsKey(entry.Key))
                 {
                     this.RemoveChildObject(entry.Key);
                 }
             }
+
+            return true;
         }
 
         /// <summary>
@@ -325,13 +359,50 @@ namespace NECS.ECS.ECSCore
 
         }
 
+        [System.NonSerialized]
+        private int deserializeErrorCount = 0;
+
         public void AfterDeserialization()
         {
-            lock (SerialLocker)
+            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server || GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Offline)
             {
-                if(HasChildChanges)
-                    DeserializationProcess();
-                AfterDeserializationImpl();
+                lock (SerialLocker)
+                {
+                    if (HasChildChanges)
+                        DeserializationProcess();
+                    AfterDeserializationImpl();
+                }
+            }
+            else
+            {
+                lock (SerialLocker)
+                {
+                    bool deserres = true;
+                    if (HasChildChanges)
+                        deserres = DeserializationProcess(true);
+                    if (!deserres)
+                    {
+                        var timer = new TimerCompat();
+                        timer.TimerCompatInit(100, (obj, arg) =>
+                        {
+                            timer.Stop();
+                            timer.Dispose();
+                            AfterDeserialization();
+                        }, false);
+                        if (deserializeErrorCount < 30)
+                        {
+                            deserializeErrorCount++;
+                            timer.Start();
+                        }
+                        else
+                        {
+                            NLogger.Error("client: error deserialize");
+                        }
+
+                        return;
+                    }
+                    AfterDeserializationImpl();
+                }
             }
         }
         protected virtual void AfterDeserializationImpl()

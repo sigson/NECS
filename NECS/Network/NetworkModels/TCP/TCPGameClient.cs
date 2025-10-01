@@ -111,7 +111,7 @@ namespace NECS.Network.NetworkModels.TCP
 
             if (result.Item2)
             {
-                NetworkingService.instance.OnReceived(result.Item1, 0, 0, this);
+                NetworkingService.instance.OnReceived(this, result.Item1);
             }
         }
 

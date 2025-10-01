@@ -54,8 +54,9 @@ namespace WebSocketRealization
 
         #region Constructor
 
-        public WSClient(string connectionString)
+        public WSClient(string host, int port, int bufferSize = 1024)
         {
+            string connectionString = $"ws://{host}:{port}";
             _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
             
             var uri = new Uri(_connectionString);

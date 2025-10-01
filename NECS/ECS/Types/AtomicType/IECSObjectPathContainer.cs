@@ -31,6 +31,20 @@ namespace NECS.ECS.Types.AtomicType
             }
         }
 
+        public IECSObjectPathContainer() {}
+
+        public IECSObjectPathContainer(bool enableClientBehaviour = false, bool updateCache = false)
+        {
+            AlwaysUpdateCache = updateCache;
+            if (enableClientBehaviour)
+            {
+                if (GlobalProgramState.instance != null && GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
+                {
+                    AlwaysUpdateCache = true;
+                }
+            }
+        }
+
         public bool AlwaysUpdateCache = false;
 
         [System.NonSerialized]

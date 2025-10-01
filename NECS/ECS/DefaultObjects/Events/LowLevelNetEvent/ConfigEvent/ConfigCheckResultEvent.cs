@@ -28,6 +28,7 @@ namespace NECS.ECS.DefaultObjects.Events.LowLevelNetEvent.ConfigEvent
                 ConstantService.instance.loadedConfigFile = NewConfig == null ? new List<byte>() : this.NewConfig.ToList();
                 ConstantService.instance.checkedConfigVersion = this.configHash;
                 ConstantService.instance.SetupConfigs();
+                ConstantService.instance.UnfreezeConstantService();
             }
         }
     }

@@ -151,7 +151,7 @@ namespace WebSocketRealization
         /// <param name="Message">The message to encode into the frame</param>
         /// <param name="Opcode">The opcode of the frame</param>
         /// <returns>Byte array in form of a websocket frame</returns>
-        public static byte[] GetFrameFromByte(byte[] Message, EOpcodeType Opcode = EOpcodeType.Text)
+        public static byte[] GetFrameFromByte(byte[] Message, EOpcodeType Opcode = EOpcodeType.Binary)
         {
             byte[] response;
             byte[] bytesRaw = Message;

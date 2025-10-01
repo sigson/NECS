@@ -14,6 +14,7 @@ using System.IO;
 using System.ComponentModel;
 using NECS.Harness.Serialization;
 using NECS.Extensions.ThreadingSync;
+using NECS.Harness.Services;
 
 namespace NECS.ECS.ECSCore
 {
@@ -86,7 +87,7 @@ namespace NECS.ECS.ECSCore
 
                                     if (dBComponent != null)
                                     {
-                                        dBComponent.AfterSerializationDB();
+                                        dBComponent.AfterSerializationDB(clearChanged);
                                     }
                                     component.AfterSerialization();
                                 }
@@ -132,7 +133,7 @@ namespace NECS.ECS.ECSCore
                                     slicedComponents[pairComponentKey] = serializedData;//writer.ToArray();
                                     if (dbComp != null)
                                     {
-                                        dbComp.AfterSerializationDB();
+                                        dbComp.AfterSerializationDB(clearChanged);
                                     }
                                     if (clearChanged)
                                         changedComponents.Remove((pairComponent as ECSComponent).GetTypeFast(), out _);
@@ -220,7 +221,7 @@ namespace NECS.ECS.ECSCore
                                 slicedComponents[pairComponent.Key] = writer.ToString();
                                 if (pairComponent.Value is DBComponent)
                                 {
-                                    (pairComponent.Value as DBComponent).AfterSerializationDB();
+                                    (pairComponent.Value as DBComponent).AfterSerializationDB(clearChanged);
                                 }
                             }
                         }
@@ -260,7 +261,7 @@ namespace NECS.ECS.ECSCore
                                         slicedComponents[pairComponentKey] = writer.ToString();
                                         if (dbComp != null)
                                         {
-                                            dbComp.AfterSerializationDB();
+                                            dbComp.AfterSerializationDB(clearChanged);
                                         }
                                     }
                                 }
@@ -323,7 +324,15 @@ namespace NECS.ECS.ECSCore
                     {
                         //TaskEx.RunAsync(() =>
                         //{
-                            (typedComponent as DBComponent).UnserializeDB();
+                        
+                            if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server || GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Offline)
+                            {
+                                (typedComponent as DBComponent).UnserializeDB();
+                            }
+                            else
+                            {
+                                (typedComponent as DBComponent).UnserializeDB(true);
+                            }
                         //});
                     }
                     typedComponent.AfterDeserialization();

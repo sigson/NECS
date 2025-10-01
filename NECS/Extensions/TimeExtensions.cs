@@ -259,7 +259,7 @@ namespace NECS.Extensions
             public static readonly GlobalTimerManager Instance = new GlobalTimerManager();
             private readonly Thread _timerThread;
             private volatile bool _isRunning;
-            private readonly HashSet<TimerInstance> _timers = new HashSet<TimerInstance>();
+            private readonly ConcurrentHashSet<TimerInstance> _timers = new ConcurrentHashSet<TimerInstance>();
             private long _currentTicks;
 
             private GlobalTimerManager()
@@ -395,7 +395,7 @@ namespace NECS.Extensions
             }
         }
 
-        public readonly TimerInstance timerData = new TimerInstance();
+        public TimerInstance timerData = new TimerInstance();
         private static GlobalTimerManager Manager => GlobalTimerManager.Instance;
 
         public bool Enabled => timerData.IsEnabled;
@@ -405,7 +405,7 @@ namespace NECS.Extensions
 
         public TimerCompat()
         {
-            var initTimer = Manager.ToString();
+            //var initTimer = Manager.ToString();
         }
 
         public TimerCompat(TimerInstance timerInstance)
@@ -432,9 +432,27 @@ namespace NECS.Extensions
             registered = true;
         }
 
+        public TimerCompat TimerCompatInit(int intervalMs, EventHandler callback, bool loop = false, bool asyncRun = true)
+        {
+            if (intervalMs < 2) intervalMs = 2;
+            timerData = new TimerInstance
+            {
+                IsEnabled = false,
+                MSInterval = intervalMs,
+                RemainingMS = intervalMs,
+                Elapsed = callback,
+                AutoReset = loop,
+                IsPaused = false,
+                IsAsync = asyncRun
+            };
+            Manager.RegisterTimer(timerData);
+            registered = true;
+            return this;
+        }
+
         public void Start()
         {
-            if(!registered)
+            if (!registered)
             {
                 Manager.RegisterTimer(timerData);
                 registered = true;

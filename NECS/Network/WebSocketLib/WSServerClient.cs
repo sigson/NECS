@@ -11,6 +11,7 @@ using NECS.Network.NetworkModels;
 using NECS.ECS.ECSCore;
 using NECS;
 using NECS.Harness.Services;
+using NECS.Extensions.ThreadingSync;
 
 namespace WebSocketRealization
 {
@@ -19,13 +20,10 @@ namespace WebSocketRealization
     /// </summary>
     public partial class WSServerClient : ISocketRealization
     {
-
         #region Fields
 
         ///<summary>The socket of the connected client</summary>
         private Socket _socket;
-
-        ///<summary>The guid of the connected client</summary>
 
         /// <summary>The server that the client is connected to</summary>
         private WSServer _server;
@@ -34,24 +32,23 @@ namespace WebSocketRealization
         private bool _bIsWaitingForPong;
         private int userPackets;
 
+        private volatile bool _isConnected;
+        private volatile bool _isConnecting;
+        private volatile bool _isDisposed;
+        private volatile bool _isSocketDisposed;
+
         public event Action<ISocketRealization, byte[]> DataReceived;
         public event Action<ISocketRealization, Exception> ErrorOccurred;
         public event Action<ISocketRealization> Connected;
         public event Action<ISocketRealization> Disconnected;
 
         public long Id { get; set; }
-
-        public string Address { get; set; }
-
-        public int Port { get; set; }
-
-        public bool IsConnected { get; set; }
-
-        public bool IsConnecting { get; set; }
-
-        public bool IsDisposed { get; set; }
-
-        public bool IsSocketDisposed { get; set; }
+        public string Address { get; private set; }
+        public int Port { get; private set; }
+        public bool IsConnected => _isConnected && _socket != null && _socket.Connected;
+        public bool IsConnecting => _isConnecting;
+        public bool IsDisposed => _isDisposed;
+        public bool IsSocketDisposed => _isSocketDisposed;
         public bool SocketClosed { get; private set; }
 
         #endregion
@@ -66,6 +63,19 @@ namespace WebSocketRealization
             this._server = Server;
             this._socket = Socket;
             this.Id = Guid.NewGuid().GuidToLong();
+
+            // Extract address and port from the connected socket
+            if (Socket.RemoteEndPoint is IPEndPoint remoteEndPoint)
+            {
+                this.Address = remoteEndPoint.Address.ToString();
+                this.Port = remoteEndPoint.Port;
+            }
+
+            _isConnected = true;
+            _isConnecting = false;
+            _isDisposed = false;
+            _isSocketDisposed = false;
+            SocketClosed = false;
 
             // Start to detect incomming messages 
             GetSocket().BeginReceive(new byte[] { 0 }, 0, 0, SocketFlags.None, messageCallback, null);
@@ -116,116 +126,187 @@ namespace WebSocketRealization
         {
             try
             {
+                if (_isDisposed || _socket == null || !_socket.Connected)
+                    return;
+
                 GetSocket().EndReceive(AsyncResult);
 
                 // Read the incomming message 
-                byte[] messageBuffer = new byte[8];
+                byte[] messageBuffer = new byte[this._server.BufferSize];
                 int bytesReceived = GetSocket().Receive(messageBuffer);
 
                 // Resize the byte array to remove whitespaces 
-                if (bytesReceived < messageBuffer.Length) Array.Resize<byte>(ref messageBuffer, bytesReceived);
+                if (bytesReceived < messageBuffer.Length) 
+                    Array.Resize<byte>(ref messageBuffer, bytesReceived);
 
                 // Get the opcode of the frame
-                EOpcodeType opcode = Helpers.GetFrameOpcode(messageBuffer);
+                //EOpcodeType opcode = Helpers.GetFrameOpcode(messageBuffer);
+                EOpcodeType opcode = EOpcodeType.Binary;
 
                 // If the connection was closed
                 if (opcode == EOpcodeType.ClosedConnection)
                 {
-                    GetServer().ClientDisconnect(this);
+                    InternalDisconnect();
                     return;
                 }
 
                 // Pass the message to the server event to handle the logic
+                //this.ReceiveMessage(this, Helpers.GetByteFromFrame(messageBuffer));
                 this.ReceiveMessage(this, Helpers.GetByteFromFrame(messageBuffer));
 
                 // Start to receive messages again
-                GetSocket().BeginReceive(new byte[] { 0 }, 0, 0, SocketFlags.None, messageCallback, null);
-
+                if (!_isDisposed && _socket != null && _socket.Connected)
+                {
+                    GetSocket().BeginReceive(new byte[] { 0 }, 0, 0, SocketFlags.None, messageCallback, null);
+                }
             }
-            catch (Exception Exception)
+            catch (Exception ex)
             {
-                GetSocket().Close();
-                GetSocket().Dispose();
-                GetServer().ClientDisconnect(this);
+                ErrorOccurred?.Invoke(this, ex);
+                InternalDisconnect();
             }
         }
 
-        public void Connect()
+        private void InternalDisconnect()
         {
+            if (_isDisposed)
+                return;
 
-        }
+            _isConnected = false;
+            _isSocketDisposed = true;
+            SocketClosed = true;
 
-        public void Disconnect()
-        {
+            try
+            {
+                _socket?.Close();
+                _socket?.Dispose();
+            }
+            catch { }
 
             GetServer().ClientDisconnect(this);
         }
 
+        public void Connect()
+        {
+            // Server clients are already connected when created
+            throw new InvalidOperationException("Server client is already connected");
+        }
+
+        public void Disconnect()
+        {
+            if (_isDisposed)
+                return;
+
+            _isConnected = false;
+            _isSocketDisposed = true;
+            InternalDisconnect();
+        }
+
         public void Close()
         {
-            GetSocket().Close();
-            GetSocket().Dispose();
+            Disconnect();
         }
 
         public void Reconnect()
         {
-
+            throw new InvalidOperationException("Server clients cannot reconnect");
         }
 
         public void ConnectAsync()
         {
-
+            throw new InvalidOperationException("Server clients are already connected");
         }
 
         public void DisconnectAsync()
         {
-
+            TaskEx.Run(() =>
+            {
+                try
+                {
+                    Disconnect();
+                }
+                catch (Exception ex)
+                {
+                    ErrorOccurred?.Invoke(this, ex);
+                }
+            });
         }
 
         public bool ReconnectAsync()
         {
-            throw new NotImplementedException();
+            throw new InvalidOperationException("Server clients cannot reconnect");
         }
 
         public void Send(byte[] buffer)
         {
+            if (_isDisposed || !_isConnected)
+                throw new InvalidOperationException("Cannot send data: client is not connected");
+
             this.SendMessage(this, buffer);
         }
 
         public void Send(ECSEvent ecsEvent)
         {
+            if (_isDisposed || !_isConnected)
+                throw new InvalidOperationException("Cannot send data: client is not connected");
+
             this.SendMessage(this, ecsEvent.GetNetworkPacket());
         }
 
         public void SendAsync(byte[] buffer)
         {
-            throw new NotImplementedException();
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+
+            if (_isDisposed || !_isConnected)
+            {
+                ErrorOccurred?.Invoke(this, new InvalidOperationException("Cannot send data: client is not connected"));
+                return;
+            }
+
+            TaskEx.Run(() =>
+            {
+                try
+                {
+                    Send(buffer);
+                }
+                catch (Exception ex)
+                {
+                    ErrorOccurred?.Invoke(this, ex);
+                }
+            });
         }
 
         public void SendMessage(WSServerClient Client, string Data)
         {
+            if (_isDisposed || !_isConnected || _socket == null || !_socket.Connected)
+                throw new InvalidOperationException("Cannot send message: client is not connected");
+
             // Create a websocket frame around the data to send
-            byte[] frameMessage = Helpers.GetFrameFromString(Data);
+            //byte[] frameMessage = Helpers.GetFrameFromString(Data);
+            byte[] frameMessage = Encoding.Default.GetBytes(Data);//Helpers.GetFrameFromString(Data);
 
-            // Send the framed message to the in client
-            Client.GetSocket().Send(frameMessage);
-
+            // Send the framed message to the client
+            Client.GetSocket().Send(Helpers.GetFrameFromByte(frameMessage));
         }
 
         public void SendMessage(WSServerClient Client, byte[] Data)
         {
+            if (_isDisposed || !_isConnected || _socket == null || !_socket.Connected)
+                throw new InvalidOperationException("Cannot send message: client is not connected");
+
             // Create a websocket frame around the data to send
+            //byte[] frameMessage = Helpers.GetFrameFromByte(Data);
             byte[] frameMessage = Helpers.GetFrameFromByte(Data);
 
-            // Send the framed message to the in client
+            // Send the framed message to the client
             Client.GetSocket().Send(frameMessage);
-
-            // Call the on send message callback event 
         }
 
         public void ReceiveMessage(WSServerClient Client, byte[] Message)
         {
-            DataReceived?.Invoke(this, Message);
+            //DataReceived?.Invoke(this, Message);
+            
             if (Message.Length == 0)
             {
                 Close();
@@ -236,7 +317,7 @@ namespace WebSocketRealization
 
             if(result.Item2)
             {
-                NetworkingService.instance.OnReceived(result.Item1, 0, 0, this);
+                NetworkingService.instance.OnReceived(this, result.Item1);
             }
 
             userPackets++;
@@ -245,5 +326,17 @@ namespace WebSocketRealization
 
         #endregion
 
+        #region IDisposable Support
+
+        public void Dispose()
+        {
+            if (_isDisposed)
+                return;
+
+            _isDisposed = true;
+            Disconnect();
+        }
+
+        #endregion
     }
 }

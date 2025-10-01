@@ -5,6 +5,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NECS.Core.Logging;
 using static FileAdapter;
 
 namespace NECS.Extensions
@@ -58,13 +59,26 @@ namespace NECS.Extensions
 
             string sFilePath = FSExtensions.Combine(sDir, sFileName);
             string sFinalDir = FSExtensions.GetDirectoryName(sFilePath);
-            if (!DirectoryAdapter.Exists(sFinalDir))
-                DirectoryAdapter.CreateDirectory(sFinalDir);
+
+#if GODOT
+            if (!DirectoryAdapter.Exists(GodotExtensions.FixPath(sFinalDir)))
+                DirectoryAdapter.CreateDirectory(GodotExtensions.FixPath(sFinalDir));
+            if (!DirectoryAdapter.Exists(FSExtensions.GetDirectoryName(GodotExtensions.FixPath(sFilePath))))
+                DirectoryAdapter.CreateDirectory(FSExtensions.GetDirectoryName(GodotExtensions.FixPath(sFilePath)));
 
             // using (FileStream outFile = new FileStream(sFilePath, FileMode.Create, FileAccess.Write, FileShare.None))
             //     outFile.Write(bytes, 0, iFileLen);
-            FileAdapter.WriteAllBytes(sFilePath, bytes);
+            FileAdapter.WriteAllBytes(GodotExtensions.FixPath(sFilePath), bytes);
+#else
+            if (!DirectoryAdapter.Exists((sFinalDir)))
+                DirectoryAdapter.CreateDirectory((sFinalDir));
+            if (!DirectoryAdapter.Exists(FSExtensions.GetDirectoryName((sFilePath))))
+                DirectoryAdapter.CreateDirectory(FSExtensions.GetDirectoryName((sFilePath)));
 
+            // using (FileStream outFile = new FileStream(sFilePath, FileMode.Create, FileAccess.Write, FileShare.None))
+            //     outFile.Write(bytes, 0, iFileLen);
+            FileAdapter.WriteAllBytes((sFilePath), bytes);
+#endif
             return true;
         }
 

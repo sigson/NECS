@@ -119,10 +119,11 @@ namespace NECS.Harness.Services
                 {
                     if (!WorldDB.TryGetValue(worldId, out var gworld))
                     {
-                        world = new ECSWorld();
-                        world.instanceId = worldId;
-                        WorldDB.TryAdd(worldId, world);
-                        world.InitWorldScope(null);
+                        gworld = new ECSWorld();
+                        gworld.instanceId = worldId;
+                        WorldDB.TryAdd(worldId, gworld);
+                        gworld.InitWorldScope(null);
+                        world = gworld;
                     }
                     return gworld;
                 }

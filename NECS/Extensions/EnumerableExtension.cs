@@ -163,6 +163,18 @@ public static class EnumerableExtension
 
         return string.Join(delimiter, source.Select(x => x?.ToString() ?? "null"));
     }
+
+    public static string ToStringListing<T>(this IEnumerable<T> source, Func<T, string> toStringFunc, string delimiter = ", ")
+    {
+        if (source == null)
+            throw new ArgumentNullException(nameof(source));
+
+        if (delimiter == null)
+            throw new ArgumentNullException(nameof(delimiter));
+
+        return string.Join(delimiter, source.Select(x => toStringFunc(x) ?? "null"));
+    }
+
     private static readonly Random rand1 = new Random();
     public static IEnumerable<T> TakeRandom<T>(this IEnumerable<T> source, int count = -1)
     {

@@ -28,22 +28,30 @@ namespace WebSocketRealization
         /// <summary>The connected clients to the server </summary>
         private List<WSServerClient> _clients = new List<WSServerClient>();
 
-        public int Port => throw new NotImplementedException();
+        private readonly int _port;
+        private readonly int _bufferSize;
+        private readonly string _address;
 
-        public int BufferSize => throw new NotImplementedException();
-
-        public string Address => throw new NotImplementedException();
+        public int Port => _port;
+        public int BufferSize => _bufferSize;
+        public string Address => _address;
 
         #endregion
 
         #region Class Events
 
         /// <summary>Create and start a new listen socket server</summary>
-        /// <param name="EndPoint">The listen endpoint of the server</param>
+        /// <param name="address">The listen address of the server</param>
+        /// <param name="port">The port to listen on</param>
+        /// <param name="bufferSize">The buffer size for operations</param>
         public WSServer(string address, int port, int bufferSize = 1024)
         {
             if (port <= 0 || port > 65535) throw new ArgumentOutOfRangeException("Parameter 'port' must be between 1 and 65,535");
             if (bufferSize <= 0) throw new ArgumentOutOfRangeException("Parameter 'bufferSize' must be above 0");
+
+            _address = address;
+            _port = port;
+            _bufferSize = bufferSize;
 
             IPEndPoint EndPoint = new IPEndPoint(IPAddress.Parse(address), port);
 
@@ -53,9 +61,6 @@ namespace WebSocketRealization
 
             // Create a new listen socket
             this._socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-            // Start the server
-            
         }
 
         #endregion
@@ -142,9 +147,70 @@ namespace WebSocketRealization
             GetSocket().Dispose();
         }
 
+        private void connectionCallback(IAsyncResult AsyncResult)
+        {
+            try
+            {
+                // Получаем сокет клиента, который пытается подключиться
+                Socket clientSocket = GetSocket().EndAccept(AsyncResult);
+
+                // --- НАЧАЛО ИЗМЕНЕНИЙ: КОРРЕКТНОЕ РУКОПОЖАТИЕ ---
+
+                // Увеличим буфер на случай длинных заголовков
+                byte[] handshakeBuffer = new byte[2048];
+                int handshakeReceived = clientSocket.Receive(handshakeBuffer);
+
+                // Преобразуем запрос в строку
+                string headerRequest = Encoding.UTF8.GetString(handshakeBuffer, 0, handshakeReceived);
+
+                // Находим ключ "Sec-WebSocket-Key" с помощью регулярного выражения
+                string webSocketKey = new System.Text.RegularExpressions.Regex("Sec-WebSocket-Key: (.*)").Match(headerRequest).Groups[1].Value.Trim();
+
+                // "Магическая строка" из стандарта WebSocket
+                string magicString = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
+                // Создаем ключ ответа путем хеширования
+                string acceptKey = Convert.ToBase64String(
+                    System.Security.Cryptography.SHA1.Create().ComputeHash(
+                        Encoding.UTF8.GetBytes(webSocketKey + magicString)
+                    )
+                );
+
+                // Формируем полный и корректный HTTP-ответ
+                byte[] response = Encoding.UTF8.GetBytes(
+                    "HTTP/1.1 101 Switching Protocols\r\n" +
+                    "Connection: Upgrade\r\n" +
+                    "Upgrade: websocket\r\n" +
+                    "Sec-WebSocket-Accept: " + acceptKey + "\r\n\r\n" // Важны два \r\n в конце
+                );
+
+                // Отправляем ответ клиенту
+                clientSocket.Send(response);
+
+                // --- КОНЕЦ ИЗМЕНЕНИЙ ---
+
+                // Создаем новый объект клиента и добавляем его в список
+                WSServerClient client = new WSServerClient(this, clientSocket);
+                _clients.Add(client);
+
+                // Вызываем событие, что клиент подключился
+                NetworkingService.instance.OnConnected(client);
+                Connected?.Invoke(client);
+
+                // Снова начинаем принимать входящие соединения
+                GetSocket().BeginAccept(connectionCallback, null);
+            }
+            catch (Exception Exception)
+            {
+                // Используйте более детальное логирование ошибки
+                Console.WriteLine($"Handshake or connection callback error: {Exception.ToString()}");
+            }
+        }
+
+        //////TLS///////////////TLS
         /// <summary>Called when the socket is trying to accept an incomming connection</summary>
         /// <param name="AsyncResult">The async operation state</param>
-        private void connectionCallback(IAsyncResult AsyncResult)
+        private void connectionCallbackTLS(IAsyncResult AsyncResult)
         {
             try
             {
@@ -169,8 +235,8 @@ namespace WebSocketRealization
 
                 // Call the event when a client has connected to the listen server 
                 NetworkingService.instance.OnConnected(client);
-                Connected(client);
-                
+                Connected?.Invoke(client);
+
 
                 // Start to accept incomming connections again 
                 GetSocket().BeginAccept(connectionCallback, null);
@@ -181,10 +247,7 @@ namespace WebSocketRealization
                 Console.WriteLine("An error has occured while trying to accept a connecting client.\n\n{0}", Exception.Message);
             }
         }
-
-        /// <summary>Called when a message was recived, calls the OnMessageReceived event</summary>
-        /// <param name="Client">The client that sent the message</param>
-        /// <param name="Message">The message that the client sent</param>
+        /////////////////////////////////////////////////////////////////////////////////////////////
 
         /// <summary>Called when a client disconnectes, calls event OnClientDisconnected</summary>
         /// <param name="Client">The client that disconnected</param>
@@ -193,11 +256,7 @@ namespace WebSocketRealization
             // Remove the client from the connected clients list
             _clients.Remove(Client);
             NetworkingService.instance.OnDisconnected(Client);
-            Disconnected(Client);
-
-            // Call the OnClientDisconnected event
-            // if (OnClientDisconnected == null) throw new Exception("Server error: OnClientDisconnected is not bound!");
-            // OnClientDisconnected(this, new OnClientDisconnectedHandler(Client));
+            Disconnected?.Invoke(Client);
         }
 
         public void Listen()
@@ -212,21 +271,20 @@ namespace WebSocketRealization
 
         public void Broadcast(byte[] packet)
         {
-            foreach (var user in NetworkingService.instance.SocketAdapters)
-                user.Value.SendAsync(packet);
+            foreach (var client in _clients)
+            {
+                client.SendAsync(packet);
+            }
         }
 
         #endregion
 
         #region Server Events
 
-        /// <summary>Send a message to a connected client</summary>
-        /// <param name="Client">The client to send the data to</param>
-        /// <param name="Data">The data to send the client</param>
-
-
-        /// <summary>Called when a client disconnected</summary>
+        /// <summary>Called when a client connected</summary>
         public event Action<ISocketRealization> Connected;
+        
+        /// <summary>Called when a client disconnected</summary>
         public event Action<ISocketRealization> Disconnected;
 
         #endregion
