@@ -305,7 +305,7 @@ namespace NECS
             }
             catch (Exception ex)
             {
-                HandleError(ex, "Error during payload execution");
+                HandleError(ex, $"Error during payload execution \n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n{new StackTrace(ex, true)}\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
             }
         }
         

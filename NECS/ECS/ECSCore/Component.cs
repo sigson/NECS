@@ -74,7 +74,7 @@ namespace NECS.ECS.ECSCore
             get
             {
                 if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
-                    return ECSSharedField<PriorityEventQueue<StateReactionType, Action>>.GetOrAdd(instanceId, "connectPoints", new PriorityEventQueue<StateReactionType, Action>(new List<StateReactionType>() { StateReactionType.Added, StateReactionType.Changed, StateReactionType.Removed }, 1, x => x + 2, this.GetTypeFast()));
+                    return ECSSharedField<PriorityEventQueue<StateReactionType, Action>>.GetOrAdd(instanceId, "StateReactionQueue", new PriorityEventQueue<StateReactionType, Action>(new List<StateReactionType>() { StateReactionType.Added, StateReactionType.Changed, StateReactionType.Removed }, 1, x => x + 2, this.GetTypeFast()));
                 else
                 {
                     if (_stateReactionQueue == null)
@@ -88,7 +88,7 @@ namespace NECS.ECS.ECSCore
             set
             {
                 if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
-                    ECSSharedField<PriorityEventQueue<StateReactionType, Action>>.SetCachedValue(instanceId, "connectPoints", value);
+                    ECSSharedField<PriorityEventQueue<StateReactionType, Action>>.SetCachedValue(instanceId, "StateReactionQueue", value);
                 else
                     _stateReactionQueue = value;
             }
@@ -222,6 +222,19 @@ namespace NECS.ECS.ECSCore
             {
                 lock (this.StateReactionQueue)
                 {
+                    if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client || GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Offline)
+                    {
+                        try
+                        {
+                            this.connectPoints.ForEach(x => x.RemoveManager());
+                        }
+                        catch (Exception ex)
+                        {
+                            NLogger.Error(ex + "\n" + this.GetType() + "\n" + ex.StackTrace);
+                        }
+                    }
+                    
+                    ECSSharedField<object>.RemoveAllCachedValuesForId(this.instanceId);
                     this.OnRemoved(entity);
                     this.IECSDispose();
                 }
@@ -254,6 +267,7 @@ namespace NECS.ECS.ECSCore
             ConfigPath.Clear();
             ComponentGroups.ClearI(this.SerialLocker);
             OnChangeHandlers.Clear();
+            ECSSharedField<object>.RemoveAllCachedValuesForId(this.instanceId);
         }
         public void RunOnChangeCallbacks(ECSEntity parentEntity)
         {

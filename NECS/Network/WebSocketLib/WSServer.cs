@@ -9,6 +9,8 @@ using System.Net;
 using System.Net.Sockets;
 using NECS.Network.NetworkModels;
 using NECS.Harness.Services;
+using NECS.Extensions;
+using NECS.Core.Logging;
 
 namespace WebSocketRealization
 {
@@ -26,7 +28,7 @@ namespace WebSocketRealization
         private IPEndPoint _endPoint;
 
         /// <summary>The connected clients to the server </summary>
-        private List<WSServerClient> _clients = new List<WSServerClient>();
+        private SynchronizedList<WSServerClient> _clients = new SynchronizedList<WSServerClient>();
 
         private readonly int _port;
         private readonly int _bufferSize;
@@ -191,6 +193,10 @@ namespace WebSocketRealization
 
                 // Создаем новый объект клиента и добавляем его в список
                 WSServerClient client = new WSServerClient(this, clientSocket);
+                client.ErrorOccurred += (s, e) =>
+                {
+                    NLogger.Error($"Client error: {e.Message} \n Stack trace: {e.StackTrace}");
+                };
                 _clients.Add(client);
 
                 // Вызываем событие, что клиент подключился
@@ -254,7 +260,8 @@ namespace WebSocketRealization
         public void ClientDisconnect(WSServerClient Client)
         {
             // Remove the client from the connected clients list
-            _clients.Remove(Client);
+            if(_clients.Contains(Client))
+                _clients.Remove(Client);
             NetworkingService.instance.OnDisconnected(Client);
             Disconnected?.Invoke(Client);
         }

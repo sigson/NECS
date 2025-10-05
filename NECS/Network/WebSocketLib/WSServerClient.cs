@@ -163,7 +163,9 @@ namespace WebSocketRealization
             catch (Exception ex)
             {
                 ErrorOccurred?.Invoke(this, ex);
-                InternalDisconnect();
+
+                // pass error
+                //InternalDisconnect();
             }
         }
 

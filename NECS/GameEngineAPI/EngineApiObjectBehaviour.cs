@@ -71,6 +71,7 @@ namespace NECS.GameEngineAPI
         public bool activeInHierarchy { get => enabled; set => enabled = value; }
         public GodotPhysicAgent PhysicAgent;
         private bool isInit = false;
+        public bool isInitialized { get => isInit;}
         private bool enterToInit = false;
         private Godot.Node componentsStorage = null;
 

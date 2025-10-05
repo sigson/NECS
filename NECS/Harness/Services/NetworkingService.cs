@@ -83,63 +83,73 @@ namespace NECS.Harness.Services
             BufferSize = ConstantService.instance.GetByConfigPath("baseconfig").GetObject<int>("Networking/BufferSize");
             Protocol = ConstantService.instance.GetByConfigPath("baseconfig").GetObject<string>("Networking/Protocol");
 
-            switch (Protocol.ToLower())
+            Action initact = () =>
             {
-                case "tcp":
-                    if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
-                    {
-                        TaskEx.RunAsync(() =>
+                switch (Protocol.ToLower())
+                {
+                    case "tcp":
+                        if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
                         {
-                            tcpClient = new TCPGameClient(HostAddress, Port, BufferSize);
-                            tcpClient.Connect();
-                        });
-                    }
-                    else
-                    {
-                        TaskEx.RunAsync(() =>
+                            TaskEx.RunAsync(() =>
+                            {
+                                tcpClient = new TCPGameClient(HostAddress, Port, BufferSize);
+                                tcpClient.Connect();
+                            });
+                        }
+                        else
                         {
-                            tcpServer = new TCPGameServer(HostAddress, Port, BufferSize);
-                            tcpServer.Listen();
-                        });
-                    }
-                    break;
-                case "websocket":
-                    if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
-                    {
-                        #if GODOT4_0_OR_GREATER || GODOT
-                        this.ExecuteInstruction(() =>
+                            TaskEx.RunAsync(() =>
+                            {
+                                tcpServer = new TCPGameServer(HostAddress, Port, BufferSize);
+                                tcpServer.Listen();
+                            });
+                        }
+                        break;
+                    case "websocket":
+                        if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
                         {
-                            tcpClient = new NECS.Network.WebSocket.WSClientGodot();
-                            this.AddChild(tcpClient as NECS.Network.WebSocket.WSClientGodot);
-                            (tcpClient as NECS.Network.WebSocket.WSClientGodot).InitializeClient(HostAddress, Port, BufferSize);
-                            tcpClient.Connected += this.OnConnected;
-                            tcpClient.Disconnected += this.OnDisconnected;
-                            //tcpClient.ErrorOccurred += this.OnErrorOccurred;
-                            tcpClient.DataReceived += this.OnReceived;
-                            tcpClient.Connect();
-                        });
-                        #else
+#if GODOT4_0_OR_GREATER || GODOT
+                            this.ExecuteInstruction(() =>
+                            {
+                                tcpClient = new NECS.Network.WebSocket.WSClientGodot();
+                                this.AddChild(tcpClient as NECS.Network.WebSocket.WSClientGodot);
+                                (tcpClient as NECS.Network.WebSocket.WSClientGodot).InitializeClient(HostAddress, Port, BufferSize);
+                                tcpClient.Connected += this.OnConnected;
+                                tcpClient.Disconnected += this.OnDisconnected;
+                                //tcpClient.ErrorOccurred += this.OnErrorOccurred;
+                                tcpClient.DataReceived += this.OnReceived;
+                                (tcpClient as NECS.Network.WebSocket.WSClientGodot).EnablePacketQueuing = true;
+                                tcpClient.Connect();
+                            });
+#else
                         TaskEx.RunAsync(() =>
                         {
                             tcpClient = new WSClient(HostAddress, Port, BufferSize);
                             tcpClient.Connect();
                         });
-                        #endif
-                    }
-                    else
-                    {
-                        TaskEx.RunAsync(() =>
+#endif
+                        }
+                        else
                         {
-                            tcpServer = new WSServer(HostAddress, Port, BufferSize);
-                            tcpServer.Listen();
-                        });
-                    }
-                    break;
-            }
+                            TaskEx.RunAsync(() =>
+                            {
+                                tcpServer = new WSServer(HostAddress, Port, BufferSize);
+                                tcpServer.Listen();
+                            });
+                        }
+                        break;
+                }
+            };
+
             if (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client)
             {
-                this.FreezeCurrentService();
+                this.FreezeCurrentService(initact);
             }
+            else
+            {
+                initact();
+            }
+            
         }
 
         public void OnConnected(ISocketRealization socketAdapter)

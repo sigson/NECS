@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
+using NECS.Core.Logging;
 
 namespace WebSocketRealization
 {
@@ -131,7 +132,17 @@ namespace WebSocketRealization
             }
 
             // Return the decoded message 
-            byte[] result = new byte[frameData.DataLength];
+            byte[] result = null;
+            try
+            {
+                result = new byte[frameData.DataLength];
+            }
+            catch (Exception ex)
+            {
+                NLogger.Error(ex.Message + $"Error: {Data.Length} bytes {frameData.DataLength} + {frameData.TotalLenght} + {frameData.Opcode}");
+                return null;
+            }
+            
             Array.Copy(Data, dataIndex, result, 0, frameData.DataLength);
             return result;
         }

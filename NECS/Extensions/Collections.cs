@@ -1676,7 +1676,378 @@ namespace NECS.Extensions
         }
     }
 
+    public class LoggingDictionary<TKey, TValue> : IDictionary<TKey, TValue>
+    {
+        // Внутренний, "настоящий" словарь, который мы оборачиваем
+        private readonly IDictionary<TKey, TValue> _dictionary;
+
+        // Приватный метод для логирования текущего состояния
+        private void LogState()
+        {
+            // Environment.StackTrace дает более полную информацию, чем new StackTrace()
+            string stackTrace = Environment.StackTrace;
+            
+            NLogger.Log($"Elements count: {_dictionary.Count}\nStack Trace:\n{stackTrace}");
+        }
+
+        #region Constructors
+        // Повторяем конструкторы оригинального Dictionary
+        public LoggingDictionary()
+        {
+            _dictionary = new Dictionary<TKey, TValue>();
+            LogState();
+        }
+
+        public LoggingDictionary(int capacity)
+        {
+            _dictionary = new Dictionary<TKey, TValue>(capacity);
+            LogState();
+        }
+
+        public LoggingDictionary(IEqualityComparer<TKey> comparer)
+        {
+            _dictionary = new Dictionary<TKey, TValue>(comparer);
+            LogState();
+        }
+
+        public LoggingDictionary(IDictionary<TKey, TValue> dictionary)
+        {
+            _dictionary = new Dictionary<TKey, TValue>(dictionary);
+            LogState();
+        }
+        #endregion
+
+        #region IDictionary<TKey, TValue> Implementation
+
+        public TValue this[TKey key]
+        {
+            get
+            {
+                var value = _dictionary[key];
+                LogState();
+                return value;
+            }
+            set
+            {
+                _dictionary[key] = value;
+                LogState();
+            }
+        }
+
+        public ICollection<TKey> Keys
+        {
+            get
+            {
+                var keys = _dictionary.Keys;
+                LogState();
+                return keys;
+            }
+        }
+
+        public ICollection<TValue> Values
+        {
+            get
+            {
+                var values = _dictionary.Values;
+                LogState();
+                return values;
+            }
+        }
+
+        public int Count
+        {
+            get
+            {
+                var count = _dictionary.Count;
+                LogState();
+                return count;
+            }
+        }
+
+        public bool IsReadOnly => _dictionary.IsReadOnly;
+
+        public void Add(TKey key, TValue value)
+        {
+            _dictionary.Add(key, value);
+            LogState();
+        }
+
+        public void Add(KeyValuePair<TKey, TValue> item)
+        {
+            _dictionary.Add(item);
+            LogState();
+        }
+
+        public void Clear()
+        {
+            _dictionary.Clear();
+            LogState();
+        }
+
+        public bool Contains(KeyValuePair<TKey, TValue> item)
+        {
+            bool result = _dictionary.Contains(item);
+            LogState();
+            return result;
+        }
+
+        public bool ContainsKey(TKey key)
+        {
+            bool result = _dictionary.ContainsKey(key);
+            LogState();
+            return result;
+        }
+
+        public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
+        {
+            _dictionary.CopyTo(array, arrayIndex);
+            LogState();
+        }
+
+        public bool Remove(TKey key)
+        {
+            bool result = _dictionary.Remove(key);
+            LogState();
+            return result;
+        }
+
+        public bool Remove(KeyValuePair<TKey, TValue> item)
+        {
+            bool result = _dictionary.Remove(item);
+            LogState();
+            return result;
+        }
+
+        public bool TryGetValue(TKey key, out TValue value)
+        {
+            bool result = _dictionary.TryGetValue(key, out value);
+            LogState();
+            return result;
+        }
+
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+        {
+            // Логируем сам факт получения итератора. 
+            // Логирование каждого шага итерации (MoveNext) потребовало бы создания
+            // обертки и для IEnumerator, что усложнило бы код.
+            var enumerator = _dictionary.GetEnumerator();
+            LogState();
+            return enumerator;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return this.GetEnumerator();
+        }
+
+        #endregion
+    }
+
     public class PriorityEventQueue<TKey, TEvent> where TEvent : System.Delegate
+    {
+        private PriorityEventQueueOneTread<TKey, TEvent> onethreadqueue;
+        private PriorityEventQueueMultiThread<TKey, TEvent> multithreadqueue;
+        public PriorityEventQueue(IEnumerable<TKey> priorityOrder, int gatesOpened = Int32.MaxValue, Func<int, int> gatesCounter = null, Type ownerType = null)
+        {
+            if (Defines.OneThreadMode)
+            {
+                onethreadqueue = new PriorityEventQueueOneTread<TKey, TEvent>(priorityOrder, gatesOpened, gatesCounter, ownerType);
+            }
+            else
+            {
+                multithreadqueue = new PriorityEventQueueMultiThread<TKey, TEvent>(priorityOrder, gatesOpened, gatesCounter, ownerType);
+            }
+        }
+
+        public void AddEvent(TKey key, TEvent eventItem)
+        {
+            if (Defines.OneThreadMode)
+            {
+                onethreadqueue.AddEvent(key, eventItem);
+            }
+            else
+            {
+                multithreadqueue.AddEvent(key, eventItem);
+            }
+        }
+    }
+
+    public class PriorityEventQueueOneTread<TKey, TEvent> where TEvent : System.Delegate
+    {
+        // ... все поля и конструктор остаются прежними ...
+        private struct ActionWrapper
+        {
+            public Guid actionId;
+            public TEvent actionEvent;
+            public bool inAction;
+        }
+
+        private class PriorityWrapper
+        {
+            public TKey priorityValue;
+            public bool GateOpened;
+        }
+
+        private int OpenedDownGates;
+        private readonly Func<int, int> GatesCounter;
+        private readonly ConcurrentDictionary<TKey, SynchronizedList<ActionWrapper>> _eventLists;
+        private readonly List<PriorityWrapper> _priorityOrder;
+        private readonly object _lock = new object();
+
+        private int _processing = 0;
+
+        private readonly StackTrace creationStackTrace;
+        private readonly Type ownerType;
+
+        public PriorityEventQueueOneTread(IEnumerable<TKey> priorityOrder, int gatesOpened = Int32.MaxValue, Func<int, int> gatesCounter = null, Type ownerType = null)
+        {
+            if (priorityOrder == null)
+                throw new ArgumentNullException(nameof(priorityOrder));
+
+            creationStackTrace = new StackTrace();
+            this.ownerType = ownerType;
+            OpenedDownGates = gatesOpened;
+            GatesCounter = gatesCounter ?? (x => x + 1);
+
+            _priorityOrder = new List<PriorityWrapper>();
+            if (!priorityOrder.Any())
+                throw new ArgumentException("Priority order must not be empty", nameof(priorityOrder));
+
+            _eventLists = new ConcurrentDictionary<TKey, SynchronizedList<ActionWrapper>>();
+            foreach (var key in priorityOrder)
+            {
+                _priorityOrder.Add(new PriorityWrapper() { priorityValue = key, GateOpened = false });
+                _eventLists[key] = new SynchronizedList<ActionWrapper>();
+            }
+        }
+
+        public void AddEvent(TKey key, TEvent eventItem)
+        {
+            if (!_eventLists.ContainsKey(key))
+                throw new ArgumentException("Key is not part of the priority order", nameof(key));
+
+            var newAction = new ActionWrapper() { actionId = Guid.NewGuid(), actionEvent = eventItem, inAction = false };
+
+            lock (_lock)
+            {
+                _eventLists[key].Add(newAction);
+            }
+
+            ProcessQueue();
+        }
+
+
+        // --- ИСПРАВЛЕННЫЙ МЕТОД ОБРАБОТКИ С ГАРАНТИЕЙ ВЫЗОВА ---
+        private void ProcessQueue()
+        {
+            // 1. Пытаемся захватить "право на обработку". Если кто-то уже работает, выходим.
+            if (Interlocked.CompareExchange(ref _processing, 1, 0) != 0)
+            {
+                return;
+            }
+
+            try
+            {
+                // 2. Вводим внешний цикл, который будет работать до тех пор,
+                // пока внутренний цикл находит и обрабатывает события.
+                bool wasWorkDoneInLastPass;
+                do
+                {
+                    wasWorkDoneInLastPass = false;
+
+                    // Внутренний цикл для поиска и обработки одного события
+                    while (true)
+                    {
+                        ActionWrapper? eventToProcess = null;
+                        PriorityWrapper priorityOfEvent = null;
+
+                        // Блокируем, чтобы безопасно найти следующее событие
+                        lock (_lock)
+                        {
+                            for (int i = 0; i < OpenedDownGates && i < _priorityOrder.Count; i++)
+                            {
+                                var currentPriority = _priorityOrder[i];
+                                if (_eventLists.TryGetValue(currentPriority.priorityValue, out var eventList) && eventList.Count > 0)
+                                {
+                                    var wrapper = eventList[0];
+                                    if (!wrapper.inAction)
+                                    {
+                                        wrapper.inAction = true;
+                                        eventList[0] = wrapper; // Важно для struct
+
+                                        eventToProcess = wrapper;
+                                        priorityOfEvent = currentPriority;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        // Если доступных событий не найдено, выходим из внутреннего цикла
+                        if (eventToProcess == null)
+                        {
+                            break;
+                        }
+
+                        // Нашли событие - значит, работа была проделана
+                        wasWorkDoneInLastPass = true;
+
+                        // Запускаем выполнение задачи
+                        // ВАЖНО: TaskEx.Run должен быть синхронным в однопоточном режиме,
+                        // иначе эта логика не будет работать так, как задумано.
+                        TaskEx.RunAsync(() =>
+                        {
+                            try
+                            {
+                                eventToProcess.Value.actionEvent.DynamicInvoke();
+
+                                // Этот код должен выполняться атомарно с удалением
+                                lock (_lock)
+                                {
+                                    if (!priorityOfEvent.GateOpened)
+                                    {
+                                        priorityOfEvent.GateOpened = true;
+                                        OpenedDownGates = GatesCounter(OpenedDownGates);
+                                    }
+                                }
+                            }
+                            finally
+                            {
+                                // Гарантированное удаление события из очереди
+                                lock (_lock)
+                                {
+                                    try
+                                    {
+                                        // Проверяем, что удаляем именно то событие, которое обработали
+                                        if (_eventLists[priorityOfEvent.priorityValue].Count > 0 &&
+                                            _eventLists[priorityOfEvent.priorityValue][0].actionId == eventToProcess.Value.actionId)
+                                        {
+                                            _eventLists[priorityOfEvent.priorityValue].RemoveAt(0);
+                                        }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        NLogger.Log($"Error removing event from queue - {ex.Message}\n in type {this.ownerType} \n{this.creationStackTrace}");
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    // 3. Если в последнем полном проходе была проделана работа,
+                    // повторяем внешний цикл, чтобы проверить наличие новых событий,
+                    // которые могли быть добавлены во время выполнения `TaskEx.Run`.
+                } while (wasWorkDoneInLastPass);
+            }
+            finally
+            {
+                // 4. Только когда очередь действительно пуста, сбрасываем флаг.
+                _processing = 0;
+            }
+        }
+    }
+
+    public class PriorityEventQueueMultiThread<TKey, TEvent> where TEvent : System.Delegate
     {
         private struct ActionWrapper
         {
@@ -1706,7 +2077,7 @@ namespace NECS.Extensions
         /// <param name="gatesCounter"> may be + 2</param>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentException"></exception>
-        public PriorityEventQueue(IEnumerable<TKey> priorityOrder, int gatesOpened = Int32.MaxValue, Func<int, int> gatesCounter = null, Type ownerType = null)
+        public PriorityEventQueueMultiThread(IEnumerable<TKey> priorityOrder, int gatesOpened = Int32.MaxValue, Func<int, int> gatesCounter = null, Type ownerType = null)
         {
             if (priorityOrder == null)
                 throw new ArgumentNullException(nameof(priorityOrder));

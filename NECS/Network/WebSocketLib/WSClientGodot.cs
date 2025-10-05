@@ -1,5 +1,6 @@
 #if GODOT && !GODOT4_0_OR_GREATER
 using System;
+using System.Collections.Concurrent; // Используем потокобезопасную коллекцию
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
@@ -20,6 +21,10 @@ namespace NECS.Network.WebSocket
         // URL для подключения
         [Export]
         public string WebsocketUrl = "ws://localhost:8080";
+
+        // Включает/отключает кеширование пакетов для отправки по одному за физический кадр
+        [Export]
+        public bool EnablePacketQueuing { get; set; } = false;
         
         // Godot WebSocket клиент
         private Godot.WebSocketClient _client;
@@ -36,6 +41,12 @@ namespace NECS.Network.WebSocket
         
         // Протоколы WebSocket
         private string[] _protocols = new string[] { };
+
+        // Кеш для пакетов, ожидающих отправки (LIFO - Last In, First Out)
+        private readonly ConcurrentStack<byte[]> _packetCache = new ConcurrentStack<byte[]>();
+        
+        // Флаг, указывающий, был ли уже отправлен пакет в текущем физическом кадре
+        private bool _packetSentThisFrame = false;
         
         #endregion
         
@@ -77,11 +88,30 @@ namespace NECS.Network.WebSocket
             
         }
         
-        public override void _Process(float delta)
+        public override void _PhysicsProcess(float delta)
         {
+            // Стандартная обработка клиента
             if (_client != null && (_isConnected || _isConnecting))
             {
                 _client.Poll();
+            }
+
+            // В начале каждого физического кадра сбрасываем флаг
+            _packetSentThisFrame = false;
+
+            // Если опция отключена, или нет подключения, или кеш пуст - выходим
+            if (!EnablePacketQueuing || !IsConnected || _packetCache.IsEmpty)
+            {
+                return;
+            }
+            
+            // Если мы здесь, значит кеширование включено, мы подключены и есть что отправлять.
+            // Достаем последний добавленный пакет (LIFO).
+            if (_packetCache.TryPop(out byte[] packetToSend))
+            {
+                // Отправляем его и устанавливаем флаг, что в этом кадре отправка уже была.
+                _DirectSend(packetToSend);
+                _packetSentThisFrame = true;
             }
         }
         
@@ -94,7 +124,7 @@ namespace NECS.Network.WebSocket
         
         #region Private Methods
         
-        public  void InitializeClient(string host, int port, int bufferSize = 1024)
+        public void InitializeClient(string host, int port, int bufferSize = 1024)
         {
             WebsocketUrl = $"ws://{host}:{port}";
             ParseUrl(WebsocketUrl);
@@ -207,7 +237,9 @@ namespace NECS.Network.WebSocket
             _isConnected = true;
             _isConnecting = false;
             
-            GD.Print($"WebSocket connected with protocol: {protocol}");
+            NLogger.LogNetwork($"WebSocket connected with protocol: {protocol}");
+
+            //_client.GetPeer(1).SetNoDelay(true);
             
             Connected?.Invoke(this);
         }
@@ -329,7 +361,8 @@ namespace NECS.Network.WebSocket
         
         #region Send Methods
         
-        public void Send(byte[] buffer)
+        // Приватный метод для непосредственной отправки данных в сокет
+        private void _DirectSend(byte[] buffer)
         {
             if (!IsConnected)
             {
@@ -357,6 +390,22 @@ namespace NECS.Network.WebSocket
             }
         }
         
+        // Публичный метод Send, который теперь решает, кешировать пакет или отправлять сразу
+        public void Send(byte[] buffer)
+        {
+            if (EnablePacketQueuing)
+            {
+                // Если кеширование включено, просто добавляем пакет в стек.
+                // _PhysicsProcess сам позаботится об отправке в нужный момент.
+                _packetCache.Push(buffer);
+            }
+            else
+            {
+                // Если кеширование отключено, отправляем напрямую, как и раньше.
+                _DirectSend(buffer);
+            }
+        }
+        
         public void Send(ECSEvent ecsEvent)
         {
             if (ecsEvent == null)
@@ -364,9 +413,8 @@ namespace NECS.Network.WebSocket
             
             try
             {
-                // Сериализуем событие в JSON
-                // var json = JsonConvert.SerializeObject(ecsEvent);
-                // var buffer = Encoding.UTF8.GetBytes(json);
+                // Этот метод теперь также будет использовать новую логику кеширования,
+                // так как он вызывает Send(byte[] buffer)
                 Send(ecsEvent.GetNetworkPacket());
             }
             catch (Exception ex)
@@ -384,22 +432,23 @@ namespace NECS.Network.WebSocket
                 return;
             }
             
-            // В Godot все операции WebSocket уже асинхронные
-            // Используем CallDeferred для отложенного вызова
-            CallDeferred(nameof(_DeferredSend), buffer);
+            // CallDeferred гарантирует, что Send будет вызван в основном потоке Godot,
+            // что безопасно для нашего стека.
+            CallDeferred(nameof(Send), buffer);
         }
         
-        private void _DeferredSend(byte[] buffer)
-        {
-            try
-            {
-                Send(buffer);
-            }
-            catch (Exception ex)
-            {
-                ErrorOccurred?.Invoke(this, ex);
-            }
-        }
+        // Этот метод больше не нужен, так как SendAsync теперь вызывает публичный Send
+        // private void _DeferredSend(byte[] buffer)
+        // {
+        //     try
+        //     {
+        //         Send(buffer);
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         ErrorOccurred?.Invoke(this, ex);
+        //     }
+        // }
         
         #endregion
         

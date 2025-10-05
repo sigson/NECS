@@ -3,29 +3,36 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NECS.Extensions;
 
 namespace NECS.ECS.ECSCore
 {
+    public static class ECSSharedDictionaryCache
+    {
+        public static Dictionary<long, Dictionary<string, object>> fieldsCache = new Dictionary<long, Dictionary<string, object>>();
+    }
     public class ECSSharedField<T> : IDisposable
     {
-        private static Dictionary<long, Dictionary<string, object>> fieldsCache = new Dictionary<long, Dictionary<string, object>>();
-        
+
+
+        private static Dictionary<long, Dictionary<string, object>> fieldsCache => ECSSharedDictionaryCache.fieldsCache;
+
         public T Value { get => GetValue(); set => SetValue(value); }
-        
+
         private readonly long entityId;
         private readonly string fieldName;
-        
+
         public ECSSharedField(long id, string name, T value)
         {
             entityId = id;
             fieldName = name;
-            
+
             // Проверяем, есть ли словарь для данного ID
             if (!fieldsCache.ContainsKey(id))
             {
                 fieldsCache[id] = new Dictionary<string, object>();
             }
-            
+
             // Проверяем, есть ли уже значение в кеше
             if (fieldsCache[id].ContainsKey(name))
             {
@@ -52,7 +59,7 @@ namespace NECS.ECS.ECSCore
             }
             return default(T);
         }
-        
+
         private void SetValue(T value)
         {
             if (!fieldsCache.ContainsKey(entityId))
@@ -61,7 +68,7 @@ namespace NECS.ECS.ECSCore
             }
             fieldsCache[entityId][fieldName] = value;
         }
-        
+
         /// <summary>
         /// Обновляет значение в кеше
         /// </summary>
@@ -85,18 +92,18 @@ namespace NECS.ECS.ECSCore
                     return typedValue;
                 }
             }
-            
+
             // Если значения нет, создаем новое
             if (!fieldsCache.ContainsKey(id))
             {
                 fieldsCache[id] = new Dictionary<string, object>();
             }
-            
+
             T newValue = valueFactory();
             fieldsCache[id][name] = newValue;
             return newValue;
         }
-        
+
         /// <summary>
         /// Получает значение из кеша или добавляет значение по умолчанию
         /// </summary>
@@ -104,7 +111,7 @@ namespace NECS.ECS.ECSCore
         {
             return GetOrAdd(id, name, () => defaultValue);
         }
-        
+
         /// <summary>
         /// Получает значение из кеша по ID и имени
         /// </summary>
@@ -116,7 +123,7 @@ namespace NECS.ECS.ECSCore
             }
             return default(T);
         }
-        
+
         /// <summary>
         /// Проверяет наличие значения в кеше
         /// </summary>
@@ -137,7 +144,7 @@ namespace NECS.ECS.ECSCore
             fieldsCache[id][name] = value;
             return value;
         }
-        
+
         /// <summary>
         /// Удаляет конкретное значение из кеша
         /// </summary>
@@ -149,7 +156,7 @@ namespace NECS.ECS.ECSCore
             }
             return false;
         }
-        
+
         /// <summary>
         /// Удаляет все значения для конкретного ID
         /// </summary>
@@ -157,7 +164,7 @@ namespace NECS.ECS.ECSCore
         {
             return fieldsCache.Remove(id);
         }
-        
+
         /// <summary>
         /// Очищает весь кеш
         /// </summary>
@@ -165,7 +172,7 @@ namespace NECS.ECS.ECSCore
         {
             fieldsCache.Clear();
         }
-        
+
         /// <summary>
         /// Получает количество закешированных ID
         /// </summary>
@@ -173,7 +180,7 @@ namespace NECS.ECS.ECSCore
         {
             return fieldsCache.Count;
         }
-        
+
         /// <summary>
         /// Получает количество закешированных полей для конкретного ID
         /// </summary>
@@ -185,7 +192,7 @@ namespace NECS.ECS.ECSCore
             }
             return 0;
         }
-        
+
         /// <summary>
         /// Получает все имена полей для конкретного ID
         /// </summary>
@@ -197,7 +204,7 @@ namespace NECS.ECS.ECSCore
             }
             return new List<string>();
         }
-        
+
         /// <summary>
         /// Получает все ID из кеша
         /// </summary>
@@ -208,7 +215,7 @@ namespace NECS.ECS.ECSCore
 
         public void Dispose()
         {
-            fieldsCache[entityId].Remove(fieldName);
+            //fieldsCache[entityId].Remove(fieldName);
         }
     }
 }
