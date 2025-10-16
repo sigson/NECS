@@ -54,7 +54,7 @@ namespace NECS.Extensions.ThreadingSync
 #endif
         }
 
-        public static void RunAsync(Action action)
+        public static void RunAsync(Action action, bool forceThreadmode = false)
         {
 #if UNITY_5_3_OR_NEWER
             Thread thread = new Thread(() =>
@@ -70,7 +70,7 @@ namespace NECS.Extensions.ThreadingSync
             });
             thread.Start();
 #else
-            if (Defines.OneThreadMode)
+            if (Defines.OneThreadMode && !forceThreadmode)
             {
                 try
                 {
@@ -83,7 +83,7 @@ namespace NECS.Extensions.ThreadingSync
             }
             else
             {
-                if (Defines.ThreadsMode)
+                if (Defines.ThreadsMode || forceThreadmode)
                 {
                     Thread thread = new Thread(() =>
                     {

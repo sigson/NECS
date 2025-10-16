@@ -94,7 +94,7 @@ namespace NECS.Harness.Services
                             {
                                 tcpClient = new TCPGameClient(HostAddress, Port, BufferSize);
                                 tcpClient.Connect();
-                            });
+                            }, true);
                         }
                         else
                         {
@@ -102,7 +102,7 @@ namespace NECS.Harness.Services
                             {
                                 tcpServer = new TCPGameServer(HostAddress, Port, BufferSize);
                                 tcpServer.Listen();
-                            });
+                            }, true);
                         }
                         break;
                     case "websocket":

@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using NECS.Extensions.ThreadingSync;
 using NECS.ECS.ECSCore;
+using NECS.Extensions;
 
 namespace NECS.Network.NetworkModels.TCP
 {
@@ -41,10 +42,28 @@ namespace NECS.Network.NetworkModels.TCP
         public event Action<ISocketRealization> Connected;
         public event Action<ISocketRealization> Disconnected;
 
+        public TimeSequencedEventBus<Action> oneThreadEventBus = new TimeSequencedEventBus<Action>(new TimeSpan(0, 1, 0));
+        public TimerCompat eventsUpdateTimer;
+
         private void Setup()
         {
             //socketAdapter = new ISocketRealization(this);
             Id = Guid.NewGuid().GuidToLong();
+            lock (this)
+            {
+                if (Defines.OneThreadMode && eventsUpdateTimer == null)
+                {
+                    oneThreadEventBus.Subscribe("Update", (x) =>
+                    {
+                        x.Invoke();
+                        return TimeSequencedEventBus<Action>.ProcessingResult.Processed;
+                    });
+                    eventsUpdateTimer = new TimerCompat(5, (obj, arg) =>
+                    {
+                        oneThreadEventBus.Update();
+                    }, true).Start();
+                }
+            }
         }
 
         public TCPGameClient(string host, int port, int bufferSize = 1024)
@@ -71,13 +90,29 @@ namespace NECS.Network.NetworkModels.TCP
             this.token.set_peer(this);
             server_token.on_connected();
             Setup();
-            NetworkingService.instance.OnConnected(this);
+            Action action = () => NetworkingService.instance.OnConnected(this);
+            if (Defines.OneThreadMode)
+            {
+                oneThreadEventBus.Publish(action);
+            }
+            else
+            {
+                action.Invoke();
+            }
         }
 
         public void on_message(CPacket msg)
         {
             msg.pop_protocol_id();
-            OnReceive(msg.pop_bytepack());
+            Action action = () => OnReceive(msg.pop_bytepack());
+            if (Defines.OneThreadMode)
+            {
+                oneThreadEventBus.Publish(action);
+            }
+            else
+            {
+                action.Invoke();
+            }
         }
 
         public void on_removed()
@@ -138,8 +173,19 @@ namespace NECS.Network.NetworkModels.TCP
             {
                 token.close();
             }
-            if (NetworkingService.instance.SocketAdapters.ContainsKey(this.Id))
-                NetworkingService.instance.OnDisconnected(this);
+            Action action = () =>
+            {
+                if (NetworkingService.instance.SocketAdapters.ContainsKey(this.Id))
+                    NetworkingService.instance.OnDisconnected(this);
+            };
+            if (Defines.OneThreadMode)
+            {
+                oneThreadEventBus.Publish(action);
+            }
+            else
+            {
+                action.Invoke();
+            }
         }
 
         public bool Reconnect()
@@ -152,7 +198,7 @@ namespace NECS.Network.NetworkModels.TCP
             TaskEx.RunAsync(() =>
             {
                 this.Connect();
-            });
+            }, true);
         }
 
         public void DisconnectAsync()
@@ -160,7 +206,7 @@ namespace NECS.Network.NetworkModels.TCP
             TaskEx.RunAsync(() =>
             {
                 this.disconnect();
-            });
+            }, true);
         }
 
         public bool ReconnectAsync()
@@ -173,7 +219,7 @@ namespace NECS.Network.NetworkModels.TCP
             TaskEx.RunAsync(() =>
             {
                 SendImpl(buffer);
-            });
+            }, true);
         }
 
         public void Send(byte[] buffer)

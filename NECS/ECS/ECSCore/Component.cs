@@ -227,6 +227,7 @@ namespace NECS.ECS.ECSCore
                         try
                         {
                             this.connectPoints.ForEach(x => x.RemoveManager());
+                            this.connectPoints.Clear();
                         }
                         catch (Exception ex)
                         {

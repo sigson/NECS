@@ -344,7 +344,14 @@ namespace NECS.Extensions
                         internalStopwatch.Stop();
                         if (internalStopwatch.ElapsedMilliseconds < 100)//NOT DEBUGGED
 #if NET || UNITY || GODOT_4_0_OR_GREATER
-                            TimerDateTime.DateTimeNowTicks += (internalStopwatch.ElapsedTicks / 100);
+                            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux))
+                            {
+                                TimerDateTime.DateTimeNowTicks += (externalStopwatch.ElapsedTicks / 63);//100
+                            }
+                            else
+                            {
+                                TimerDateTime.DateTimeNowTicks += (long)(externalStopwatch.ElapsedTicks * 1.3d);
+                            }
 #else
                             TimerDateTime.DateTimeNowTicks += (internalStopwatch.ElapsedTicks);
 #endif
@@ -358,9 +365,16 @@ namespace NECS.Extensions
                     externalStopwatch.Stop();
                     if (externalStopwatch.ElapsedMilliseconds < baseTick + 100)//NOT DEBUGGED
                     {
-                        
+
 #if NET || UNITY || GODOT_4_0_OR_GREATER
-                        TimerDateTime.DateTimeNowTicks += (externalStopwatch.ElapsedTicks / 100);
+                        if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux))
+                        {
+                            TimerDateTime.DateTimeNowTicks += (externalStopwatch.ElapsedTicks / 63);//100
+                        }
+                        else
+                        {
+                            TimerDateTime.DateTimeNowTicks += (long)(externalStopwatch.ElapsedTicks * 1.3d);
+                        }
 #else
                         TimerDateTime.DateTimeNowTicks += (externalStopwatch.ElapsedTicks);
 #endif
@@ -450,7 +464,7 @@ namespace NECS.Extensions
             return this;
         }
 
-        public void Start()
+        public TimerCompat Start()
         {
             if (!registered)
             {
@@ -463,21 +477,23 @@ namespace NECS.Extensions
             {
                 timerData.RemainingMS = timerData.MSInterval;
             }
+            return this;
         }
 
-        public void Pause()
+        public TimerCompat Pause()
         {
-            if(!registered)
+            if (!registered)
             {
                 Manager.RegisterTimer(timerData);
                 registered = true;
             }
             timerData.IsPaused = true;
+            return this;
         }
 
-        public void Resume()
+        public TimerCompat Resume()
         {
-            if(!registered)
+            if (!registered)
             {
                 Manager.RegisterTimer(timerData);
                 registered = true;
@@ -487,11 +503,12 @@ namespace NECS.Extensions
                 timerData.IsPaused = false;
                 timerData.IsEnabled = true;
             }
+            return this;
         }
 
-        public void Stop()
+        public TimerCompat Stop()
         {
-            if(!registered)
+            if (!registered)
             {
                 Manager.RegisterTimer(timerData);
                 registered = true;
@@ -499,6 +516,7 @@ namespace NECS.Extensions
             timerData.IsEnabled = false;
             timerData.IsPaused = false;
             timerData.RemainingMS = timerData.MSInterval;
+            return this;
         }
 
         public TimeSpan GetRemainingTime()

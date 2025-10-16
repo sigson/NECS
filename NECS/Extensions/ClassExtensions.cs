@@ -180,7 +180,7 @@ namespace NECS
             Action payloadAction,
             int timeoutBetweenAttempts = 1000,
             int maxAttempts = 3,
-            Action<Exception, string> errorHandler = null)
+            Action<Exception, string> errorHandler = null, bool replaceExist = false)
         {
             // Валидация параметров
             if (string.IsNullOrWhiteSpace(predicateId))
@@ -202,11 +202,18 @@ namespace NECS
             
             // Установка обработчика ошибок (стандартный или пользовательский)
             this.errorHandler = errorHandler ?? DefaultErrorHandler;
-            
+
             // Сохраняем stack trace для диагностики
             this.stackTrace = new StackTrace(true);
-            
+
             // Добавляем в кеш
+            if (replaceExist)
+            {
+                if (InstanceCache.TryGetValue(predicateId, out var existPredicate))
+                {
+                    existPredicate.Stop();
+                }
+            }
             if (!InstanceCache.TryAdd(predicateId, this))
             {
                 NLogger.Error($"Failed to add PredicateExecutor with ID '{predicateId}' to cache - ID already exists");

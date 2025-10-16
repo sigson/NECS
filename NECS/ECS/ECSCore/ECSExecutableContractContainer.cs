@@ -42,7 +42,7 @@ namespace NECS.ECS.ECSCore
 
     public class ECSExecutableContractContainer
     {
-        public long Id { get; set; }
+        public string ContractId { get; set; }
         [System.NonSerialized]
         protected Type _systemType = null;
         public Type SystemType
@@ -225,6 +225,19 @@ namespace NECS.ECS.ECSCore
                 lock (ContractLocker)
                 {
                     _removeAfterExecution = value;
+                }
+            }
+        }
+
+        protected bool _bypassFinalization = false;
+        public bool BypassFinalization
+        {
+            get => _bypassFinalization;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _bypassFinalization = value;
                 }
             }
         }
@@ -439,6 +452,7 @@ namespace NECS.ECS.ECSCore
             lock (ContractLocker)
             {
                 NowTried++;
+                BypassFinalization = false;
                 if (!ContractExecuted)
                 {
                     OnTryExecute();
@@ -487,7 +501,10 @@ namespace NECS.ECS.ECSCore
                             }
                             if (ExecuteContract && !errorState)
                             {
-                                ContractExecuted = true;
+                                if(!BypassFinalization)
+                                {
+                                    ContractExecuted = true;
+                                }
                                 return true;
                             }
                         }
@@ -595,7 +612,7 @@ namespace NECS.ECS.ECSCore
                 {
                     if (LoggingLevel == ContractLoggingLevel.Verbose)
                     {
-                        NLogger.Log($"Contract {this.GetType().Name} (ID: {this.Id}): Entity {entityId} not found in EntityStorage");
+                        NLogger.Log($"Contract {this.GetType().Name} (ID: {this.ContractId}): Entity {entityId} not found in EntityStorage");
                     }
                     continue;
                 }
@@ -662,7 +679,7 @@ namespace NECS.ECS.ECSCore
                     if (violationSeizure && LoggingLevel == ContractLoggingLevel.Verbose)
                     {
                         var logMessage = new StringBuilder();
-                        logMessage.AppendLine($"Contract {this.GetType().Name} (ID: {this.Id}): Component requirements violation for Entity {entityId}:");
+                        logMessage.AppendLine($"Contract {this.GetType().Name} (ID: {this.ContractId}): Component requirements violation for Entity {entityId}:");
                         
                         if (missingExpected.Count > 0)
                         {
@@ -676,6 +693,19 @@ namespace NECS.ECS.ECSCore
                         
                         logMessage.AppendLine($"  Expected present: {string.Join(", ", expectedPresent.Select(t => t.Name))}");
                         logMessage.AppendLine($"  Expected absent: {string.Join(", ", expectedAbsent.Select(t => t.Name))}");
+
+                        var rawRules = new StringBuilder();
+                        this.EntityComponentPresenceSign.ForEach(x => {
+                            rawRules.Append($"EntityId: {x.Key} = ");
+                            x.Value.ForEach(y =>
+                            {
+                                rawRules.Append($"{y.Key.IdToECSType().Name} = {y.Value}; ");
+                            });
+                            rawRules.AppendLine();
+                        });
+
+                        logMessage.AppendLine($"  Raw contract presence rules: {rawRules.ToString()}\n==!!==!!==!!==!!==!!==!!==!!==");
+
                         logMessage.AppendLine($"  All entity components: {string.Join(", ", actualComponents.Select(t => t.Name))}");
                         
                         NLogger.Log(logMessage.ToString());
@@ -694,7 +724,7 @@ namespace NECS.ECS.ECSCore
                             
                             if (LoggingLevel == ContractLoggingLevel.Verbose)
                             {
-                                NLogger.Log($"Contract {this.GetType().Name} (ID: {this.Id}): Condition #{i} failed for Entity {entityId}");
+                                NLogger.Log($"Contract {this.GetType().Name} (ID: {this.ContractId}): Condition #{i} failed for Entity {entityId}");
                             }
                         }
                     }
@@ -739,7 +769,7 @@ namespace NECS.ECS.ECSCore
                 {
                     if (LoggingLevel == ContractLoggingLevel.Verbose)
                     {
-                        NLogger.Log($"Contract {this.GetType().Name} (ID: {this.Id}): Entity {entityid} - world or entity manager not found");
+                        NLogger.Log($"Contract {this.GetType().Name} (ID: {this.ContractId}): Entity {entityid} - world or entity manager not found");
                     }
                     continue;
                 }
@@ -809,7 +839,7 @@ namespace NECS.ECS.ECSCore
                         if (violationSeizure && LoggingLevel == ContractLoggingLevel.Verbose)
                         {
                             var logMessage = new StringBuilder();
-                            logMessage.AppendLine($"Contract {this.GetType().Name} (ID: {this.Id}): Component requirements violation for Entity {entid}:");
+                            logMessage.AppendLine($"Contract {this.GetType().Name} (ID: {this.ContractId}): Component requirements violation for Entity {entid}:");
                             
                             if (missingExpected.Count > 0)
                             {
@@ -823,6 +853,19 @@ namespace NECS.ECS.ECSCore
                             
                             logMessage.AppendLine($"  Expected present: {string.Join(", ", expectedPresent.Select(t => t.Name))}");
                             logMessage.AppendLine($"  Expected absent: {string.Join(", ", expectedAbsent.Select(t => t.Name))}");
+
+                            var rawRules = new StringBuilder();
+                            this.EntityComponentPresenceSign.ForEach(x => {
+                                rawRules.Append($"EntityId: {x.Key} = ");
+                                x.Value.ForEach(y =>
+                                {
+                                    rawRules.Append($"{y.Key.IdToECSType().Name} = {y.Value}; ");
+                                });
+                                rawRules.AppendLine();
+                            });
+
+                            logMessage.AppendLine($"  Raw contract presence rules: {rawRules.ToString()}\n==!!==!!==!!==!!==!!==!!==!!==");
+
                             logMessage.AppendLine($"  All entity components: {string.Join(", ", actualComponents.Select(t => t.Name))}");
                             
                             NLogger.Log(logMessage.ToString());
@@ -840,7 +883,7 @@ namespace NECS.ECS.ECSCore
                                 
                                 if (LoggingLevel == ContractLoggingLevel.Verbose)
                                 {
-                                    NLogger.Log($"Contract {this.GetType().Name} (ID: {this.Id}): Condition #{i} failed for Entity {entid}");
+                                    NLogger.Log($"Contract {this.GetType().Name} (ID: {this.ContractId}): Condition #{i} failed for Entity {entid}");
                                 }
                             }
                         }
@@ -876,7 +919,7 @@ namespace NECS.ECS.ECSCore
             {
                 if (LoggingLevel == ContractLoggingLevel.Verbose)
                 {
-                    NLogger.Log($"Contract {this.GetType().Name} (ID: {this.Id}): No entities passed contract requirements");
+                    NLogger.Log($"Contract {this.GetType().Name} (ID: {this.ContractId}): No entities passed contract requirements");
                 }
                 return false;
             }

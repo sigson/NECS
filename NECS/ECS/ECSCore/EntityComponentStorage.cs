@@ -846,6 +846,17 @@ namespace NECS.ECS.ECSCore
             components.ExecuteWriteLocked(componentType, action);
         }
 
+        public bool GetReadLockedComponent<T>(out T component, out RWLock.LockToken token) where T : ECSComponent
+        {
+            ECSComponent tempComponent;
+
+            bool result = this.GetReadLockedComponent(typeof(T), out tempComponent, out token);
+
+            component = tempComponent as T; 
+
+            return result && component != null;
+        }
+
         public bool GetReadLockedComponent(Type componentType, out ECSComponent component, out RWLock.LockToken token)
         {
             return components.TryGetLockedElement(componentType, out component, out token, false);

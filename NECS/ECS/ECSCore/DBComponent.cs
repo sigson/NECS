@@ -613,21 +613,24 @@ namespace NECS.ECS.ECSCore
             try
             {
                 var changes = new List<(ECSComponent, ComponentState, string)>();
-                var dbsnap = this.DB.SnapshotI(this.SerialLocker)[instanceId];
-                foreach (var inter in dbsnap.ToList())
+                //var dbsnap = this.DB.SnapshotI(this.SerialLocker)[instanceId];
+                if(this.DB.SnapshotI(this.SerialLocker).TryGetValue(instanceId, out var dbsnap))
                 {
-                    changes.Add((inter.Value.Item1, ComponentState.Removed, "Removed"));
-                    this.RemoveComponent(inter.Value.Item1.instanceId);
-                }
-                
-                if (LoggingLevel >= DBLoggingLevel.CountAndTypes)
-                {
-                    LogDBState($"RemoveComponentsByOwner(Owner: {instanceId})", changes);
+                    foreach (var inter in dbsnap.ToList())
+                    {
+                        changes.Add((inter.Value.Item1, ComponentState.Removed, "Removed"));
+                        this.RemoveComponent(inter.Value.Item1.instanceId);
+                    }
+                    
+                    if (LoggingLevel >= DBLoggingLevel.CountAndTypes)
+                    {
+                        LogDBState($"RemoveComponentsByOwner(Owner: {instanceId})", changes);
+                    }
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                NLogger.LogError("error remove components from db by owner");
+                NLogger.LogError($"error remove components from db by owner {ex.Message} \n [[[[[[[[[{ex.StackTrace}]]]]]]]]]");
             }
         }
 
@@ -737,6 +740,31 @@ namespace NECS.ECS.ECSCore
                     ChangedComponents.Clear();
                 errorChanged.ForEach(x => ChangedComponents[x] = 1);
             }
+            if (LoggingLevel >= DBLoggingLevel.CountOnly)
+            {
+                var elementsOwners = new StringBuilder();
+                foreach (var serializedRow in serializedDB)
+                {
+                    elementsOwners.AppendLine($"{serializedRow.Key.serializableInstanceId} " + "{");
+                    foreach (var dbrow in serializedRow.Value)
+                    {
+                        elementsOwners.AppendLine($"        {dbrow.componentId}++{dbrow.componentInstanceId}++{dbrow.componentState}, ");
+                    }
+                    elementsOwners.AppendLine("}");
+                }
+
+                var elementsOwnersEO = new StringBuilder();
+                foreach (var serializedRow in serializedDBNonEO)
+                {
+                    elementsOwners.AppendLine($"{serializedRow.Key.serializableInstanceId} " + "{");
+                    foreach (var dbrow in serializedRow.Value.Item1)
+                    {
+                        elementsOwners.AppendLine($"        {dbrow.componentId}++{dbrow.componentInstanceId}++{dbrow.componentState}, ");
+                    }
+                    elementsOwners.AppendLine("}");
+                }
+                NLogger.Log($"[DB UnserializeDB] Starting deserialization of {serializedDB.Count} owners with elements:\n {elementsOwners} \n AND HAS NullEntityOwner:\n {elementsOwnersEO}");
+            }
         }
 
         public override void AfterSerializationDB(bool clearAfterSerializaion = true)
@@ -785,7 +813,28 @@ namespace NECS.ECS.ECSCore
             {
                 if (LoggingLevel >= DBLoggingLevel.CountOnly)
                 {
-                    NLogger.Log($"[DB UnserializeDB] Starting deserialization of {serializedDB.Count} owners");
+                    var elementsOwners = new StringBuilder();
+                    foreach (var serializedRow in serializedDB)
+                    {
+                        elementsOwners.AppendLine($"{serializedRow.Key.serializableInstanceId} " + "{");
+                        foreach (var dbrow in serializedRow.Value)
+                        {
+                            elementsOwners.AppendLine($"        {dbrow.componentId}++{dbrow.componentInstanceId}++{dbrow.componentState}, ");
+                        }
+                        elementsOwners.AppendLine("}");
+                    }
+
+                    var elementsOwnersEO = new StringBuilder();
+                    foreach (var serializedRow in serializedDBNonEO)
+                    {
+                        elementsOwners.AppendLine($"{serializedRow.Key.serializableInstanceId} " + "{");
+                        foreach (var dbrow in serializedRow.Value.Item1)
+                        {
+                            elementsOwners.AppendLine($"        {dbrow.componentId}++{dbrow.componentInstanceId}++{dbrow.componentState}, ");
+                        }
+                        elementsOwners.AppendLine("}");
+                    }
+                    NLogger.Log($"[DB UnserializeDB] Starting deserialization of {serializedDB.Count} owners with elements:\n {elementsOwners} \n AND HAS NullEntityOwner:\n {elementsOwnersEO}");
                 }
 
                 if (retryNullEntityOwner)
@@ -815,7 +864,8 @@ namespace NECS.ECS.ECSCore
                                     this.RemoveComponentsByOwner(lostInstanceId);
                                 }
                                 NLogger.Log("lost components destroyed");
-                                return;
+                                serializedDBNonEO.Remove(serializedRow.Key);
+                                continue;
                             }
 
                             serializedDBNonEO[serializedRow.Key] = (serializedRow.Value, serializedDBNonEO[serializedRow.Key].Item2 + 1);

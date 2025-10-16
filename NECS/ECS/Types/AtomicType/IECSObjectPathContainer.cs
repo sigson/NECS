@@ -92,7 +92,10 @@ namespace NECS.ECS.Types.AtomicType
                                 }
                             }
                         }
-                        cacheECSObject = currentObject;
+                        if(currentObject != null && currentObject.instanceId == serializableInstanceId)
+                        {
+                            cacheECSObject = currentObject;
+                        }
                         if (Interlocked.Read(ref this.serializableInstanceId) == -1)
                         {
                             if (cacheECSObject != null)
