@@ -127,7 +127,7 @@ namespace NECS.ECS.ECSCore
 
         public void DirectiveSetChanged()
         {
-            if (ownerEntity != null)
+            if (ownerEntity != null && ownerDB == null)
             {
                 ownerEntity.entityComponents.DirectiveChange(this.GetType());
             }
@@ -135,9 +135,14 @@ namespace NECS.ECS.ECSCore
 
         public void MarkAsChanged(bool serializationSilent = false, bool eventSilent = false)
         {
-            if (ownerEntity != null)
+            if (ownerEntity != null && ownerDB == null)
             {
                 ownerEntity.entityComponents.MarkComponentChanged(this, serializationSilent, eventSilent);
+            }
+            if(ownerDB != null)
+            {
+                ownerDB.ChangeComponent(this);
+                ownerDB.MarkAsChanged();
             }
         }
 

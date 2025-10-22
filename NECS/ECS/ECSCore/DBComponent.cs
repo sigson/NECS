@@ -16,6 +16,8 @@ using System.IO;
 using static NECS.ECS.ECSCore.ComponentsDBComponent;
 using NECS.ECS.Types.AtomicType;
 using NECS.Extensions.ThreadingSync;
+using NECS.Harness.Services;
+using System.Diagnostics;
 
 namespace NECS.ECS.ECSCore
 {
@@ -335,7 +337,14 @@ namespace NECS.ECS.ECSCore
                 {
                     if (!ComponentOwners.TryGetValue(componentId, out owner))
                     {
-                        NLogger.LogError("error get component from db");
+                        if(GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Client && new StackTrace().ToString().Contains("UnserializeDB"))
+                        {
+                            NLogger.Log("SETUP_UNSERIALIZE error get component from db");
+                        }
+                        else
+                        {
+                            NLogger.LogError("error get component from db");
+                        }
                         return (null, ComponentState.Null);
                     }
                 }

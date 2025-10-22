@@ -294,6 +294,19 @@ namespace NECS.ECS.ECSCore
             }
         }
 
+        protected bool _notAllIncludedEntitiesPresenceSign = false;
+        public bool NotAllIncludedEntitiesPresenceSign
+        {
+            get => _notAllIncludedEntitiesPresenceSign;
+            set
+            {
+                lock (ContractLocker)
+                {
+                    _notAllIncludedEntitiesPresenceSign = value;
+                }
+            }
+        }
+
         protected bool _asyncExecution = true;
         public bool AsyncExecution
         {
@@ -743,7 +756,7 @@ namespace NECS.ECS.ECSCore
                 }
             }
 
-            if (globalViolationSeizure && !partialEntityTargetListLockingAllowed)
+            if (globalViolationSeizure && !partialEntityTargetListLockingAllowed && !NotAllIncludedEntitiesPresenceSign)
             {
                 lockTokens.ForEach(token => token.Dispose());
                 lockTokens.Clear();
@@ -910,7 +923,7 @@ namespace NECS.ECS.ECSCore
                     Lockers[entityid].Add(entitytoken);
 
             }
-            if (globalViolationSeizure && !partialEntityTargetListLockingAllowed)
+            if (globalViolationSeizure && !partialEntityTargetListLockingAllowed && !NotAllIncludedEntitiesPresenceSign)
             {
                 Lockers.ForEach(x => x.Value.ForEach(y => y.Dispose()));
                 return !globalViolationSeizure;
