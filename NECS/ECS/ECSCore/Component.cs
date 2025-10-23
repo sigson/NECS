@@ -40,6 +40,8 @@ namespace NECS.ECS.ECSCore
         public List<Action<ECSEntity, ECSComponent>> OnChangeHandlers = new List<Action<ECSEntity, ECSComponent>>();
         [System.NonSerialized]
         public bool Unregistered = true;
+        [System.NonSerialized]
+        public bool AlreadyRemovedReaction = false;
         public ComponentManagersStorage componentManagers
         {
             get
@@ -139,7 +141,7 @@ namespace NECS.ECS.ECSCore
             {
                 ownerEntity.entityComponents.MarkComponentChanged(this, serializationSilent, eventSilent);
             }
-            if(ownerDB != null)
+            if(ownerDB != null && (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server || GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Offline))
             {
                 ownerDB.ChangeComponent(this);
                 ownerDB.MarkAsChanged();
@@ -223,6 +225,11 @@ namespace NECS.ECS.ECSCore
         /// <param name="entity"></param>
         public void RemovingReaction(ECSEntity entity)
         {
+            if (AlreadyRemovedReaction)//unsafe, but i don't care
+            {
+                return;
+            }
+            AlreadyRemovedReaction = true;
             StateReactionQueue.AddEvent(StateReactionType.Removed, () =>
             {
                 lock (this.StateReactionQueue)

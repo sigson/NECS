@@ -10,16 +10,16 @@ namespace NECS.ECS.Types.AtomicType
 {
     [System.Serializable]
     [TypeUid(106)]
-    public class DeterministicCollectionProcessor : BaseCustomType
+    public class DeterministicContainer : BaseCustomType
     {
         public long _salt = 0;
 
-        public DeterministicCollectionProcessor()
+        public DeterministicContainer()
         {
             
         }
 
-        public DeterministicCollectionProcessor(long salt)
+        public DeterministicContainer(long salt)
         {
             _salt = salt;
         }
@@ -29,7 +29,7 @@ namespace NECS.ECS.Types.AtomicType
         /// </summary>
         /// <param name="salt">Значение long, используемое для инициализации генератора 
         /// случайных чисел.</param>
-        public DeterministicCollectionProcessor SetSalt(long salt)
+        public DeterministicContainer SetSalt(long salt)
         {
             _salt = salt;
             return this;
@@ -138,6 +138,23 @@ namespace NECS.ECS.Types.AtomicType
                 // Вызываем предоставленное действие
                 action(item, deterministicValue);
             }
+        }
+
+        public T[] DeterministicSelect<T>(IEnumerable<T> collection, int count)
+        {
+            if (collection == null || count <= 0)
+            {
+                return new T[0];
+            }
+
+            T[] shuffledArray = DeterministicShuffle(collection);
+
+            if (count >= shuffledArray.Length)
+            {
+                return shuffledArray;
+            }
+
+            return shuffledArray.Take(count).ToArray();
         }
     }
 }
