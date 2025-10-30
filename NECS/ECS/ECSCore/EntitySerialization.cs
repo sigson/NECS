@@ -435,8 +435,12 @@ namespace NECS.ECS.ECSCore
                         {
                             entity.GetComponent<DBComponent>(tComponent.GetId()).UnserializeDB(true);
                         }
+                        entity.GetComponent<DBComponent>(tComponent.GetId()).AfterDeserialization();
                     }
-                    tComponent.AfterDeserialization();
+                    else
+                    {
+                        tComponent.AfterDeserialization();
+                    }
                 });
                 entity.AfterDeserialization();
                 entity.entityComponents.RegisterAllComponents();
@@ -700,7 +704,7 @@ namespace NECS.ECS.ECSCore
     public static class GlobalCachingSerialization
     {
         public static JsonSerializer cachingSerializer => standartSerializer;
-        public static JsonSerializer standartSerializer = new JsonSerializer();
+        public static JsonSerializer standartSerializer = new JsonSerializer(){MissingMemberHandling = MissingMemberHandling.Ignore, NullValueHandling = NullValueHandling.Ignore};
     }
 
 }

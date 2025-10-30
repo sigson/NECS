@@ -19,6 +19,7 @@ namespace NECS.Harness.Model
         public abstract bool LoginCheck(string username, string hashedPassword);
         public abstract bool EmailAvailable(string email);
         public abstract T CreateUser<T>(T dataRow) where T : UserDataRowBase;
+        public abstract T CreateOrUpdateUser<T>(T dataRow) where T : UserDataRowBase;
         public abstract T GetUserViaCallsign<T>(string username) where T : UserDataRowBase;
         public abstract T GetUserViaEmail<T>(string email) where T : UserDataRowBase;
         public abstract List<string> GetEmailList();
@@ -31,7 +32,7 @@ namespace NECS.Harness.Model
 
     public class UserDataRowBase
     {
-        //public int id;
+        public long Id;
         public string Username = "";
         public string Password = "";
         public string Email = "";
@@ -67,7 +68,7 @@ namespace NECS.Harness.Model
 #if NET && !GODOT
             if (dbResult.HasRows)
             {
-                //Id = int.Parse(dbResult.GetString("Id"));
+                Id = int.Parse(dbResult.GetString("id"));
                 Username = dbResult.GetString("Username");
                 Password = dbResult.GetString("Password");
                 Email = dbResult.GetString("Email");

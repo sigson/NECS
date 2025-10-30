@@ -93,22 +93,78 @@ CREATE TABLE IF NOT EXISTS ""Friends"" (
 
         public override T CreateUser<T>(T dataRow)
         {
-            if (! EmailAvailable(dataRow.Email)) throw new ArgumentException("Email Taken!");
-            var packed = dataRow.PrepareToDBInsert();
-            var columns = "";
-            var values = "";
-            packed.Item1.ForEach(x => columns += x + ", ");
-            packed.Item2.ForEach(x => values += "'" + x + "', ");
-            columns = columns.Substring(0, columns.Length - 2);
-            values = values.Substring(0, values.Length - 2);
-            using (SqliteCommand request = new SqliteCommand(
-                $"INSERT INTO Users({columns}) VALUES({values});",
-                this.Connection
-            ))
-            {
-                request.ExecuteNonQuery();
+            if (!EmailAvailable(dataRow.Email)) throw new ArgumentException("Email Taken!");
+            
+            // 1. Подготовка данных (предполагаем, что Item2 - это List<object>)
+            var packed = dataRow.PrepareToDBInsert(); 
+            var columns = string.Join(", ", packed.Item1);
+            var paramNames = string.Join(", ", packed.Item1.Select(col => "@" + col)); // @Username, @Email
 
+            string sql = $"INSERT INTO Users({columns}) VALUES({paramNames});";
+
+            using (SqliteCommand request = new SqliteCommand(sql, this.Connection))
+            {
+                // 2. Добавление параметров
+                for (int i = 0; i < packed.Item1.Count; i++)
+                {
+                    request.Parameters.AddWithValue("@" + packed.Item1[i], (object)packed.Item2[i] ?? DBNull.Value);
+                }
+
+                // 3. Безопасное выполнение
+                request.ExecuteNonQuery();
                 return GetUserViaCallsign<T>(dataRow.Username);
+            }
+        }
+
+        public override T CreateOrUpdateUser<T>(T dataRow)
+        {
+            T existingUser = null;
+            try
+            {
+                existingUser = GetUserViaCallsign<T>(dataRow.Username);
+            }
+            catch
+            {
+                existingUser = null;
+            }
+
+            // Подготовка данных
+            var packed = dataRow.PrepareToDBInsert(); // (List<string> cols, List<object> vals)
+
+            if (existingUser != null)
+            {
+                // ----- UPDATE (БЕЗОПАСНЫЙ) -----
+
+                if (existingUser.Email != dataRow.Email && !EmailAvailable(dataRow.Email))
+                {
+                    throw new ArgumentException("Email Taken!");
+                }
+                
+                // Формируем SET: "col1 = @col1, col2 = @col2"
+                // Исключаем Username из обновления
+                var setClauses = packed.Item1
+                    .Where(col => !col.Equals("Username", StringComparison.OrdinalIgnoreCase))
+                    .Select(col => $"{col} = @{col}");
+                
+                string sql = $"UPDATE Users SET {string.Join(", ", setClauses)} WHERE Username = @Username;";
+
+                using (SqliteCommand request = new SqliteCommand(sql, this.Connection))
+                {
+                    // Добавляем все параметры (включая @Username для WHERE)
+                    for (int i = 0; i < packed.Item1.Count; i++)
+                    {
+                        request.Parameters.AddWithValue("@" + packed.Item1[i], (object)packed.Item2[i] ?? DBNull.Value);
+                    }
+
+                    request.ExecuteNonQuery();
+                    return GetUserViaCallsign<T>(dataRow.Username);
+                }
+            }
+            else
+            {
+                // ----- CREATE (БЕЗОПАСНЫЙ) -----
+                // Можно просто вызвать безопасный CreateUser, который мы написали выше
+                return CreateUser(dataRow);
             }
         }
 

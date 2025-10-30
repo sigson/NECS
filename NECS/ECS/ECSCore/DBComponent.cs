@@ -343,7 +343,7 @@ namespace NECS.ECS.ECSCore
                         }
                         else
                         {
-                            NLogger.LogError("error get component from db");
+                            NLogger.LogErrorDB("error get component from db");
                         }
                         return (null, ComponentState.Null);
                     }
@@ -363,7 +363,7 @@ namespace NECS.ECS.ECSCore
                 }
                 else
                 {
-                    NLogger.LogError("error get component from db");
+                    NLogger.LogErrorDB("error get component from db");
                     return (null, ComponentState.Null);
                 }
             }
@@ -408,7 +408,7 @@ namespace NECS.ECS.ECSCore
         {
             if(!ComponentOwners.ContainsKey(component.instanceId))
             {
-                NLogger.LogError("error change component from db");
+                NLogger.LogErrorDB("error change component from db");
                 return;
             }
             
@@ -423,7 +423,7 @@ namespace NECS.ECS.ECSCore
                     {
                         if (!ComponentOwners.TryGetValue(component.instanceId, out owner))
                         {
-                            NLogger.LogError("error change component from db");
+                            NLogger.LogErrorDB("error change component from db");
                         }
                     }
                     else
@@ -446,7 +446,7 @@ namespace NECS.ECS.ECSCore
         {
             if (!ComponentOwners.ContainsKey(componentId))
             {
-                NLogger.LogError("error remove component from db");
+                NLogger.LogErrorDB("error remove component from db");
                 return;
             }
             ECSComponent removedComponent = null;
@@ -461,7 +461,7 @@ namespace NECS.ECS.ECSCore
                     {
                         if (!ComponentOwners.TryGetValue(componentId, out owner))
                         {
-                            NLogger.LogError("error remove component from db");
+                            NLogger.LogErrorDB("error remove component from db");
                         }
                     }
                     else
@@ -478,7 +478,7 @@ namespace NECS.ECS.ECSCore
                     }
                     else
                     {
-                        NLogger.LogError("error remove component from db");
+                        NLogger.LogErrorDB("error remove component from db");
                     }
                 }
             }
@@ -639,7 +639,7 @@ namespace NECS.ECS.ECSCore
             }
             catch (Exception ex)
             {
-                NLogger.LogError($"error remove components from db by owner {ex.Message} \n [[[[[[[[[{ex.StackTrace}]]]]]]]]]");
+                NLogger.LogErrorDB($"error remove components from db by owner {ex.Message} \n [[[[[[[[[{ex.StackTrace}]]]]]]]]]");
             }
         }
 
@@ -663,7 +663,7 @@ namespace NECS.ECS.ECSCore
             }
             catch (Exception e)
             {
-                NLogger.LogError("error remove components from db by owner");
+                NLogger.LogErrorDB("error remove components from db by owner");
             }
         }
 
@@ -989,7 +989,7 @@ namespace NECS.ECS.ECSCore
                     var ownerList = DB[entityRow.Key.CacheInstanceId];
                     if (entityRowValues[i].componentState == ComponentState.Removed && !ownerList.ContainsKey(entityRowValues[i].componentInstanceId))
                     {
-                        NLogger.LogError("remove db component duplicate");
+                        NLogger.LogErrorDB("remove db component duplicate");
                         continue;
                     }
                     var ecsComponent = ownerList[entityRowValues[i].componentInstanceId];

@@ -66,7 +66,7 @@ namespace NECS.Network.NetworkModels.TCP
 
         public TCPGameSession(CUserToken token, IServerRealization server)
         {
-            NLogger.Log("Client accepted");
+            NLogger.LogNetwork("Client accepted");
             this.Server = server;
             this.token = token;
             this.token.set_peer(this);
@@ -153,7 +153,7 @@ namespace NECS.Network.NetworkModels.TCP
                     }
                     catch (Exception ex)
                     {
-                        NLogger.Log("SocketEmitError: " + ex.StackTrace);
+                        NLogger.LogNetwork("SocketEmitError: " + ex.StackTrace);
                         errorCount++;
                     }
                 }
@@ -171,7 +171,7 @@ namespace NECS.Network.NetworkModels.TCP
                 }
                 catch (Exception ex)
                 {
-                    NLogger.Log("SocketEmitError: " + ex.StackTrace);
+                    NLogger.LogNetwork("SocketEmitError: " + ex.StackTrace);
                     errorCount++;
                 }
             }

@@ -85,7 +85,7 @@ namespace NECS.Extensions.ThreadingSync
             {
                 if (Defines.ThreadsMode || forceThreadmode)
                 {
-                    Thread thread = new Thread(() =>
+                    ThreadPool.QueueUserWorkItem(_ => // Используем '_' , чтобы показать, что 'state' нам не нужен
                     {
                         try
                         {
@@ -96,7 +96,18 @@ namespace NECS.Extensions.ThreadingSync
                             NLogger.LogError(ex);
                         }
                     });
-                    thread.Start();
+                    // Thread thread = new Thread(() =>
+                    // {
+                    //     try
+                    //     {
+                    //         action();
+                    //     }
+                    //     catch (Exception ex)
+                    //     {
+                    //         NLogger.LogError(ex);
+                    //     }
+                    // });
+                    // thread.Start();
                 }
                 else
                 {

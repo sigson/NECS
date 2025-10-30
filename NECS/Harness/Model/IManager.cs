@@ -41,7 +41,7 @@ public abstract
             }
         }
         #endregion
-        private IECSObjectPathContainer _ConnectPoint = new IECSObjectPathContainer(true);
+        protected IECSObjectPathContainer _ConnectPoint = new IECSObjectPathContainer(true);
         public IECSObject ConnectPoint
         {
             get

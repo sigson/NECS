@@ -50,11 +50,11 @@ namespace NECS.ECS.Types.AtomicType
         /// <typeparam name="T">Тип элементов в коллекции.</typeparam>
         /// <param name="collection">Исходная коллекция.</param>
         /// <returns>Новый массив, содержащий отфильтрованные элементы.</returns>
-        public T[] DeterministicFilter<T>(IEnumerable<T> collection)
+        public T[] DeterministicFilter<T>(IEnumerable<T> collection, int seedInject = 0)
         {
             // Создаем новый экземпляр Random с тем же сидом,
             // чтобы эта операция всегда начиналась одинаково.
-            var rand = new Random(GetSeed());
+            var rand = new Random(GetSeed() + seedInject);
             var filteredList = new List<T>();
 
             foreach (var item in collection)
@@ -83,10 +83,10 @@ namespace NECS.ECS.Types.AtomicType
         /// <param name="collection">Исходная коллекция.</param>
         /// <returns>Новый массив с элементами в "случайном", но
         /// детерминированном порядке.</returns>
-        public T[] DeterministicShuffle<T>(IEnumerable<T> collection)
+        public T[] DeterministicShuffle<T>(IEnumerable<T> collection, int seedInject = 0)
         {
             // Снова создаем Random с тем же сидом.
-            var rand = new Random(GetSeed());
+            var rand = new Random(GetSeed() + seedInject);
 
             // Нам нужен материализованный список/массив для тасования
             var array = collection.ToArray();
@@ -119,10 +119,10 @@ namespace NECS.ECS.Types.AtomicType
         /// <param name="collection">Исходная коллекция.</param>
         /// <param name="action">Лямбда-функция или метод, принимающий 
         /// (T item, long deterministicValue).</param>
-        public void ProcessWithDeterministicLong<T>(IEnumerable<T> collection, Action<T, long> action)
+        public void ProcessWithDeterministicLong<T>(IEnumerable<T> collection, Action<T, long> action, int seedInject = 0)
         {
             // И снова создаем Random с тем же сидом.
-            var rand = new Random(GetSeed());
+            var rand = new Random(GetSeed() + seedInject);
 
             // Буфер для 8 байт (размер long)
             byte[] buffer = new byte[8];
@@ -140,14 +140,14 @@ namespace NECS.ECS.Types.AtomicType
             }
         }
 
-        public T[] DeterministicSelect<T>(IEnumerable<T> collection, int count)
+        public T[] DeterministicSelect<T>(IEnumerable<T> collection, int count, int seedInject = 0)
         {
             if (collection == null || count <= 0)
             {
                 return new T[0];
             }
 
-            T[] shuffledArray = DeterministicShuffle(collection);
+            T[] shuffledArray = DeterministicShuffle(collection, seedInject);
 
             if (count >= shuffledArray.Length)
             {

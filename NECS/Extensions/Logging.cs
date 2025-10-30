@@ -87,6 +87,7 @@ namespace NECS.Core.Logging
         public static void Log(object content) => Write("INFO", ConsoleColor.Gray, content);
         public static void LogNetwork(object content) => Write("Network", ConsoleColor.Blue, content);
         public static void LogDB(object content) => Write("DataBase", ConsoleColor.Yellow, content);
+        public static void LogErrorDB(object content) => Write("ERRORDB", ConsoleColor.Red, content);
         public static void LogService(object content) => Write("Service", ConsoleColor.Magenta, content);
         public static void LogSuccess(object content) => Write("Success", ConsoleColor.Green, content);
 

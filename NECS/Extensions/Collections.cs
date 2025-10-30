@@ -832,11 +832,11 @@ namespace NECS.Extensions
                                 holdToken.Dispose();
                                 goto recheckRaceOfStates;
                             }
-                            else if(KeysHoldingLockdownCache.ContainsKey(key))
-                            {
-                                holdToken.Dispose();
-                                goto recheckHolded;
-                            }
+                            // else if(KeysHoldingLockdownCache.ContainsKey(key))
+                            // {
+                            //     holdToken.Dispose();
+                            //     goto recheckHolded;
+                            // }
                         }
                         var newLockedValue = new LockedValue() { Value = value, lockValue = new RWLock() };
                         if(lockedMode) 
@@ -1012,21 +1012,17 @@ namespace NECS.Extensions
             lockToken = null;
             if (HoldKeys)
             {
-                KeysHoldingStorage.TryAddChangeLockedElement(key, false, holdMode, out var wrlockToken, true);
-                if(wrlockToken != null)
+                KeysHoldingStorage.TryAddChangeLockedElement(key, false, true, out var rdlockToken, false);
+                if(rdlockToken != null)
                 {
                     if (!this.ContainsKey(key))
                     {
-                        if (KeysHoldingLockdownCache.TryAdd(key, false))
-                        {
-                            wrlockToken.Dispose();
-                            KeysHoldingStorage.TryAddChangeLockedElement(key, false, holdMode, out lockToken);
-                            KeysHoldingLockdownCache.Remove(key, out _);
-                            return true;
-                        }
+                        lockToken = rdlockToken;
+                        return true;
                     }
-                    wrlockToken.Dispose();
+                    rdlockToken?.Dispose();
                 }
+                rdlockToken?.Dispose();
                 return false;
             }
             else
@@ -2170,15 +2166,16 @@ namespace NECS.Extensions
     public class LoggingDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     {
         // Внутренний, "настоящий" словарь, который мы оборачиваем
+        private long instanceId = Guid.NewGuid().GuidToLong();
         private readonly IDictionary<TKey, TValue> _dictionary;
 
         // Приватный метод для логирования текущего состояния
-        private void LogState()
+        private void LogState(string prefix = "")
         {
             // Environment.StackTrace дает более полную информацию, чем new StackTrace()
             string stackTrace = Environment.StackTrace;
             
-            NLogger.Log($"Elements count: {_dictionary.Count}\nStack Trace:\n{stackTrace}");
+            NLogger.Log($"{prefix}+{instanceId}+Elements count: {_dictionary.Count}\nStack Trace:\n{stackTrace}");
         }
 
         #region Constructors
@@ -2186,25 +2183,25 @@ namespace NECS.Extensions
         public LoggingDictionary()
         {
             _dictionary = new Dictionary<TKey, TValue>();
-            LogState();
+            LogState("Ctor()");
         }
 
         public LoggingDictionary(int capacity)
         {
             _dictionary = new Dictionary<TKey, TValue>(capacity);
-            LogState();
+            LogState("Ctor(capacity)");
         }
 
         public LoggingDictionary(IEqualityComparer<TKey> comparer)
         {
             _dictionary = new Dictionary<TKey, TValue>(comparer);
-            LogState();
+            LogState("Ctor(comparer)");
         }
 
         public LoggingDictionary(IDictionary<TKey, TValue> dictionary)
         {
             _dictionary = new Dictionary<TKey, TValue>(dictionary);
-            LogState();
+            LogState("Ctor(dictionary)");
         }
         #endregion
 
@@ -2215,13 +2212,13 @@ namespace NECS.Extensions
             get
             {
                 var value = _dictionary[key];
-                LogState();
+                LogState("Indexer[get]");
                 return value;
             }
             set
             {
                 _dictionary[key] = value;
-                LogState();
+                LogState("Indexer[set]");
             }
         }
 
@@ -2230,7 +2227,7 @@ namespace NECS.Extensions
             get
             {
                 var keys = _dictionary.Keys;
-                LogState();
+                LogState("Keys[get]");
                 return keys;
             }
         }
@@ -2240,7 +2237,7 @@ namespace NECS.Extensions
             get
             {
                 var values = _dictionary.Values;
-                LogState();
+                LogState("Values[get]");
                 return values;
             }
         }
@@ -2250,7 +2247,7 @@ namespace NECS.Extensions
             get
             {
                 var count = _dictionary.Count;
-                LogState();
+                LogState("Count[get]");
                 return count;
             }
         }
@@ -2260,59 +2257,59 @@ namespace NECS.Extensions
         public void Add(TKey key, TValue value)
         {
             _dictionary.Add(key, value);
-            LogState();
+            LogState("Add(key, value)");
         }
 
         public void Add(KeyValuePair<TKey, TValue> item)
         {
             _dictionary.Add(item);
-            LogState();
+            LogState("Add(item)");
         }
 
         public void Clear()
         {
             _dictionary.Clear();
-            LogState();
+            LogState("Clear()");
         }
 
         public bool Contains(KeyValuePair<TKey, TValue> item)
         {
             bool result = _dictionary.Contains(item);
-            LogState();
+            LogState("Contains(item)");
             return result;
         }
 
         public bool ContainsKey(TKey key)
         {
             bool result = _dictionary.ContainsKey(key);
-            LogState();
+            LogState("ContainsKey(key)");
             return result;
         }
 
         public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
             _dictionary.CopyTo(array, arrayIndex);
-            LogState();
+            LogState("CopyTo()");
         }
 
         public bool Remove(TKey key)
         {
             bool result = _dictionary.Remove(key);
-            LogState();
+            LogState("Remove(key)");
             return result;
         }
 
         public bool Remove(KeyValuePair<TKey, TValue> item)
         {
             bool result = _dictionary.Remove(item);
-            LogState();
+            LogState("Remove(item)");
             return result;
         }
 
         public bool TryGetValue(TKey key, out TValue value)
         {
             bool result = _dictionary.TryGetValue(key, out value);
-            LogState();
+            LogState("TryGetValue()");
             return result;
         }
 
@@ -2322,7 +2319,7 @@ namespace NECS.Extensions
             // Логирование каждого шага итерации (MoveNext) потребовало бы создания
             // обертки и для IEnumerator, что усложнило бы код.
             var enumerator = _dictionary.GetEnumerator();
-            LogState();
+            LogState("GetEnumerator()");
             return enumerator;
         }
 

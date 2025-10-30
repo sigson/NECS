@@ -249,7 +249,7 @@ namespace NECS.Harness.Services
             //deserializedEvent.cachedGameDataEvent = NetworkPacketBuilderService.instance.SliceAndRepackForSendNetworkPacket(buffer);
             if (Defines.ECSNetworkTypeLogging)
             {
-                NLogger.Log($"Received {deserializedEvent.GetType().Name}");
+                NLogger.LogNetwork($"Received {deserializedEvent.GetType().Name}");
             }
             try
             {

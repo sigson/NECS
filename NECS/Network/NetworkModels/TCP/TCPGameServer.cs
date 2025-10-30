@@ -55,7 +55,7 @@ namespace NECS.Network.NetworkModels.TCP
             try { user = new TCPGameSession(token, this); }
             catch
             {
-                NLogger.Log("error add user");
+                NLogger.LogNetwork("error add user");
                 return;
             }
         }

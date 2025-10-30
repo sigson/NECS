@@ -155,6 +155,7 @@ namespace NECS
         
         // Свойства класса
         public string PredicateId { get; private set; }
+        public bool SuccessfullExecuted { get; private set; }
         private List<Func<bool>> predicates;
         public Action payloadAction;
         private int maxAttempts;
@@ -306,9 +307,11 @@ namespace NECS
                 NLogger.Log($"PredicateExecutor '{PredicateId}': All predicates passed, executing payload");
                 payloadAction.Invoke();
                 NLogger.Log($"PredicateExecutor '{PredicateId}': Payload executed successfully");
-                
+
                 // Успешное выполнение - удаляем из кеша
                 RemoveFromCache();
+                
+                SuccessfullExecuted = true;
             }
             catch (Exception ex)
             {

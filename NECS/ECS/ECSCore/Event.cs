@@ -70,7 +70,7 @@ namespace NECS.ECS.ECSCore
         {
             if(Defines.ECSNetworkTypeLogging)
             {
-                NLogger.Log($"Prepared to send {this.GetType().Name}");
+                NLogger.LogNetwork($"Prepared to send {this.GetType().Name}");
             }
             if (cachedGameDataEvent == null)
                 SerializeEvent();
