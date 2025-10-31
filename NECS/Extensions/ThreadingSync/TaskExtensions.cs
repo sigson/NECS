@@ -93,7 +93,7 @@ namespace NECS.Extensions.ThreadingSync
                         }
                         catch (Exception ex)
                         {
-                            NLogger.LogError(ex);
+                            NLogger.ErrorThread(ex);
                         }
                     });
                     // Thread thread = new Thread(() =>

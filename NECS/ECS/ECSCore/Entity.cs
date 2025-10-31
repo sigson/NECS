@@ -101,6 +101,340 @@ namespace NECS.ECS.ECSCore
             ExecuteReadLockedComponent(typeof(T), action);
         }
 
+        #region Generic_Extension
+
+        public void ExecuteWriteLockedComponent<T1, T2, T3, T4, T5, T6>(Action<T1, T2, T3, T4, T5, T6> action) where T1 : ECSComponent where T2 : ECSComponent where T3 : ECSComponent where T4 : ECSComponent where T5 : ECSComponent where T6 : ECSComponent
+        {
+            ExecuteWriteLockedComponent(typeof(T1), (t, c1) =>
+            {
+                ExecuteWriteLockedComponent(typeof(T2), (t, c2) =>
+                {
+                    ExecuteWriteLockedComponent(typeof(T3), (t, c3) =>
+                    {
+                        ExecuteWriteLockedComponent(typeof(T4), (t, c4) =>
+                        {
+                            ExecuteWriteLockedComponent(typeof(T5), (t, c5) =>
+                            {
+                                ExecuteWriteLockedComponent(typeof(T5), (t, c6) =>
+                                {
+                                    action((T1)c1, (T2)c2, (T3)c3, (T4)c4, (T5)c5, (T6)c6);
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        }
+
+        public void ExecuteWriteLockedComponent<T1, T2, T3, T4, T5>(Action<T1, T2, T3, T4, T5> action)
+            where T1 : ECSComponent
+            where T2 : ECSComponent
+            where T3 : ECSComponent
+            where T4 : ECSComponent
+            where T5 : ECSComponent
+        {
+            ExecuteWriteLockedComponent(typeof(T1), (t, c1) =>
+            {
+                ExecuteWriteLockedComponent(typeof(T2), (t, c2) =>
+                {
+                    ExecuteWriteLockedComponent(typeof(T3), (t, c3) =>
+                    {
+                        ExecuteWriteLockedComponent(typeof(T4), (t, c4) =>
+                        {
+                            ExecuteWriteLockedComponent(typeof(T5), (t, c5) =>
+                            {
+                                action((T1)c1, (T2)c2, (T3)c3, (T4)c4, (T5)c5);
+                            });
+                        });
+                    });
+                });
+            });
+        }
+
+        public void ExecuteWriteLockedComponent<T1, T2, T3, T4>(Action<T1, T2, T3, T4> action)
+            where T1 : ECSComponent
+            where T2 : ECSComponent
+            where T3 : ECSComponent
+            where T4 : ECSComponent
+        {
+            ExecuteWriteLockedComponent(typeof(T1), (t, c1) =>
+            {
+                ExecuteWriteLockedComponent(typeof(T2), (t, c2) =>
+                {
+                    ExecuteWriteLockedComponent(typeof(T3), (t, c3) =>
+                    {
+                        ExecuteWriteLockedComponent(typeof(T4), (t, c4) =>
+                        {
+                            action((T1)c1, (T2)c2, (T3)c3, (T4)c4);
+                        });
+                    });
+                });
+            });
+        }
+
+        public void ExecuteWriteLockedComponent<T1, T2, T3>(Action<T1, T2, T3> action)
+            where T1 : ECSComponent
+            where T2 : ECSComponent
+            where T3 : ECSComponent
+        {
+            ExecuteWriteLockedComponent(typeof(T1), (t, c1) =>
+            {
+                ExecuteWriteLockedComponent(typeof(T2), (t, c2) =>
+                {
+                    ExecuteWriteLockedComponent(typeof(T3), (t, c3) =>
+                    {
+                        action((T1)c1, (T2)c2, (T3)c3);
+                    });
+                });
+            });
+        }
+        
+        public void ExecuteWriteLockedComponent<T1, T2>(Action<T1, T2> action) 
+            where T1 : ECSComponent 
+            where T2 : ECSComponent
+        {
+            ExecuteWriteLockedComponent(typeof(T1), (t, c1) =>
+            {
+                ExecuteWriteLockedComponent(typeof(T2), (t, c2) =>
+                {
+                    action((T1)c1, (T2)c2);
+                });
+            });
+        }
+
+        public void ExecuteWriteLockedComponent<T1>(Action<T1> action)
+            where T1 : ECSComponent
+        {
+            ExecuteWriteLockedComponent(typeof(T1), (t, c1) =>
+            {
+                action((T1)c1);
+            });
+        }
+
+        public void ExecuteReadLockedComponent<T1, T2, T3, T4, T5, T6>(Action<T1, T2, T3, T4, T5, T6> action) where T1 : ECSComponent where T2 : ECSComponent where T3 : ECSComponent where T4 : ECSComponent where T5 : ECSComponent where T6 : ECSComponent
+        {
+            ExecuteReadLockedComponent(typeof(T1), (t, c1) =>
+            {
+                ExecuteReadLockedComponent(typeof(T2), (t, c2) =>
+                {
+                    ExecuteReadLockedComponent(typeof(T3), (t, c3) =>
+                    {
+                        ExecuteReadLockedComponent(typeof(T4), (t, c4) =>
+                        {
+                            ExecuteReadLockedComponent(typeof(T5), (t, c5) =>
+                            {
+                                ExecuteReadLockedComponent(typeof(T5), (t, c6) =>
+                                {
+                                    action((T1)c1, (T2)c2, (T3)c3, (T4)c4, (T5)c5, (T6)c6);
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        }
+
+        public void ExecuteReadLockedComponent<T1, T2, T3, T4, T5>(Action<T1, T2, T3, T4, T5> action)
+            where T1 : ECSComponent
+            where T2 : ECSComponent
+            where T3 : ECSComponent
+            where T4 : ECSComponent
+            where T5 : ECSComponent
+        {
+            ExecuteReadLockedComponent(typeof(T1), (t, c1) =>
+            {
+                ExecuteReadLockedComponent(typeof(T2), (t, c2) =>
+                {
+                    ExecuteReadLockedComponent(typeof(T3), (t, c3) =>
+                    {
+                        ExecuteReadLockedComponent(typeof(T4), (t, c4) =>
+                        {
+                            ExecuteReadLockedComponent(typeof(T5), (t, c5) =>
+                            {
+                                action((T1)c1, (T2)c2, (T3)c3, (T4)c4, (T5)c5);
+                            });
+                        });
+                    });
+                });
+            });
+        }
+
+        public void ExecuteReadLockedComponent<T1, T2, T3, T4>(Action<T1, T2, T3, T4> action)
+            where T1 : ECSComponent
+            where T2 : ECSComponent
+            where T3 : ECSComponent
+            where T4 : ECSComponent
+        {
+            ExecuteReadLockedComponent(typeof(T1), (t, c1) =>
+            {
+                ExecuteReadLockedComponent(typeof(T2), (t, c2) =>
+                {
+                    ExecuteReadLockedComponent(typeof(T3), (t, c3) =>
+                    {
+                        ExecuteReadLockedComponent(typeof(T4), (t, c4) =>
+                        {
+                            action((T1)c1, (T2)c2, (T3)c3, (T4)c4);
+                        });
+                    });
+                });
+            });
+        }
+
+        public void ExecuteReadLockedComponent<T1, T2, T3>(Action<T1, T2, T3> action)
+            where T1 : ECSComponent
+            where T2 : ECSComponent
+            where T3 : ECSComponent
+        {
+            ExecuteReadLockedComponent(typeof(T1), (t, c1) =>
+            {
+                ExecuteReadLockedComponent(typeof(T2), (t, c2) =>
+                {
+                    ExecuteReadLockedComponent(typeof(T3), (t, c3) =>
+                    {
+                        action((T1)c1, (T2)c2, (T3)c3);
+                    });
+                });
+            });
+        }
+        
+        public void ExecuteReadLockedComponent<T1, T2>(Action<T1, T2> action) 
+            where T1 : ECSComponent 
+            where T2 : ECSComponent
+        {
+            ExecuteReadLockedComponent(typeof(T1), (t, c1) =>
+            {
+                ExecuteReadLockedComponent(typeof(T2), (t, c2) =>
+                {
+                    action((T1)c1, (T2)c2);
+                });
+            });
+        }
+
+        public void ExecuteReadLockedComponent<T1>(Action<T1> action)
+            where T1 : ECSComponent
+        {
+            ExecuteReadLockedComponent(typeof(T1), (t, c1) =>
+            {
+                action((T1)c1);
+            });
+        }
+
+        public void ExecuteHoldComponent<T1, T2, T3, T4, T5, T6>(Action<T1, T2, T3, T4, T5, T6> action) 
+            where T1 : ECSComponent 
+            where T2 : ECSComponent 
+            where T3 : ECSComponent 
+            where T4 : ECSComponent 
+            where T5 : ECSComponent 
+            where T6 : ECSComponent
+        {
+            this.entityComponents.ExecuteOnNotHasComponent(typeof(T1), () =>
+            {
+                this.entityComponents.ExecuteOnNotHasComponent(typeof(T2), () =>
+                {
+                    this.entityComponents.ExecuteOnNotHasComponent(typeof(T3), () =>
+                    {
+                        this.entityComponents.ExecuteOnNotHasComponent(typeof(T4), () =>
+                        {
+                            this.entityComponents.ExecuteOnNotHasComponent(typeof(T5), () =>
+                            {
+                                this.entityComponents.ExecuteOnNotHasComponent(typeof(T6), () =>
+                                {
+                                    action(default(T1), default(T2), default(T3), default(T4), default(T5), default(T6));
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        }
+
+        public void ExecuteHoldComponent<T1, T2, T3, T4, T5>(Action<T1, T2, T3, T4, T5> action) 
+            where T1 : ECSComponent 
+            where T2 : ECSComponent 
+            where T3 : ECSComponent 
+            where T4 : ECSComponent 
+            where T5 : ECSComponent
+        {
+            this.entityComponents.ExecuteOnNotHasComponent(typeof(T1), () =>
+            {
+                this.entityComponents.ExecuteOnNotHasComponent(typeof(T2), () =>
+                {
+                    this.entityComponents.ExecuteOnNotHasComponent(typeof(T3), () =>
+                    {
+                        this.entityComponents.ExecuteOnNotHasComponent(typeof(T4), () =>
+                        {
+                            this.entityComponents.ExecuteOnNotHasComponent(typeof(T5), () =>
+                            {
+                                action(default(T1), default(T2), default(T3), default(T4), default(T5));
+                            });
+                        });
+                    });
+                });
+            });
+        }
+
+        public void ExecuteHoldComponent<T1, T2, T3, T4>(Action<T1, T2, T3, T4> action) 
+            where T1 : ECSComponent 
+            where T2 : ECSComponent 
+            where T3 : ECSComponent 
+            where T4 : ECSComponent
+        {
+            this.entityComponents.ExecuteOnNotHasComponent(typeof(T1), () =>
+            {
+                this.entityComponents.ExecuteOnNotHasComponent(typeof(T2), () =>
+                {
+                    this.entityComponents.ExecuteOnNotHasComponent(typeof(T3), () =>
+                    {
+                        this.entityComponents.ExecuteOnNotHasComponent(typeof(T4), () =>
+                        {
+                            action(default(T1), default(T2), default(T3), default(T4));
+                        });
+                    });
+                });
+            });
+        }
+
+        public void ExecuteHoldComponent<T1, T2, T3>(Action<T1, T2, T3> action) 
+            where T1 : ECSComponent 
+            where T2 : ECSComponent 
+            where T3 : ECSComponent
+        {
+            this.entityComponents.ExecuteOnNotHasComponent(typeof(T1), () =>
+            {
+                this.entityComponents.ExecuteOnNotHasComponent(typeof(T2), () =>
+                {
+                    this.entityComponents.ExecuteOnNotHasComponent(typeof(T3), () =>
+                    {
+                        action(default(T1), default(T2), default(T3));
+                    });
+                });
+            });
+        }
+
+        public void ExecuteHoldComponent<T1, T2>(Action<T1, T2> action) 
+            where T1 : ECSComponent 
+            where T2 : ECSComponent
+        {
+            this.entityComponents.ExecuteOnNotHasComponent(typeof(T1), () =>
+            {
+                this.entityComponents.ExecuteOnNotHasComponent(typeof(T2), () =>
+                {
+                    action(default(T1), default(T2));
+                });
+            });
+        }
+
+        public void ExecuteHoldComponent<T1>(Action<T1> action)
+            where T1 : ECSComponent
+        {
+            this.entityComponents.ExecuteOnNotHasComponent(typeof(T1), () =>
+            {
+                action(default(T1));
+            });
+        }
+        
+        #endregion
+
         public void ExecuteWriteLockedComponent(Type type, Action <Type, ECSComponent> action)
         {
             this.entityComponents.ExecuteWriteLockedComponent(type, action);

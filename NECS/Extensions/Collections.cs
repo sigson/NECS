@@ -1020,7 +1020,7 @@ namespace NECS.Extensions
                         lockToken = rdlockToken;
                         return true;
                     }
-                    rdlockToken?.Dispose();
+                    //rdlockToken?.Dispose();
                 }
                 rdlockToken?.Dispose();
                 return false;
@@ -1047,9 +1047,14 @@ namespace NECS.Extensions
 
         public void ExecuteOnAddLocked(TKey key, TValue value, Action<TKey,TValue> action)
         {
-            if(this.TryAddOrChange(key, value, out _, out var lockToken, true) && lockToken != null)
+            var result = this.TryAddOrChange(key, value, out _, out var lockToken, true);
+            if (result && lockToken != null)
             {
                 action(key, value);
+                lockToken.Dispose();
+            }
+            else if(lockToken != null)
+            {
                 lockToken.Dispose();
             }
         }
@@ -1062,9 +1067,14 @@ namespace NECS.Extensions
         /// <returns></returns>
         public void ExecuteOnChangeLocked(TKey key, TValue value, Action<TKey,TValue,TValue> action)
         {
-            if(this.dictionary.ContainsKey(key) && !this.TryAddOrChange(key, value, out var oldvalue, out var lockToken, true) && lockToken != null)
+            var result = this.TryAddOrChange(key, value, out var oldvalue, out var lockToken, true);
+            if (this.dictionary.ContainsKey(key) && !result && lockToken != null)
             {
                 action(key, value, oldvalue);
+                lockToken.Dispose();
+            }
+            else if(lockToken != null)
+            {
                 lockToken.Dispose();
             }
         }
@@ -1564,22 +1574,26 @@ namespace NECS.Extensions
 
         private void SetImpl(TKey key, TValue value)
         {
-            //lock (dictionary)
+            try
             {
-                if (dictionary.ContainsKey(key))
-                    dictionary[key] = value;
-                else
-                {
-                    dictionary.Add(key, value);
-                }
+                dictionary[key] = value;
+            }
+            catch
+            {
+                //ignore addition error
             }
         }
 
         private bool RemoveImpl(TKey key)
         {
-            //lock (dictionary)
+            try
             {
                 return dictionary.Remove(key);
+            }
+            catch
+            {
+                //ignore addition error
+                return false;
             }
         }
 

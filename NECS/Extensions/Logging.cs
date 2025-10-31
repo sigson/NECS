@@ -101,6 +101,8 @@ namespace NECS.Core.Logging
         public static void Warn(object content) => Write("WARN", ConsoleColor.DarkYellow, content);
 
         public static void Error(object content) => Write("ERROR", ConsoleColor.Red, content);
+        public static void ErrorThread(object content) => Write("ERRORTHREAD", ConsoleColor.Red, content);
         public static void LogError(object content) => Error(content);
+        public static void LogErrorLocking(object content) => Write("ERRORLOCK", ConsoleColor.Red, content);
     }
 }
