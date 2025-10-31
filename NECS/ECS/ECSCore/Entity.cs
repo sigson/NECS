@@ -107,15 +107,15 @@ namespace NECS.ECS.ECSCore
         {
             ExecuteWriteLockedComponent(typeof(T1), (t, c1) =>
             {
-                ExecuteWriteLockedComponent(typeof(T2), (t, c2) =>
+                ExecuteWriteLockedComponent(typeof(T2), (t2, c2) =>
                 {
-                    ExecuteWriteLockedComponent(typeof(T3), (t, c3) =>
+                    ExecuteWriteLockedComponent(typeof(T3), (t3, c3) =>
                     {
-                        ExecuteWriteLockedComponent(typeof(T4), (t, c4) =>
+                        ExecuteWriteLockedComponent(typeof(T4), (t4, c4) =>
                         {
-                            ExecuteWriteLockedComponent(typeof(T5), (t, c5) =>
+                            ExecuteWriteLockedComponent(typeof(T5), (t5, c5) =>
                             {
-                                ExecuteWriteLockedComponent(typeof(T5), (t, c6) =>
+                                ExecuteWriteLockedComponent(typeof(T5), (t6, c6) =>
                                 {
                                     action((T1)c1, (T2)c2, (T3)c3, (T4)c4, (T5)c5, (T6)c6);
                                 });
@@ -133,15 +133,15 @@ namespace NECS.ECS.ECSCore
             where T4 : ECSComponent
             where T5 : ECSComponent
         {
-            ExecuteWriteLockedComponent(typeof(T1), (t, c1) =>
+            ExecuteWriteLockedComponent(typeof(T1), (t1, c1) =>
             {
-                ExecuteWriteLockedComponent(typeof(T2), (t, c2) =>
+                ExecuteWriteLockedComponent(typeof(T2), (t2, c2) =>
                 {
-                    ExecuteWriteLockedComponent(typeof(T3), (t, c3) =>
+                    ExecuteWriteLockedComponent(typeof(T3), (t3, c3) =>
                     {
-                        ExecuteWriteLockedComponent(typeof(T4), (t, c4) =>
+                        ExecuteWriteLockedComponent(typeof(T4), (t4, c4) =>
                         {
-                            ExecuteWriteLockedComponent(typeof(T5), (t, c5) =>
+                            ExecuteWriteLockedComponent(typeof(T5), (t5, c5) =>
                             {
                                 action((T1)c1, (T2)c2, (T3)c3, (T4)c4, (T5)c5);
                             });
@@ -157,13 +157,13 @@ namespace NECS.ECS.ECSCore
             where T3 : ECSComponent
             where T4 : ECSComponent
         {
-            ExecuteWriteLockedComponent(typeof(T1), (t, c1) =>
+            ExecuteWriteLockedComponent(typeof(T1), (t1, c1) =>
             {
-                ExecuteWriteLockedComponent(typeof(T2), (t, c2) =>
+                ExecuteWriteLockedComponent(typeof(T2), (t2, c2) =>
                 {
-                    ExecuteWriteLockedComponent(typeof(T3), (t, c3) =>
+                    ExecuteWriteLockedComponent(typeof(T3), (t3, c3) =>
                     {
-                        ExecuteWriteLockedComponent(typeof(T4), (t, c4) =>
+                        ExecuteWriteLockedComponent(typeof(T4), (t4, c4) =>
                         {
                             action((T1)c1, (T2)c2, (T3)c3, (T4)c4);
                         });
@@ -177,11 +177,11 @@ namespace NECS.ECS.ECSCore
             where T2 : ECSComponent
             where T3 : ECSComponent
         {
-            ExecuteWriteLockedComponent(typeof(T1), (t, c1) =>
+            ExecuteWriteLockedComponent(typeof(T1), (t1, c1) =>
             {
-                ExecuteWriteLockedComponent(typeof(T2), (t, c2) =>
+                ExecuteWriteLockedComponent(typeof(T2), (t2, c2) =>
                 {
-                    ExecuteWriteLockedComponent(typeof(T3), (t, c3) =>
+                    ExecuteWriteLockedComponent(typeof(T3), (t3, c3) =>
                     {
                         action((T1)c1, (T2)c2, (T3)c3);
                     });
@@ -193,9 +193,9 @@ namespace NECS.ECS.ECSCore
             where T1 : ECSComponent 
             where T2 : ECSComponent
         {
-            ExecuteWriteLockedComponent(typeof(T1), (t, c1) =>
+            ExecuteWriteLockedComponent(typeof(T1), (t1, c1) =>
             {
-                ExecuteWriteLockedComponent(typeof(T2), (t, c2) =>
+                ExecuteWriteLockedComponent(typeof(T2), (t2, c2) =>
                 {
                     action((T1)c1, (T2)c2);
                 });
@@ -205,7 +205,7 @@ namespace NECS.ECS.ECSCore
         public void ExecuteWriteLockedComponent<T1>(Action<T1> action)
             where T1 : ECSComponent
         {
-            ExecuteWriteLockedComponent(typeof(T1), (t, c1) =>
+            ExecuteWriteLockedComponent(typeof(T1), (t1, c1) =>
             {
                 action((T1)c1);
             });
@@ -213,17 +213,17 @@ namespace NECS.ECS.ECSCore
 
         public void ExecuteReadLockedComponent<T1, T2, T3, T4, T5, T6>(Action<T1, T2, T3, T4, T5, T6> action) where T1 : ECSComponent where T2 : ECSComponent where T3 : ECSComponent where T4 : ECSComponent where T5 : ECSComponent where T6 : ECSComponent
         {
-            ExecuteReadLockedComponent(typeof(T1), (t, c1) =>
+            ExecuteReadLockedComponent(typeof(T1), (t1, c1) =>
             {
-                ExecuteReadLockedComponent(typeof(T2), (t, c2) =>
+                ExecuteReadLockedComponent(typeof(T2), (t2, c2) =>
                 {
-                    ExecuteReadLockedComponent(typeof(T3), (t, c3) =>
+                    ExecuteReadLockedComponent(typeof(T3), (t3, c3) =>
                     {
-                        ExecuteReadLockedComponent(typeof(T4), (t, c4) =>
+                        ExecuteReadLockedComponent(typeof(T4), (t4, c4) =>
                         {
-                            ExecuteReadLockedComponent(typeof(T5), (t, c5) =>
+                            ExecuteReadLockedComponent(typeof(T5), (t5, c5) =>
                             {
-                                ExecuteReadLockedComponent(typeof(T5), (t, c6) =>
+                                ExecuteReadLockedComponent(typeof(T5), (t6, c6) =>
                                 {
                                     action((T1)c1, (T2)c2, (T3)c3, (T4)c4, (T5)c5, (T6)c6);
                                 });
@@ -241,15 +241,15 @@ namespace NECS.ECS.ECSCore
             where T4 : ECSComponent
             where T5 : ECSComponent
         {
-            ExecuteReadLockedComponent(typeof(T1), (t, c1) =>
+            ExecuteReadLockedComponent(typeof(T1), (t1, c1) =>
             {
-                ExecuteReadLockedComponent(typeof(T2), (t, c2) =>
+                ExecuteReadLockedComponent(typeof(T2), (t2, c2) =>
                 {
-                    ExecuteReadLockedComponent(typeof(T3), (t, c3) =>
+                    ExecuteReadLockedComponent(typeof(T3), (t3, c3) =>
                     {
-                        ExecuteReadLockedComponent(typeof(T4), (t, c4) =>
+                        ExecuteReadLockedComponent(typeof(T4), (t4, c4) =>
                         {
-                            ExecuteReadLockedComponent(typeof(T5), (t, c5) =>
+                            ExecuteReadLockedComponent(typeof(T5), (t5, c5) =>
                             {
                                 action((T1)c1, (T2)c2, (T3)c3, (T4)c4, (T5)c5);
                             });
@@ -265,13 +265,13 @@ namespace NECS.ECS.ECSCore
             where T3 : ECSComponent
             where T4 : ECSComponent
         {
-            ExecuteReadLockedComponent(typeof(T1), (t, c1) =>
+            ExecuteReadLockedComponent(typeof(T1), (t1, c1) =>
             {
-                ExecuteReadLockedComponent(typeof(T2), (t, c2) =>
+                ExecuteReadLockedComponent(typeof(T2), (t2, c2) =>
                 {
-                    ExecuteReadLockedComponent(typeof(T3), (t, c3) =>
+                    ExecuteReadLockedComponent(typeof(T3), (t3, c3) =>
                     {
-                        ExecuteReadLockedComponent(typeof(T4), (t, c4) =>
+                        ExecuteReadLockedComponent(typeof(T4), (t4, c4) =>
                         {
                             action((T1)c1, (T2)c2, (T3)c3, (T4)c4);
                         });
@@ -285,11 +285,11 @@ namespace NECS.ECS.ECSCore
             where T2 : ECSComponent
             where T3 : ECSComponent
         {
-            ExecuteReadLockedComponent(typeof(T1), (t, c1) =>
+            ExecuteReadLockedComponent(typeof(T1), (t1, c1) =>
             {
-                ExecuteReadLockedComponent(typeof(T2), (t, c2) =>
+                ExecuteReadLockedComponent(typeof(T2), (t2, c2) =>
                 {
-                    ExecuteReadLockedComponent(typeof(T3), (t, c3) =>
+                    ExecuteReadLockedComponent(typeof(T3), (t3, c3) =>
                     {
                         action((T1)c1, (T2)c2, (T3)c3);
                     });
@@ -301,9 +301,9 @@ namespace NECS.ECS.ECSCore
             where T1 : ECSComponent 
             where T2 : ECSComponent
         {
-            ExecuteReadLockedComponent(typeof(T1), (t, c1) =>
+            ExecuteReadLockedComponent(typeof(T1), (t1, c1) =>
             {
-                ExecuteReadLockedComponent(typeof(T2), (t, c2) =>
+                ExecuteReadLockedComponent(typeof(T2), (t2, c2) =>
                 {
                     action((T1)c1, (T2)c2);
                 });
@@ -313,7 +313,7 @@ namespace NECS.ECS.ECSCore
         public void ExecuteReadLockedComponent<T1>(Action<T1> action)
             where T1 : ECSComponent
         {
-            ExecuteReadLockedComponent(typeof(T1), (t, c1) =>
+            ExecuteReadLockedComponent(typeof(T1), (t1, c1) =>
             {
                 action((T1)c1);
             });
