@@ -920,14 +920,25 @@ namespace NECS.Extensions
             bool result = false;
             using (GlobalLocker.ReadLock())
             {
+                checkagain:
                 RWLock.LockToken token = null;
                 LockedValue dvalue;
                 //using(this.Remlocker.ReadLock())
                 {
                     if (dictionary.TryGetValue(key, out dvalue))
                     {
+                        //в этот момент обьекта уже может не существовать в словаре
                         token = dvalue.lockValue.WriteLock();
                     }
+                }
+                LockedValue checkdvalue;
+                if (!dictionary.TryGetValue(key, out checkdvalue))
+                {
+                    goto checkagain;
+                }
+                else if (checkdvalue.lockValue != dvalue.lockValue)
+                {
+                    goto checkagain;
                 }
                 if(dvalue != null)
                 {
