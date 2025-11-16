@@ -16,8 +16,9 @@ public static class Defines
     public static bool SerializatorTypesLog = true;
     public static bool HiddenKeyNotFoundLog = false;
     public static bool IgnoreNonDangerousExceptions = true;
+    public static bool RedirectAllLogsToExeFile = false;
     public static bool AOTMode = false;
     public static int TimerMinimumMSTick = 15;
-    public static bool ThreadsMode = false;
+    public static bool ThreadsMode = true;
     public static bool OneThreadMode = false;
 }

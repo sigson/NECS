@@ -9,54 +9,66 @@ namespace NECS.Core.Logging
     {
         private static readonly object _lock = new object();
         private static DictionaryWrapper<string, List<string>> logs_stack = new DictionaryWrapper<string, List<string>>();
+        public static ConcurrentBag<(string, ConsoleColor, string)> logsBag = new ConcurrentBag<(string, ConsoleColor, string)>();
 
         private static void Write(string type, ConsoleColor color, object content, string logstack = "")
         {
-            lock (_lock)
+            var message = "";
+            if(content is Exception)
+                message = $"[{DateTime.UtcNow}, {type}] {(content as Exception).Message}\n=======EXCEPTION======\n{new System.Diagnostics.StackTrace(content as Exception, true).ToString()}\n======================";
+            else
             {
-                if(logstack != "")
-                {
-                    if(!logs_stack.ContainsKey(logstack))
-                        logs_stack.TryAdd(logstack, new List<string>());
-                    logs_stack[logstack].Add($"{DateTime.UtcNow}##{content}");
-                }
-                
-#if UNITY_5_3_OR_NEWER
-                Console.ForegroundColor = color;
-                if(ConsoleColor.Red.Equals(color))
-                    UnityEngine.Debug.LogError($"[{DateTime.UtcNow}, {type}] {content}");
-                else if(ConsoleColor.DarkYellow.Equals(color))
-                    UnityEngine.Debug.LogWarning($"[{DateTime.UtcNow}, {type}] {content}");
-                else
-                    UnityEngine.Debug.Log($"[{DateTime.UtcNow}, {type}] {content}");
-#elif GODOT && !GODOT_4_0_OR_GREATER
                 if (ConsoleColor.Red.Equals(color))
                 {
-                    Godot.GD.PrintErr($"[{DateTime.UtcNow}, {type}] {content}");
-                    Godot.GD.PrintStack();
+                    message = $"[{DateTime.UtcNow}, {type}] {content}\n=======LOGGED======\n{new System.Diagnostics.StackTrace(true).ToString()}\n======================";
                 }
-                else if(ConsoleColor.DarkYellow.Equals(color))
-                    Godot.GD.Print($"[{DateTime.UtcNow}, {type}] {content}");
-                else
-                    Godot.GD.Print($"[{DateTime.UtcNow}, {type}] {content}");
-#else
-                Console.ForegroundColor = color;
-                if(content is Exception)
-                    Console.WriteLine($"[{DateTime.UtcNow}, {type}] {(content as Exception).Message}\n {(content as Exception).StackTrace}");
                 else
                 {
-                    if (ConsoleColor.Red.Equals(color))
-                    {
-                        Console.WriteLine($"[{DateTime.UtcNow}, {type}] {content}\n=======/\\/\\/\\/\\/\\======\n{new System.Diagnostics.StackTrace().ToString()}\n======================");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"[{DateTime.UtcNow}, {type}] {content}");
-                    }
+                    message = $"[{DateTime.UtcNow}, {type}] {content}";
                 }
-                    
-#endif
             }
+
+            if(Defines.OneThreadMode && !Defines.RedirectAllLogsToExeFile)
+            {
+                PrintErrorBase(type, color, message, logstack);
+            }
+            else
+            {
+                logsBag.Add((type, color, message));
+            }
+        }
+
+        public static void PrintErrorBase(string type, ConsoleColor color, string message, string logstack = "")
+        {
+            if (logstack != "")
+            {
+                if (!logs_stack.ContainsKey(logstack))
+                    logs_stack.TryAdd(logstack, new List<string>());
+                logs_stack[logstack].Add(message);
+            }
+
+#if UNITY_5_3_OR_NEWER
+            Console.ForegroundColor = color;
+            if(ConsoleColor.Red.Equals(color))
+                UnityEngine.Debug.LogError(message);
+            else if(ConsoleColor.DarkYellow.Equals(color))
+                UnityEngine.Debug.LogWarning(message);
+            else
+                UnityEngine.Debug.Log(message);
+#elif GODOT && !GODOT_4_0_OR_GREATER
+            if (ConsoleColor.Red.Equals(color))
+            {
+                Godot.GD.PrintErr(message);
+                //Godot.GD.PrintStack();
+            }
+            else if (ConsoleColor.DarkYellow.Equals(color))
+                Godot.GD.Print(message);
+            else
+                Godot.GD.Print(message);
+#else
+            Console.ForegroundColor = color;
+            Console.WriteLine(message);
+#endif
         }
 
         public static void DumpLogStack(string logstack, string file, bool clear = true)
