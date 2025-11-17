@@ -671,6 +671,7 @@ namespace NECS.ECS.ECSCore
 
         public override void SerializeDB(bool serializeOnlyChanged = false, bool clearChanged = true)
         {
+            Dictionary<IECSObjectPathContainer, List<dbRow>> newSerializedDB = new Dictionary<IECSObjectPathContainer, List<dbRow>>();
             lock (this.locker)
             {
                 serializedDB.Clear();
@@ -713,7 +714,7 @@ namespace NECS.ECS.ECSCore
                             errorChanged.Add(changedComponent.Key);
                         }
                     }
-                    serializedDB = serializedCompPath;
+                    newSerializedDB = serializedCompPath;
                 }
                 else
                 {
@@ -736,23 +737,25 @@ namespace NECS.ECS.ECSCore
                             });
 
                         }
-                        serializedDB[this.OwnerPaths[entityRow.Key]] = components;
+                        newSerializedDB[this.OwnerPaths[entityRow.Key]] = components;
                     }
                 }
                 
                 if (LoggingLevel >= DBLoggingLevel.CountOnly)
                 {
-                    NLogger.Log($"[DB SerializeDB] Serialized {serializedDB.Count} owners, {errorChanged.Count} errors");
+                    NLogger.Log($"[DB SerializeDB] Serialized {newSerializedDB.Count} owners, {errorChanged.Count} errors");
                 }
                 
                 if (clearChanged)
                     ChangedComponents.Clear();
                 errorChanged.ForEach(x => ChangedComponents[x] = 1);
+
+                serializedDB = newSerializedDB;
             }
             if (LoggingLevel >= DBLoggingLevel.CountOnly)
             {
                 var elementsOwners = new StringBuilder();
-                foreach (var serializedRow in serializedDB)
+                foreach (var serializedRow in newSerializedDB)
                 {
                     elementsOwners.AppendLine($"{serializedRow.Key.serializableInstanceId} " + "{");
                     foreach (var dbrow in serializedRow.Value)
@@ -772,7 +775,7 @@ namespace NECS.ECS.ECSCore
                     }
                     elementsOwners.AppendLine("}");
                 }
-                NLogger.Log($"[DB UnserializeDB] Starting deserialization of {serializedDB.Count} owners with elements:\n {elementsOwners} \n AND HAS NullEntityOwner:\n {elementsOwnersEO}");
+                NLogger.Log($"[DB UnserializeDB] Starting deserialization of {newSerializedDB.Count} owners with elements:\n {elementsOwners} \n AND HAS NullEntityOwner:\n {elementsOwnersEO}");
             }
         }
 
@@ -783,7 +786,7 @@ namespace NECS.ECS.ECSCore
                 if (clearAfterSerializaion)
                 {
                     int removedCount = 0;
-                    foreach (var entityRow in serializedDB)
+                    foreach (var entityRow in new Dictionary<IECSObjectPathContainer, List<dbRow>>(serializedDB))
                     {
                         var entityRowValues = entityRow.Value.ToList();
                         for (int i = 0; i < entityRowValues.Count; i++)

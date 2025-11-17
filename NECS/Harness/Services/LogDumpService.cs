@@ -52,7 +52,7 @@ namespace NECS.Harness.Services
             {
                 while (!NLogger.logsBag.IsEmpty)
                 {
-                    if (NLogger.logsBag.TryTake(out var log))
+                    if (NLogger.logsBag.TryDequeue(out var log))
                     {
                         NLogger.PrintErrorBase(log.Item1, log.Item2, log.Item3);
                     }
@@ -65,7 +65,7 @@ namespace NECS.Harness.Services
                 {
                     while (!NLogger.logsBag.IsEmpty)
                     {
-                        if (NLogger.logsBag.TryTake(out var log))
+                        if (NLogger.logsBag.TryDequeue(out var log))
                         {
                             writer.WriteLine(log.Item3);
                         }

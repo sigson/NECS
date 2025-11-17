@@ -9,7 +9,7 @@ namespace NECS.Core.Logging
     {
         private static readonly object _lock = new object();
         private static DictionaryWrapper<string, List<string>> logs_stack = new DictionaryWrapper<string, List<string>>();
-        public static ConcurrentBag<(string, ConsoleColor, string)> logsBag = new ConcurrentBag<(string, ConsoleColor, string)>();
+        public static ConcurrentQueue<(string, ConsoleColor, string)> logsBag = new ConcurrentQueue<(string, ConsoleColor, string)>();
 
         private static void Write(string type, ConsoleColor color, object content, string logstack = "")
         {
@@ -34,7 +34,7 @@ namespace NECS.Core.Logging
             }
             else
             {
-                logsBag.Add((type, color, message));
+                logsBag.Enqueue((type, color, message));
             }
         }
 

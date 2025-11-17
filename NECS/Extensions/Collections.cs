@@ -812,8 +812,9 @@ namespace NECS.Extensions
             oldValue = default(TValue);
             using (GlobalLocker.ReadLock())
             {
+                checkagain:
                 RWLock.LockToken token = null;
-                LockedValue dvalue;
+                LockedValue dvalue = null;
                 bool added = false;
                 //using(this.Remlocker.ReadLock())
                 {
@@ -895,7 +896,27 @@ namespace NECS.Extensions
                 }
                 if(!added && dvalue != null)
                 {
-                    if (dictionary.TryGetValue(key, out dvalue))
+                    LockedValue checkdvalue = null;
+                    if (!dictionary.TryGetValue(key, out checkdvalue))
+                    {
+                        if(token != null)
+                            token.Dispose();
+                        if(lockToken != null)
+                            lockToken.Dispose();
+                        //raceChecker++;
+                        goto checkagain;
+                    }
+                    if (checkdvalue.lockValue != dvalue.lockValue)
+                    {
+                        if(token != null)
+                            token.Dispose();
+                        if(lockToken != null)
+                            lockToken.Dispose();
+                        //raceChecker++;
+                        goto checkagain;
+                    }
+
+                    if (dvalue != null)
                     {
                         oldValue = dvalue.Value;
                         dvalue.Value = value;
@@ -922,7 +943,7 @@ namespace NECS.Extensions
             {
                 checkagain:
                 RWLock.LockToken token = null;
-                LockedValue dvalue;
+                LockedValue dvalue = null;
                 //using(this.Remlocker.ReadLock())
                 {
                     if (dictionary.TryGetValue(key, out dvalue))
@@ -931,17 +952,22 @@ namespace NECS.Extensions
                         token = dvalue.lockValue.WriteLock();
                     }
                 }
-                LockedValue checkdvalue;
-                if (!dictionary.TryGetValue(key, out checkdvalue))
-                {
-                    goto checkagain;
-                }
-                else if (checkdvalue.lockValue != dvalue.lockValue)
-                {
-                    goto checkagain;
-                }
+                
                 if(dvalue != null)
                 {
+                    LockedValue checkdvalue;
+                    if (!dictionary.TryGetValue(key, out checkdvalue))
+                    {
+                        if(token != null)
+                            token.Dispose();
+                        goto checkagain;
+                    }
+                    if (checkdvalue.lockValue != dvalue.lockValue)
+                    {
+                        if(token != null)
+                            token.Dispose();
+                        goto checkagain;
+                    }
                     LockedValue outValue = null;
                     if (dictionary.TryGetValue(key, out dvalue))
                     {
@@ -949,7 +975,16 @@ namespace NECS.Extensions
                         {
                             action(key, dvalue.Value);
                         }
+                        tryremoveagain:
                         dictionary.Remove(key, out outValue);
+
+                        LockedValue checkdeletedvalue;
+                        if (dictionary.TryGetValue(key, out checkdeletedvalue) && checkdeletedvalue.lockValue == dvalue.lockValue)
+                        {
+                            NLogger.Error("Dothet shiet detected on TryRemove LockedDictionary, retrying remove...");
+                            goto tryremoveagain;
+                        }
+
                         value = outValue.Value;
                         result = true;
                     }
@@ -983,7 +1018,8 @@ namespace NECS.Extensions
             bool result = false;
             using (GlobalLocker.ReadLock())
             {
-                LockedValue dvalue;
+                checkagain:
+                LockedValue dvalue = null;
                 //using(this.Remlocker.ReadLock())
                 {
                     if (dictionary.TryGetValue(key, out dvalue))
@@ -996,6 +1032,19 @@ namespace NECS.Extensions
                 }
                 if(dvalue != null)
                 {
+                    LockedValue checkdvalue;
+                    if (!dictionary.TryGetValue(key, out checkdvalue))
+                    {
+                        if(token != null)
+                            token.Dispose();
+                        goto checkagain;
+                    }
+                    if (checkdvalue.lockValue != dvalue.lockValue)
+                    {
+                        if(token != null)
+                            token.Dispose();
+                        goto checkagain;
+                    }
                     if (dictionary.TryGetValue(key, out dvalue))
                     {
                         value = dvalue.Value;
