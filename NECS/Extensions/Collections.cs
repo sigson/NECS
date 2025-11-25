@@ -1477,8 +1477,7 @@ namespace NECS.Extensions
 
     }
 
-   public class LoggingConcurrentDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary
-    where TKey : notnull
+    public class LoggingConcurrentDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary
     {
         private readonly ConcurrentDictionary<TKey, TValue> _dictionary;
 
@@ -1487,10 +1486,10 @@ namespace NECS.Extensions
 
         // ИЗМЕНЕНИЕ: Теперь Action принимает название операции, Ключ и Значение.
         // Используем TKey? и TValue?, так как в некоторых операциях (Clear, Ctor) их может не быть.
-        public Action<string, LoggingConcurrentDictionary<TKey, TValue>, TKey?, TValue?>? LogAction { get; set; }
+        public Action<string, LoggingConcurrentDictionary<TKey, TValue>, TKey, TValue> LogAction { get; set; }
 
         // ИЗМЕНЕНИЕ: Метод Log теперь принимает типизированные аргументы
-        private void Log(string operation, TKey? key = default, TValue? value = default)
+        private void Log(string operation, TKey key = default, TValue value = default)
         {
             if (LogAction == null) return;
 
@@ -1514,7 +1513,7 @@ namespace NECS.Extensions
             Log("Ctor(capacity)");
         }
 
-        public LoggingConcurrentDictionary(IEqualityComparer<TKey>? comparer)
+        public LoggingConcurrentDictionary(IEqualityComparer<TKey> comparer)
         {
             _dictionary = new ConcurrentDictionary<TKey, TValue>(comparer ?? EqualityComparer<TKey>.Default);
             Log("Ctor(comparer)");
@@ -1526,7 +1525,7 @@ namespace NECS.Extensions
             Log("Ctor(collection)");
         }
 
-        public LoggingConcurrentDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey>? comparer)
+        public LoggingConcurrentDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey> comparer)
         {
             _dictionary = new ConcurrentDictionary<TKey, TValue>(collection, comparer ?? EqualityComparer<TKey>.Default);
             Log("Ctor(collection, comparer)");
@@ -1629,7 +1628,7 @@ namespace NECS.Extensions
             return result;
         }
 
-        public bool TryRemove(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue value)
+        public bool TryRemove(TKey key, out TValue value)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
@@ -1743,7 +1742,7 @@ namespace NECS.Extensions
             return result;
         }
 
-        public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue value)
+        public bool TryGetValue(TKey key, out TValue value)
         {
             return _dictionary.TryGetValue(key, out value);
         }
@@ -1763,11 +1762,11 @@ namespace NECS.Extensions
 
         #region IDictionary Implementation (Non-generic)
 
-        void IDictionary.Add(object key, object? value)
+        void IDictionary.Add(object key, object value)
         {
             if (key is TKey k && (value is TValue || value == null))
             {
-                Add(k, (TValue)value!);
+                Add(k, (TValue)value);
             }
             else
             {
@@ -1799,7 +1798,7 @@ namespace NECS.Extensions
             if (key is TKey k) Remove(k);
         }
 
-        object? IDictionary.this[object key]
+        object IDictionary.this[object key]
         {
             get
             {
@@ -1810,7 +1809,7 @@ namespace NECS.Extensions
             {
                 if (key is TKey k && (value is TValue || value == null))
                 {
-                    this[k] = (TValue)value!;
+                    this[k] = (TValue)value;
                 }
             }
         }
