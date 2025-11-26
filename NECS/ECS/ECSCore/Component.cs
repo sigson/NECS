@@ -247,8 +247,8 @@ namespace NECS.ECS.ECSCore
                         }
                     }
                     
-                    ECSSharedField<object>.RemoveAllCachedValuesForId(this.instanceId);
                     this.OnRemoved(entity);
+                    ECSSharedField<object>.RemoveAllCachedValuesForId(this.instanceId);
                     this.IECSDispose();
                 }
             });

@@ -620,7 +620,16 @@ namespace NECS.ECS.ECSCore
 
             foreach (var entityId in contractEntities)
             {
-                var entityManager = ECSService.instance.GetEntityWorld(entityId).entityManager;
+                var entityWorld = ECSService.instance.GetEntityWorld(entityId);
+                if (entityWorld == null || entityWorld.entityManager == null)
+                {
+                    if (LoggingLevel == ContractLoggingLevel.Verbose)
+                    {
+                        NLogger.Log($"Contract {this.GetType().Name} (ID: {this.ContractId}): Entity {entityId} - world or entity manager not found");
+                    }
+                    continue;
+                }
+                var entityManager = entityWorld.entityManager;
                 if (!entityManager.EntityStorage.TryGetValue(entityId, out var entity))
                 {
                     if (LoggingLevel == ContractLoggingLevel.Verbose)
@@ -730,14 +739,25 @@ namespace NECS.ECS.ECSCore
                 {
                     for (int i = 0; i < conditions.Count; i++)
                     {
-                        if (!conditions[i](entity))
+                        bool condiresult = false;
+                        Exception condiex = null;
+                        try
+                        {
+                            condiresult = conditions[i](entity);
+                        }
+                        catch (Exception ex)
+                        {
+                            condiex = ex;
+                            condiresult = false;
+                        }
+                        if (!condiresult)
                         {
                             violationSeizure = true;
                             globalViolationSeizure = true;
-                            
+
                             if (LoggingLevel == ContractLoggingLevel.Verbose)
                             {
-                                NLogger.Log($"Contract {this.GetType().Name} (ID: {this.ContractId}): Condition #{i} failed for Entity {entityId}");
+                                NLogger.Log($"Contract {this.GetType().Name} (ID: {this.ContractId}): Condition #{i} failed for Entity {entityId} {(condiex != null ? "with exception: " + condiex.ToString() + "\n/*/*/*/*/*/*/*/*/*/*/*/*/*/\n" + new System.Diagnostics.StackTrace(condiex, true) : "")}");
                             }
                         }
                     }
@@ -889,14 +909,25 @@ namespace NECS.ECS.ECSCore
                     {
                         for (int i = 0; i < conditions.Count; i++)
                         {
-                            if (!conditions[i](contentity))
+                            bool condiresult = false;
+                            Exception condiex = null;
+                            try
+                            {
+                                condiresult = conditions[i](contentity);
+                            }
+                            catch (Exception ex)
+                            {
+                                condiex = ex;
+                                condiresult = false;
+                            }
+                            if (!condiresult)
                             {
                                 violationSeizure = true;
                                 globalViolationSeizure = true;
                                 
                                 if (LoggingLevel == ContractLoggingLevel.Verbose)
                                 {
-                                    NLogger.Log($"Contract {this.GetType().Name} (ID: {this.ContractId}): Condition #{i} failed for Entity {entid}");
+                                    NLogger.Log($"Contract {this.GetType().Name} (ID: {this.ContractId}): Condition #{i} failed for Entity {entid} {(condiex != null ? "with exception: " + condiex.ToString() + "\n/*/*/*/*/*/*/*/*/*/*/*/*/*/\n" + new System.Diagnostics.StackTrace(condiex, true): "")}");
                                 }
                             }
                         }
