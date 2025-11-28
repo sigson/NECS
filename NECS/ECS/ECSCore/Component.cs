@@ -10,6 +10,7 @@ using System.Linq;
 using System.IO;
 using System.Threading;
 using NECS.Harness.Services;
+using NECS.Extensions.ThreadingSync;
 
 namespace NECS.ECS.ECSCore
 {
@@ -29,6 +30,8 @@ namespace NECS.ECS.ECSCore
         public ComponentsDBComponent ownerDB;
         [System.NonSerialized]
         public ReaderWriterLockSlim locker = new ReaderWriterLockSlim();
+        [System.NonSerialized]
+        public SharedLock monoLocker = new SharedLock();
 
         [System.NonSerialized]
         public List<string> ConfigPath = new List<string>();

@@ -15,7 +15,17 @@ namespace NECS.Core.Logging
         {
             var message = "";
             if(content is Exception)
-                message = $"[{DateTime.UtcNow}, {type}] {(content as Exception).Message}\n=======EXCEPTION======\n{new System.Diagnostics.StackTrace(content as Exception, true).ToString()}\n======================";
+            {
+                var exception = $"{(content as Exception).Message}\n=======EXCEPTION======\n{new System.Diagnostics.StackTrace(content as Exception, true).ToString()}\n";
+                var lastex = (content as Exception);
+                while(lastex.InnerException != null)
+                {
+                    lastex = lastex.InnerException;
+                    exception += $"\n-------INNER EXCEPTION-------\n{lastex.Message}\n{new System.Diagnostics.StackTrace(lastex, true).ToString()}\n----------------------------";
+                }
+                exception += $"\n=======END EXCEPTION======";
+                message = $"[{DateTime.UtcNow}, {type}] {exception}";
+            }
             else
             {
                 if (ConsoleColor.Red.Equals(color))

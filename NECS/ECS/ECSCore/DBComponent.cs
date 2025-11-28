@@ -35,9 +35,11 @@ namespace NECS.ECS.ECSCore
 
         public Dictionary<IECSObjectPathContainer, List<dbRow>> serializedDB = new Dictionary<IECSObjectPathContainer, List<dbRow>>();
 
-        public virtual void SerializeDB(bool serializeOnlyChanged = false, bool clearChanged = true)
+        //public bool fullSerialized = true;
+
+        public virtual SharedLock.LockToken SerializeDB(bool serializeOnlyChanged = false, bool clearChanged = true)
         {
-            
+            return null;
         }
         
         public virtual void AfterSerializationDB(bool clearAfterSerializaion = true)
@@ -192,7 +194,7 @@ namespace NECS.ECS.ECSCore
             
             using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())
             {
-                lock (this.locker)
+                using (this.monoLocker.Lock())
                 {
                     DB.TryGetValue(ownerComponent.instanceId, out components);
                     if (components == null)
@@ -231,7 +233,7 @@ namespace NECS.ECS.ECSCore
             
             using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())
             {
-                lock (this.locker)
+                using (this.monoLocker.Lock())
                 {
                     DB.TryGetValue(ownerComponent.instanceId, out components);
                     if (components == null)
@@ -330,7 +332,7 @@ namespace NECS.ECS.ECSCore
         
         public virtual (ECSComponent, ComponentState) GetComponent(long componentId, IECSObject ownerComponent = null)
         {
-            lock (this.locker)
+            using (this.monoLocker.Lock())
             {
                 long owner = 0;
                 if (ownerComponent == null)
@@ -353,7 +355,7 @@ namespace NECS.ECS.ECSCore
                     owner = ownerComponent.instanceId;
                 }
                 (ECSComponent, ComponentState) comp;
-                if (DB[owner].TryGetValue(componentId, out comp))
+                if (DB[owner].TryGetValue(componentId, out comp) && comp.Item2 != ComponentState.Removed)
                 {
                     if (LoggingLevel >= DBLoggingLevel.Full)
                     {
@@ -372,7 +374,7 @@ namespace NECS.ECS.ECSCore
         public virtual List<(ECSComponent, ComponentState)> GetComponentsByType(List<long> componentTypeId, IECSObject ownerComponent = null)
         {
             List<(ECSComponent, ComponentState)> result = new List<(ECSComponent, ComponentState)>();
-            lock (this.locker)
+            using (this.monoLocker.Lock())
             {
                 List<long> owners = new List<long>();
                 if (ownerComponent == null)
@@ -389,7 +391,7 @@ namespace NECS.ECS.ECSCore
                     var components = DB[dbOwner];
                     foreach(var comp in components)
                     {
-                        if(componentTypeId.Contains(comp.Value.Item1.GetId()))
+                        if(comp.Value.Item2 != ComponentState.Removed && componentTypeId.Contains(comp.Value.Item1.GetId()))
                         {
                             result.Add(comp.Value);
                         }
@@ -416,7 +418,7 @@ namespace NECS.ECS.ECSCore
             
             using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())
             {
-                lock (this.locker)
+                using (this.monoLocker.Lock())
                 {
                     long owner = 0;
                     if (ownerComponent == null)
@@ -454,7 +456,7 @@ namespace NECS.ECS.ECSCore
             
             using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())
             {
-                lock (this.locker)
+                using (this.monoLocker.Lock())
                 {
                     long owner = 0;
                     if (ownerComponent == null)
@@ -519,7 +521,7 @@ namespace NECS.ECS.ECSCore
             
             using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())
             {
-                lock (this.locker)
+                using (this.monoLocker.Lock())
                 {
                     List<long> owners = new List<long>();
                     if (ownerComponent == null)
@@ -573,7 +575,7 @@ namespace NECS.ECS.ECSCore
             
             using(ownerEntity.entityComponents.StabilizationLocker.WriteLock())
             {
-                lock (this.locker)
+                using (this.monoLocker.Lock())
                 {
                     List<long> owners = new List<long>();
                     if (ownerComponent == null)
@@ -669,10 +671,11 @@ namespace NECS.ECS.ECSCore
 
         #endregion
 
-        public override void SerializeDB(bool serializeOnlyChanged = false, bool clearChanged = true)
+        public override SharedLock.LockToken SerializeDB(bool serializeOnlyChanged = false, bool clearChanged = true)
         {
             Dictionary<IECSObjectPathContainer, List<dbRow>> newSerializedDB = new Dictionary<IECSObjectPathContainer, List<dbRow>>();
-            lock (this.locker)
+            var sharelock = this.monoLocker.Lock();
+            //using (this.monoLocker.Lock())
             {
                 serializedDB.Clear();
                 List<long> errorChanged = new List<long>();
@@ -777,15 +780,20 @@ namespace NECS.ECS.ECSCore
                 }
                 NLogger.Log($"[DB UnserializeDB] Starting deserialization of {newSerializedDB.Count} owners with elements:\n {elementsOwners} \n AND HAS NullEntityOwner:\n {elementsOwnersEO}");
             }
+
+            return sharelock;
         }
 
         public override void AfterSerializationDB(bool clearAfterSerializaion = true)
         {
-            lock (this.locker)
+            using (this.monoLocker.Lock())
             {
                 if (clearAfterSerializaion)
                 {
                     int removedCount = 0;
+
+                    HashSet<long> removedOwners = new HashSet<long>();
+
                     foreach (var entityRow in new Dictionary<IECSObjectPathContainer, List<dbRow>>(serializedDB))
                     {
                         var entityRowValues = entityRow.Value.ToList();
@@ -799,8 +807,14 @@ namespace NECS.ECS.ECSCore
                                 ownerList.Remove(ecsComponent.Item1.instanceId);
                                 removedCount++;
                             }
+                            if(ownerList.Count == 0)
+                            {
+                                removedOwners.Add(entityRow.Key.ECSObject.instanceId);
+                            }
                         }
                     }
+
+                    removedOwners.ForEach(x => DB.Remove(x));
                     
                     if (LoggingLevel >= DBLoggingLevel.CountOnly)
                     {

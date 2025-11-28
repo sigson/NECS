@@ -73,17 +73,25 @@ namespace NECS.ECS.ECSCore
                                     component.EnterToSerialization();
 
                                     DBComponent dBComponent = null;
+
+                                    SharedLock.LockToken dbLocktocken = null;
+
                                     if (component is DBComponent)
                                     {
                                         dBComponent = (component as DBComponent);
                                     }
                                     if (dBComponent != null)
                                     {
-                                        dBComponent.SerializeDB(serializeOnlyChanged, clearChanged);
+                                        dbLocktocken = dBComponent.SerializeDB(serializeOnlyChanged, clearChanged);
                                     }
 
                                     //NetSerializer.Serializer.Default.Serialize(writer, component);
                                     serializedData = SerializationAdapter.SerializeECSComponent(component);
+
+                                    if (dbLocktocken != null)
+                                    {
+                                        dbLocktocken.Dispose();
+                                    }
 
                                     if (dBComponent != null)
                                     {
@@ -120,15 +128,21 @@ namespace NECS.ECS.ECSCore
                                         NLogger.Log($"Will serialized component {pairComponent.GetType()} in {this.entity.AliasName}:{this.entity.instanceId}");
                                     }
 
+                                    SharedLock.LockToken dbLocktocken = null;
 
                                     if (pairComponent is DBComponent)
                                     {
                                         dbComp = (pairComponent as DBComponent);
-                                        dbComp.SerializeDB(serializeOnlyChanged, clearChanged);
+                                        dbLocktocken = dbComp.SerializeDB(serializeOnlyChanged, clearChanged);
                                     }
 
                                     //NetSerializer.Serializer.Default.Serialize(writer, pairComponent);
                                     var serializedData = SerializationAdapter.SerializeECSComponent((pairComponent as ECSComponent));
+
+                                    if (dbLocktocken != null)
+                                    {
+                                        dbLocktocken.Dispose();
+                                    }
 
                                     slicedComponents[pairComponentKey] = serializedData;//writer.ToArray();
                                     if (dbComp != null)
@@ -199,13 +213,18 @@ namespace NECS.ECS.ECSCore
                             try
                             {
                                 var component = components[changedComponent];
+                                SharedLock.LockToken dbLocktocken = null;
                                 if (component is DBComponent)
                                 {
-                                    (component as DBComponent).SerializeDB(serializeOnlyChanged, clearChanged);
+                                    dbLocktocken = (component as DBComponent).SerializeDB(serializeOnlyChanged, clearChanged);
                                 }
                                 else
                                 {
                                     serializeContainer[component.GetId()] = component;
+                                }
+                                if (dbLocktocken != null)
+                                {
+                                    dbLocktocken.Dispose();
                                 }
                             }
                             catch (Exception ex)
@@ -252,12 +271,19 @@ namespace NECS.ECS.ECSCore
                                     if (!(pairComponent as ECSComponent).Unregistered)
                                     {
                                         DBComponent dbComp = null;
+                                        SharedLock.LockToken dbLocktocken = null;
                                         if (pairComponent is DBComponent)
                                         {
                                             dbComp = (pairComponent as DBComponent);
-                                            dbComp.SerializeDB(serializeOnlyChanged, clearChanged);
+                                            dbLocktocken = dbComp.SerializeDB(serializeOnlyChanged, clearChanged);
                                         }
                                         serializer.Serialize(writer, pairComponent);
+
+                                        if (dbLocktocken != null)
+                                        {
+                                            dbLocktocken.Dispose();
+                                        }
+
                                         slicedComponents[pairComponentKey] = writer.ToString();
                                         if (dbComp != null)
                                         {
@@ -737,7 +763,7 @@ namespace NECS.ECS.ECSCore
 
         public ECSComponent RemoveComponentImmediately(long componentTypeId)
         {
-            return RemoveComponentImmediately(this.IdToTypeComponent[componentTypeId]);
+            return RemoveComponentImmediately(componentTypeId.IdToECSType());//this.IdToTypeComponent[componentTypeId]);
         }
 
         public void AddComponentsImmediately(IList<ECSComponent> addedComponents)

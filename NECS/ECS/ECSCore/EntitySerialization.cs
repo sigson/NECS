@@ -33,7 +33,8 @@ namespace NECS.ECS.ECSCore
         {
             var nonSerializedSet = new HashSet<Type>() { typeof(EntityManagersComponent) };
 
-            var ecsObjects = ECSAssemblyExtensions.GetAllSubclassOf(typeof(IECSObject)).Where(x => !x.IsAbstract).Where(x => !nonSerializedSet.Contains(x)).ToList();
+            var ecsObjects = ECSAssemblyExtensions.GetAllSubclassOf(typeof(IECSObject)).Where(x => !x.IsAbstract).Where(x => !nonSerializedSet.Contains(x)).ToHashSet();
+            ecsObjects.Add(typeof(EntityManagersComponent));
             ecsObjects.Select(x => Activator.CreateInstance(x)).Cast<IECSObject>().ForEach(x =>
             {
                 if (TypeStorage.ContainsKey(x.GetId()))
