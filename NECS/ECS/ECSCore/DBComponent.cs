@@ -1023,7 +1023,7 @@ namespace NECS.ECS.ECSCore
                     if (ecsComponent.Item2 == ComponentState.Changed)
                     {
                         //ecsComponent.Item1.OnAdded(ecsComponent.Item1.ownerEntity);
-                        TaskEx.Run(() =>
+                        TaskEx.RunAsync(() =>
                         {
                             ecsComponent.Item1.ChangeReaction(ecsComponent.Item1.ownerEntity);
                         });

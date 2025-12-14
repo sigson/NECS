@@ -21,7 +21,10 @@ namespace NECS.Extensions.ThreadingSync
                 try
                 {
                     // Пытаемся захватить эксклюзивную блокировку
-                    Monitor.Enter(_lockObj, ref _lockTaken);
+                    if (!Defines.OneThreadMode)
+                        Monitor.Enter(_lockObj, ref _lockTaken);
+                    else
+                        _lockTaken = true;
                 }
                 catch (Exception e)
                 {
@@ -36,8 +39,13 @@ namespace NECS.Extensions.ThreadingSync
                 {
                     try
                     {
-                        Monitor.Exit(_lockObj);
-                        _lockTaken = false;
+                        if (!Defines.OneThreadMode)
+                        {
+                            Monitor.Exit(_lockObj);
+                            _lockTaken = false;
+                        }
+                        else
+                            _lockTaken = false;
                     }
                     catch (SynchronizationLockException e)
                     {
