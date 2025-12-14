@@ -371,6 +371,11 @@ namespace NECS.ECS.ECSCore
             }
         }
 
+        public virtual List<(ECSComponent, ComponentState)> GetComponentsByType<T>(IECSObject ownerComponent = null)
+        {
+            return this.GetComponentsByType(new List<long>() { typeof(T).IdToECSType() }, ownerComponent);
+        }
+
         public virtual List<(ECSComponent, ComponentState)> GetComponentsByType(List<long> componentTypeId, IECSObject ownerComponent = null)
         {
             List<(ECSComponent, ComponentState)> result = new List<(ECSComponent, ComponentState)>();

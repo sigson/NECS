@@ -147,7 +147,7 @@ namespace NECS.ECS.ECSCore
             if(ownerDB != null && (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server || GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Offline))
             {
                 ownerDB.ChangeComponent(this);
-                ownerDB.MarkAsChanged();
+                ownerDB.DirectiveSetChanged();
             }
         }
 

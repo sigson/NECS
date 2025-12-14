@@ -1100,7 +1100,14 @@ namespace NECS.Extensions
         {
             if(HoldKey(key, out var lockToken))
             {
-                action();
+                try
+                {
+                    action();
+                }
+                catch(Exception ex)
+                {
+                    NLogger.Error(ex);
+                }
                 lockToken.Dispose();
                 return true;
             }
@@ -1117,7 +1124,14 @@ namespace NECS.Extensions
             var result = this.TryAddOrChange(key, value, out _, out var lockToken, true);
             if (result && lockToken != null)
             {
-                action(key, value);
+                try
+                {
+                    action(key, value);
+                }
+                catch(Exception ex)
+                {
+                    NLogger.Error(ex);
+                }
                 lockToken.Dispose();
             }
             else if(lockToken != null)
@@ -1140,7 +1154,14 @@ namespace NECS.Extensions
             {
                 if(this.UnsafeChange(key, value))
                 {
-                    action(key, value, oldvalue);
+                    try
+                    {
+                        action(key, value, oldvalue);
+                    }
+                    catch(Exception ex)
+                    {
+                        NLogger.Error(ex);
+                    }
                 }
                 //token.Dispose();
             }
@@ -1167,14 +1188,28 @@ namespace NECS.Extensions
         /// <returns></returns>
         public void ExecuteOnAddOrChangeLocked(TKey key, TValue value, Action<TKey,TValue> onAddaction, Action<TKey,TValue,TValue> onChangeaction)
         {
-            if(this.TryAddOrChange(key, value, out var oldvalue, out var lockToken, true) && lockToken != null)
+            if (this.TryAddOrChange(key, value, out var oldvalue, out var lockToken, true) && lockToken != null)
             {
-                onAddaction(key, value);
+                try
+                {
+                    onAddaction(key, value);
+                }
+                catch (Exception ex)
+                {
+                    NLogger.Error(ex);
+                }
                 lockToken.Dispose();
             }
-            else if(lockToken != null)
+            else if (lockToken != null)
             {
-                onChangeaction(key, value, oldvalue);
+                try
+                {
+                    onChangeaction(key, value, oldvalue);
+                }
+                catch (Exception ex)
+                {
+                    NLogger.Error(ex);
+                }
                 lockToken.Dispose();
             }
         }
@@ -1195,7 +1230,14 @@ namespace NECS.Extensions
             var result = this.TryAddOrChange(key, value, out var oldValue, out var lockToken, true);
             if(lockToken != null)
             {
-                action(key, value, oldValue);
+                try
+                {
+                    action(key, value, oldValue);
+                }
+                catch (Exception ex)
+                {
+                    NLogger.Error(ex);
+                }
                 lockToken.Dispose();
             }
             return result;
@@ -1205,7 +1247,14 @@ namespace NECS.Extensions
         {
             if(this.TryGetLockedElement(key, out var value, out var token, false))
             {
-                action(key, value);
+                try
+                {
+                    action(key, value);
+                }
+                catch(Exception ex)
+                {
+                    NLogger.Error(ex);
+                }
                 token.Dispose();
             }
         }
@@ -1214,7 +1263,14 @@ namespace NECS.Extensions
         {
             if(this.TryGetLockedElement(key, out var value, out var token, true))
             {
-                action(key, value);
+                try
+                {
+                    action(key, value);
+                }
+                catch(Exception ex)
+                {
+                    NLogger.Error(ex);
+                }
                 token.Dispose();
             }
         }
@@ -1223,7 +1279,14 @@ namespace NECS.Extensions
         {
             if(this.TryGetLockedElement(key, out var value, out token, false))
             {
-                action(key, value);
+                try
+                {
+                    action(key, value);
+                }
+                catch(Exception ex)
+                {
+                    NLogger.Error(ex);
+                }
                 //token.Dispose();
             }
         }
@@ -1232,7 +1295,14 @@ namespace NECS.Extensions
         {
             if(this.TryGetLockedElement(key, out var value, out token, true))
             {
-                action(key, value);
+                try
+                {
+                    action(key, value);
+                }
+                catch(Exception ex)
+                {
+                    NLogger.Error(ex);
+                }
                 //token.Dispose();
             }
         }
