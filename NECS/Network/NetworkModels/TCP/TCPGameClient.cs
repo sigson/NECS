@@ -29,6 +29,8 @@ namespace NECS.Network.NetworkModels.TCP
 
         int ISocketRealization.Port => this.Port;
 
+        public bool ProxyMode { get; set; } = false;
+
         public CUserToken token;
         public CNetworkService service;
         public CConnector connector;
@@ -90,7 +92,14 @@ namespace NECS.Network.NetworkModels.TCP
             this.token.set_peer(this);
             server_token.on_connected();
             Setup();
-            Action action = () => NetworkingService.instance.OnConnected(this);
+            Action action = () => {
+
+                Connected?.Invoke(this);
+                if(!ProxyMode)
+                {
+                    NetworkingService.instance.OnConnected(this);
+                }
+            };
             if (Defines.OneThreadMode)
             {
                 oneThreadEventBus.Publish(action);
@@ -141,12 +150,17 @@ namespace NECS.Network.NetworkModels.TCP
                 return;
             }
 
-            //Array.Copy(buffer, newBuffer, newBuffer.Length);
-            var result = NetworkPacketBuilderService.instance.UnpackNetworkPacket(newBuffer);
+            DataReceived?.Invoke(this, newBuffer);
 
-            if (result.Item2)
+            if(!ProxyMode)
             {
-                NetworkingService.instance.OnReceived(this, result.Item1);
+                //Array.Copy(buffer, newBuffer, newBuffer.Length);
+                var result = NetworkPacketBuilderService.instance.UnpackNetworkPacket(newBuffer);
+
+                if (result.Item2)
+                {
+                    NetworkingService.instance.OnReceived(this, result.Item1);
+                }
             }
         }
 
@@ -175,8 +189,12 @@ namespace NECS.Network.NetworkModels.TCP
             }
             Action action = () =>
             {
-                if (NetworkingService.instance.SocketAdapters.ContainsKey(this.Id))
-                    NetworkingService.instance.OnDisconnected(this);
+                Disconnected?.Invoke(this);
+                if(!ProxyMode)
+                {
+                    if (NetworkingService.instance.SocketAdapters.ContainsKey(this.Id))
+                        NetworkingService.instance.OnDisconnected(this);
+                }
             };
             if (Defines.OneThreadMode)
             {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Text;
 using NECS.Extensions;
 
 namespace NECS.Core.Logging
@@ -38,6 +39,8 @@ namespace NECS.Core.Logging
                 }
             }
 
+            logsDumpStorage.AppendLine(message);
+
             if(Defines.OneThreadMode && !Defines.RedirectAllLogsToExeFile)
             {
                 PrintErrorBase(type, color, message, logstack);
@@ -47,6 +50,8 @@ namespace NECS.Core.Logging
                 logsBag.Enqueue((type, color, message));
             }
         }
+
+        public static StringBuilder logsDumpStorage = new StringBuilder();
 
         public static void PrintErrorBase(string type, ConsoleColor color, string message, string logstack = "")
         {

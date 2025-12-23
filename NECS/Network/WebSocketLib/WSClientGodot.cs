@@ -77,6 +77,8 @@ namespace NECS.Network.WebSocket
 
         public bool IsDisposed => _isDisposed;
 
+        public bool ProxyMode { get; set; } = false;
+
         public bool IsSocketDisposed => _isDisposed || _client == null;
         
         #endregion

@@ -952,6 +952,10 @@ namespace NECS.ECS.ECSCore
                 }, out var entitytoken);
                 if (entitytoken != null && Lockers.ContainsKey(entityid))
                     Lockers[entityid].Add(entitytoken);
+                else if (entitytoken != null)
+                {
+                    entitytoken.Dispose();
+                }
 
             }
             if (globalViolationSeizure && !partialEntityTargetListLockingAllowed && !NotAllIncludedEntitiesPresenceSign)

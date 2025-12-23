@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NECS.Core.Logging;
 using NECS.Extensions;
 
 //namespace NECS.Extensions
@@ -209,6 +210,27 @@ public static class EnumerableExtension
         {
             compute(list[i]);
         }
+    }
+
+    public static IEnumerable<TResult> Cast<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> converter)
+    {
+        if (source == null) return Enumerable.Empty<TResult>();
+        
+        var result = new List<TResult>();
+        
+        foreach (var item in source)
+        {
+            try
+            {
+                result.Add(converter(item));
+            }
+            catch(Exception ex)
+            {
+                NLogger.LogError(ex);
+            }
+        }
+        
+        return result;
     }
 
     public static void ForEachWithIndex<TKey>(this IEnumerable<TKey> list, Action<int> compute)

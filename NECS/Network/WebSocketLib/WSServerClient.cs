@@ -45,6 +45,7 @@ namespace WebSocketRealization
         public long Id { get; set; }
         public string Address { get; private set; }
         public int Port { get; private set; }
+        public bool ProxyMode { get; set; } = false;
         public bool IsConnected => _isConnected && _socket != null && _socket.Connected;
         public bool IsConnecting => _isConnecting;
         public bool IsDisposed => _isDisposed;

@@ -433,6 +433,17 @@ namespace NECS.Extensions
             }
         }
 
+        public IList<T> GetAndClear()
+        {
+            IList<T> result = null;
+            lock (this.sync)
+            {
+                result = new List<T>(this.items);
+                this.ClearItems();
+            }
+            return result;
+        }
+
         public void CopyTo(T[] array, int index)
         {
             lock (this.sync)
@@ -1164,9 +1175,10 @@ namespace NECS.Extensions
                     }
                 }
                 //token.Dispose();
+                if(token != null)
+                    token?.Dispose();
             }
-            if(token != null)
-                token?.Dispose();
+            
 
             // if (this.dictionary.ContainsKey(key) && !result && lockToken != null)
             // {
@@ -1326,7 +1338,9 @@ namespace NECS.Extensions
             using (GlobalLocker.WriteLock())
             {
                 result = dictionary.ToDictionary(x => x.Key, x => x.Value.Value);
+                var tokens = dictionary.Select(x => x.Value.lockValue.WriteLock());
                 dictionary.Clear();
+                tokens.ForEach(x => x.Dispose());
             }
             return result;
         }

@@ -23,6 +23,7 @@ namespace NECS.Network.NetworkModels.TCP
         public bool IsConnected { get; set; }
         public bool IsDisposed { get; private set; }
         public bool IsSocketDisposed { get; private set; }
+        public bool ProxyMode { get; set; } = false;
 
         public CUserToken token;
 
@@ -72,7 +73,11 @@ namespace NECS.Network.NetworkModels.TCP
             this.token.set_peer(this);
             this.token.disable_auto_heartbeat();
             Setup();
-            NetworkingService.instance.OnConnected(this);
+            Connected?.Invoke(this);
+            if(!ProxyMode)
+            {
+                NetworkingService.instance.OnConnected(this);
+            }
         }
 
         public void on_message(CPacket msg)
@@ -105,8 +110,13 @@ namespace NECS.Network.NetworkModels.TCP
             {
                 token.close();
             }
-            if (NetworkingService.instance.SocketAdapters.ContainsKey(this.Id))
-                NetworkingService.instance.OnDisconnected(this);
+
+            Disconnected?.Invoke(this);
+            if (!ProxyMode)
+            {
+                if (NetworkingService.instance.SocketAdapters.ContainsKey(this.Id))
+                    NetworkingService.instance.OnDisconnected(this);
+            }
         }
 
         void OnReceive(byte[] newBuffer)
@@ -119,11 +129,15 @@ namespace NECS.Network.NetworkModels.TCP
                 return;
             }
 
-            var result = NetworkPacketBuilderService.instance.UnpackNetworkPacket(newBuffer);
-
-            if(result.Item2)
+            DataReceived?.Invoke(this, newBuffer);
+            if(!ProxyMode)
             {
-                NetworkingService.instance.OnReceived(this, result.Item1);
+                var result = NetworkPacketBuilderService.instance.UnpackNetworkPacket(newBuffer);
+
+                if(result.Item2)
+                {
+                    NetworkingService.instance.OnReceived(this, result.Item1);
+                }
             }
 
             //Array.Copy(buffer, newBuffer, newBuffer.Length);

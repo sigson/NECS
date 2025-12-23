@@ -136,6 +136,11 @@ namespace NECS.ECS.ECSCore
             {
                 ownerEntity.entityComponents.DirectiveChange(this.GetType());
             }
+            if(ownerDB != null && (GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Server || GlobalProgramState.instance.ProgramType == GlobalProgramState.ProgramTypeEnum.Offline))
+            {
+                ownerDB.ChangeComponent(this);
+                ownerDB.DirectiveSetChanged();
+            }
         }
 
         public void MarkAsChanged(bool serializationSilent = false, bool eventSilent = false)

@@ -179,44 +179,84 @@ namespace NECS.Extensions.ThreadingSync
 
     public class RWLockLogging : IDisposable
     {
-        // --- НОВОЕ ПОЛЕ ---
+        public enum LockType
+        {
+            Read,
+            Write
+        }
+
         /// <summary>
-        /// Словарь для отслеживания активных блокировок.
-        /// Ключ - экземпляр токена, Значение - стектрейс входа.
+        /// Запись о блокировке с информацией о порядке.
         /// </summary>
-        private readonly ConcurrentDictionary<LockToken, string> _activeLocks;
-        // --- КОНЕЦ НОВОГО ПОЛЯ ---
+        public readonly struct LockEntry
+        {
+            public long OrderId { get; }
+            public DateTime AcquiredAt { get; }
+            public string StackTrace { get; }
+            public LockType Type { get; }
+            public int ThreadId { get; }
+
+            public LockEntry(long orderId, string stackTrace, LockType type)
+            {
+                OrderId = orderId;
+                AcquiredAt = DateTime.UtcNow;
+                StackTrace = stackTrace;
+                Type = type;
+                ThreadId = Environment.CurrentManagedThreadId;
+            }
+        }
+        // --- КОНЕЦ НОВЫХ ТИПОВ ---
+
+        // --- ИЗМЕНЁННЫЕ ПОЛЯ ---
+        /// <summary>
+        /// Атомарный счётчик для порядковых номеров.
+        /// </summary>
+        private long _orderCounter;
+
+        /// <summary>
+        /// Словарь для отслеживания активных блокировок с сохранением порядка.
+        /// Ключ - экземпляр токена, Значение - информация о блокировке.
+        /// </summary>
+        private readonly ConcurrentDictionary<LockToken, LockEntry> _activeLocks;
+        // --- КОНЕЦ ИЗМЕНЁННЫХ ПОЛЕЙ ---
 
         public abstract class LockToken : IDisposable
         {
-            // --- НОВОЕ ПОЛЕ ---
-            /// <summary>
-            /// Ссылка на родительский RWLock, содержащий словарь _activeLocks.
-            /// </summary>
             protected readonly RWLockLogging _parent;
-            // --- КОНЕЦ НОВОГО ПОЛЯ ---
-
             protected bool TokenMockLock = false;
             public abstract void ExitLock();
             public void Dispose() => ExitLock();
 
-            // --- НОВЫЙ КОНСТРУКТОР ---
-            /// <summary>
-            /// Базовый конструктор для токена блокировки.
-            /// </summary>
-            /// <param name="parent">Экземпляр RWLock, создавший этот токен.</param>
             protected LockToken(RWLockLogging parent)
             {
                 _parent = parent ?? throw new ArgumentNullException(nameof(parent));
             }
-            // --- КОНЕЦ НОВОГО КОНСТРУКТОРА ---
+
+            // --- НОВЫЙ ВСПОМОГАТЕЛЬНЫЙ МЕТОД ---
+            /// <summary>
+            /// Регистрирует блокировку в словаре с атомарным порядковым номером.
+            /// </summary>
+            protected void RegisterLock(string stackTrace, LockType lockType)
+            {
+                long orderId = Interlocked.Increment(ref _parent._orderCounter);
+                var entry = new LockEntry(orderId, stackTrace, lockType);
+                _parent._activeLocks.TryAdd(this, entry);
+            }
+
+            /// <summary>
+            /// Удаляет блокировку из словаря.
+            /// </summary>
+            protected void UnregisterLock()
+            {
+                _parent._activeLocks.TryRemove(this, out _);
+            }
+            // --- КОНЕЦ ВСПОМОГАТЕЛЬНОГО МЕТОДА ---
         }
 
         public class WriteLockToken : LockToken
         {
             private readonly IReaderWriterLockSlim lockobj;
 
-            // --- ИЗМЕНЕННЫЙ КОНСТРУКТОР ---
             public WriteLockToken(IReaderWriterLockSlim @lock, RWLockLogging parent) : base(parent)
             {
                 this.lockobj = @lock;
@@ -228,11 +268,9 @@ namespace NECS.Extensions.ThreadingSync
                 }
                 if (!this.lockobj.IsWriteLockHeld || this.lockobj.RecursionPolicy == LockRecursionPolicy.SupportsRecursion)
                 {
-                    // --- НОВАЯ ЛОГИКА ---
                     string stackTrace = "Stack trace capture failed";
                     try
                     {
-                        // 1. Захватываем StackTrace ПЕРЕД попыткой входа
                         stackTrace = new StackTrace(true).ToString();
                     }
                     catch (Exception stEx)
@@ -240,17 +278,14 @@ namespace NECS.Extensions.ThreadingSync
                         if (true || !Defines.IgnoreNonDangerousExceptions)
                             NLogger.LogErrorLocking($"Failed to capture stack trace: {stEx.Message}");
                     }
-                    // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
 
                     try
                     {
-                        // 2. Входим в блокировку
+                        RegisterLock(stackTrace, LockType.Write);
                         lockobj.EnterWriteLock();
-
-                        // --- НОВАЯ ЛОГИКА ---
-                        // 3. Добавляем себя в словарь ПОСЛЕ успешного входа
-                        _parent._activeLocks.TryAdd(this, stackTrace);
-                        // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
+                        
+                        // --- ИЗМЕНЕНО: используем новый метод ---
+                        
                     }
                     catch (Exception e)
                     {
@@ -263,7 +298,6 @@ namespace NECS.Extensions.ThreadingSync
                     TokenMockLock = true;
                 }
             }
-            // --- КОНЕЦ ИЗМЕНЕННОГО КОНСТРУКТОРА ---
 
             override public void ExitLock()
             {
@@ -271,13 +305,10 @@ namespace NECS.Extensions.ThreadingSync
                 {
                     if (this.lockobj.IsWriteLockHeld)
                     {
-                        // 1. Выходим из блокировки
                         lockobj.ExitWriteLock();
-
-                        // --- НОВАЯ ЛОГИКА ---
-                        // 2. Удаляем себя из словаря ПОСЛЕ выхода
-                        _parent._activeLocks.TryRemove(this, out _);
-                        // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
+                        
+                        // --- ИЗМЕНЕНО: используем новый метод ---
+                        UnregisterLock();
                     }
                     else if (TokenMockLock)
                     {
@@ -286,7 +317,7 @@ namespace NECS.Extensions.ThreadingSync
                     else
                     {
                         if (true || !Defines.IgnoreNonDangerousExceptions)
-                            NLogger.LogErrorLocking("You tried to exit write lock, but write lock for this thread already free"); // Исправлена опечатка
+                            NLogger.LogErrorLocking("You tried to exit write lock, but write lock for this thread already free");
                     }
                 }
                 catch (Exception e)
@@ -301,7 +332,6 @@ namespace NECS.Extensions.ThreadingSync
         {
             private readonly IReaderWriterLockSlim lockobj;
 
-            // --- ИЗМЕНЕННЫЙ КОНСТРУКТОР ---
             public ReadLockToken(IReaderWriterLockSlim @lock, RWLockLogging parent) : base(parent)
             {
                 this.lockobj = @lock;
@@ -313,11 +343,9 @@ namespace NECS.Extensions.ThreadingSync
                 }
                 if (!this.lockobj.IsReadLockHeld || this.lockobj.RecursionPolicy == LockRecursionPolicy.SupportsRecursion)
                 {
-                    // --- НОВАЯ ЛОГИКА ---
                     string stackTrace = "Stack trace capture failed";
                     try
                     {
-                        // 1. Захватываем StackTrace ПЕРЕД попыткой входа
                         stackTrace = new StackTrace(true).ToString();
                     }
                     catch (Exception stEx)
@@ -325,17 +353,14 @@ namespace NECS.Extensions.ThreadingSync
                         if (true || !Defines.IgnoreNonDangerousExceptions)
                             NLogger.LogErrorLocking($"Failed to capture stack trace: {stEx.Message}");
                     }
-                    // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
 
                     try
                     {
-                        // 2. Входим в блокировку
+                        RegisterLock(stackTrace, LockType.Read);
                         lockobj.EnterReadLock();
-
-                        // --- НОВАЯ ЛОГИКА ---
-                        // 3. Добавляем себя в словарь ПОСЛЕ успешного входа
-                        _parent._activeLocks.TryAdd(this, stackTrace);
-                        // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
+                        
+                        // --- ИЗМЕНЕНО: используем новый метод ---
+                        
                     }
                     catch (Exception e)
                     {
@@ -348,7 +373,6 @@ namespace NECS.Extensions.ThreadingSync
                     TokenMockLock = true;
                 }
             }
-            // --- КОНЕЦ ИЗМЕНЕННОГО КОНСТРУКТОРА ---
 
             override public void ExitLock()
             {
@@ -356,13 +380,10 @@ namespace NECS.Extensions.ThreadingSync
                 {
                     if (this.lockobj.IsReadLockHeld)
                     {
-                        // 1. Выходим из блокировки
                         lockobj.ExitReadLock();
-
-                        // --- НОВАЯ ЛОГИКА ---
-                        // 2. Удаляем себя из словаря ПОСЛЕ выхода
-                        _parent._activeLocks.TryRemove(this, out _);
-                        // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
+                        
+                        // --- ИЗМЕНЕНО: используем новый метод ---
+                        UnregisterLock();
                     }
                     else if (TokenMockLock)
                     {
@@ -384,10 +405,8 @@ namespace NECS.Extensions.ThreadingSync
 
         public readonly IReaderWriterLockSlim lockobj;
 
-        // --- ИЗМЕНЕННЫЕ МЕТОДЫ-ФАБРИКИ ---
         public ReadLockToken ReadLock() => new ReadLockToken(lockobj, this);
         public WriteLockToken WriteLock() => new WriteLockToken(lockobj, this);
-        // --- КОНЕЦ ИЗМЕНЕННЫХ МЕТОДОВ ---
 
         public void ExecuteReadLocked(Action action)
         {
@@ -407,10 +426,8 @@ namespace NECS.Extensions.ThreadingSync
 
         public RWLockLogging()
         {
-            // --- НОВАЯ ЛОГИКА ---
-            // Инициализируем словарь
-            _activeLocks = new ConcurrentDictionary<LockToken, string>();
-            // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
+            _activeLocks = new ConcurrentDictionary<LockToken, LockEntry>();
+            _orderCounter = 0;
 
             if (Defines.OneThreadMode)
             {
@@ -424,28 +441,36 @@ namespace NECS.Extensions.ThreadingSync
                 }
                 else
                 {
-#if NET || UNITY || GODOT4
+    #if NET || UNITY || GODOT4
                     lockobj = new AsyncReaderWriterLockSlim();
-#else
+    #else
                     NLogger.Error("AsyncReaderWriterLockSlim not supported, enable Defines.ThreadsMode or Defines.OneThread");
-#endif
+    #endif
                 }
             }
         }
 
         public void Dispose() => lockobj.Dispose();
 
-        // --- НОВЫЙ МЕТОД (Опционально) ---
+        // --- ИЗМЕНЁННЫЙ МЕТОД ---
         /// <summary>
-        /// Возвращает потокобезопасную копию словаря активных блокировок для отладки.
+        /// Возвращает список активных блокировок, отсортированный по порядку получения.
         /// </summary>
-        public IReadOnlyDictionary<LockToken, string> GetActiveLocks()
+        public IReadOnlyList<LockEntry> GetActiveLocksOrdered()
         {
-            // Возвращаем копию, чтобы избежать проблем с перечислением
-            // во время модификации коллекции в другом потоке.
-            return new Dictionary<LockToken, string>(_activeLocks);
+            return _activeLocks.Values
+                .OrderBy(e => e.OrderId)
+                .ToList();
         }
-        // --- КОНЕЦ НОВОГО МЕТОДА ---
+
+        /// <summary>
+        /// Возвращает словарь активных блокировок (без гарантии порядка).
+        /// </summary>
+        public IReadOnlyDictionary<LockToken, LockEntry> GetActiveLocks()
+        {
+            return new Dictionary<LockToken, LockEntry>(_activeLocks);
+        }
+        // --- КОНЕЦ ИЗМЕНЁННЫХ МЕТОДОВ ---
     }
     
     // public class RWLock : IDisposable

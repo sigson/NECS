@@ -55,7 +55,7 @@ namespace NECS.ECS.ECSCore
 
         public void OnRemoveEntity(ECSEntity Entity)
         {
-            EntityStorage.Remove(Entity.instanceId, out Entity);
+            EntityStorage.ExecuteOnRemoveLocked(Entity.instanceId, out Entity, (longv, entt) => {});
             Entity.OnDelete();
             TaskEx.RunAsync(() =>
             {

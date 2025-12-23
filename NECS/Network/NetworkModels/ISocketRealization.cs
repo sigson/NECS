@@ -9,6 +9,7 @@ namespace NECS.Network.NetworkModels
         #region Properties
         
         long Id { get; set; }
+        bool ProxyMode { get; set; }
         string Address { get; }
         int Port { get; }
         bool IsConnected { get; }
